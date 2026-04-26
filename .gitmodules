@@ -1,0 +1,3 @@
+[submodule "SimRewilding"]
+	path = SimRewilding
+	url = https://github.com/GMY2018/SimRewilding.git

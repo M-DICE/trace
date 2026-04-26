@@ -1,0 +1,14 @@
+.DS_Store
+
+# Generated data
+results
+plots
+
+# Folders to ignore
+plans
+reviews
+
+
+# Python
+__pycache__
+.venv
