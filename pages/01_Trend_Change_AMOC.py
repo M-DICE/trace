@@ -41,7 +41,7 @@ TREND_INCREASE = np.round(
 )
 EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]   # % of mean / 10 yr
 
-RESULTS_PATH = Path(__file__).parent.parent / "results" / "sim_results.pkl"
+RESULTS_PATH = Path(__file__).parent.parent / "results" / "amoc_trend_results.pkl"
 
 
 # ── Data loading ───────────────────────────────────────────────────────────────

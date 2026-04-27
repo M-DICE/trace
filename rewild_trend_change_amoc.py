@@ -84,8 +84,8 @@ if __name__ == "__main__":
 
 def setup_plots_directory():
     """Create plots directory if it doesn't exist."""
-    plots_dir = Path("plots")
-    plots_dir.mkdir(exist_ok=True)
+    plots_dir = Path("plots") / "amoc_trend"
+    plots_dir.mkdir(parents=True, exist_ok=True)
     return plots_dir
 
 
@@ -119,7 +119,7 @@ def save_simulation_results(critical_values, detection_results, detection_result
     """
     results_path = Path(results_dir)
     results_path.mkdir(exist_ok=True)
-    filepath = results_path / "sim_results.pkl"
+    filepath = results_path / "amoc_trend_results.pkl"
 
     data = {
         'critical_values':           critical_values,
@@ -135,7 +135,7 @@ def save_simulation_results(critical_values, detection_results, detection_result
 
 def load_simulation_results(results_dir="results"):
     """Load previously saved simulation results from results directory."""
-    filepath = Path(results_dir) / "sim_results.pkl"
+    filepath = Path(results_dir) / "amoc_trend_results.pkl"
     if not filepath.exists():
         return None
     with open(filepath, 'rb') as f:
@@ -158,15 +158,15 @@ def _null_sim_worker(args):
     warnings.filterwarnings('ignore')
     if use_ar:
         sim_data = ci_sim_ar(seed=i, npre=npre, npost=npost, level=level,
-                             trend=[0, 0], phi=phi, sigma=sigma)
+                             trend=[trend_control, trend_control], phi=phi, sigma=sigma)
         stats = trend_stats_ar(y_itv=sim_data['y_itv'], nt=npre + npost)  # BA: intervention only
     elif ba:
         sim_data = ci_sim(seed=i, npre=npre, npost=npost, level=level,
-                          trend=[0, 0], sigma=sigma)
+                          trend=[trend_control, trend_control], sigma=sigma)
         stats = trend_stats(y_itv=sim_data['y_itv'], nt=npre + npost)  # BA: intervention only
     else:
         sim_data = ci_sim(seed=i, npre=npre, npost=npost, level=level,
-                          trend=[0, 0], sigma=sigma)
+                          trend=[trend_control, trend_control], sigma=sigma)
         stats = trend_stats(y_ctr=sim_data['y_ctr'], y_itv=sim_data['y_itv'],
                             nt=npre + npost)
     return stats['Tmax']
@@ -457,8 +457,10 @@ def run_main_simulation(simN, trend_increase, critical_value, npre, npost_max,
     n_trends = len(trend_increase)
     n_workers = os.cpu_count() or 1
 
-    for trend_idx, trend_interv in enumerate(trend_increase, start=1):
-        print(f"\n  Trend increment {trend_idx}/{n_trends}: {trend_interv:.4f}", flush=True)
+    for trend_idx, trend_inc in enumerate(trend_increase, start=1):
+        trend_interv = trend_control + trend_inc
+        print(f"\n  Trend increment {trend_idx}/{n_trends}: {trend_inc:.4f} "
+              f"(intervention trend: {trend_interv:.4f})", flush=True)
 
         # npost_vec passed into each worker so it can run the growing window loop
         args_list = [
@@ -495,7 +497,7 @@ def run_main_simulation(simN, trend_increase, critical_value, npre, npost_max,
         print(f"    At npost_max: detection rate = {rate_at_max:.2%}, "
               f"mean error = {error_at_max:.2f} months", flush=True)
 
-        detection_results[trend_interv] = {
+        detection_results[trend_inc] = {
             # Raw matrices — one row per simulation, one column per npost length
             'tmax_matrix':      tmax_matrix,     # (simN, len(npost_vec))
             'cpt_matrix':       cpt_matrix,       # (simN, len(npost_vec))
@@ -528,8 +530,10 @@ def run_main_simulation_iid_ba(simN, trend_increase, critical_value, npre, npost
     n_trends = len(trend_increase)
     n_workers = os.cpu_count() or 1
 
-    for trend_idx, trend_interv in enumerate(trend_increase, start=1):
-        print(f"\n  Trend increment {trend_idx}/{n_trends}: {trend_interv:.4f}", flush=True)
+    for trend_idx, trend_inc in enumerate(trend_increase, start=1):
+        trend_interv = trend_control + trend_inc
+        print(f"\n  Trend increment {trend_idx}/{n_trends}: {trend_inc:.4f} "
+              f"(intervention trend: {trend_interv:.4f})", flush=True)
 
         args_list = [
             (sim_idx, trend_interv, trend_idx, n_trends, npre, npost_max, npost_vec,
@@ -559,7 +563,7 @@ def run_main_simulation_iid_ba(simN, trend_increase, critical_value, npre, npost
         print(f"    At npost_max: detection rate = {rate_at_max:.2%}, "
               f"mean error = {error_at_max:.2f} months", flush=True)
 
-        detection_results[trend_interv] = {
+        detection_results[trend_inc] = {
             'tmax_matrix':     tmax_matrix,
             'cpt_matrix':      cpt_matrix,
             'detected_matrix': detected_matrix,
@@ -604,8 +608,10 @@ def run_main_simulation_ar(simN, trend_increase, critical_value, npre, npost_max
     n_trends = len(trend_increase)
     n_workers = os.cpu_count() or 1
 
-    for trend_idx, trend_interv in enumerate(trend_increase, start=1):
-        print(f"\n  Trend increment {trend_idx}/{n_trends}: {trend_interv:.4f}", flush=True)
+    for trend_idx, trend_inc in enumerate(trend_increase, start=1):
+        trend_interv = trend_control + trend_inc
+        print(f"\n  Trend increment {trend_idx}/{n_trends}: {trend_inc:.4f} "
+              f"(intervention trend: {trend_interv:.4f})", flush=True)
 
         args_list = [
             (sim_idx, trend_interv, trend_idx, n_trends, npre, npost_max, npost_vec,
@@ -635,7 +641,7 @@ def run_main_simulation_ar(simN, trend_increase, critical_value, npre, npost_max
         print(f"    At npost_max: detection rate = {rate_at_max:.2%}, "
               f"mean error = {error_at_max:.2f} months", flush=True)
 
-        detection_results[trend_interv] = {
+        detection_results[trend_inc] = {
             'tmax_matrix':     tmax_matrix,
             'cpt_matrix':      cpt_matrix,
             'detected_matrix': detected_matrix,
@@ -719,7 +725,7 @@ if __name__ == "__main__":
     if not use_saved:
         # Run a concrete example for plotting and to verify data generation
         sim_data_test = ci_sim(seed=42, npre=npre, npost=npost_max, level=level,
-                               trend=[trend_control, example_trend], sigma=sigma)
+                               trend=[trend_control, trend_control + example_trend], sigma=sigma)
         stats_test = trend_stats(y_ctr=sim_data_test['y_ctr'], y_itv=sim_data_test['y_itv'],
                                  nt=npre + npost_max)
 
@@ -894,7 +900,7 @@ if __name__ == "__main__":
     # Ensure we have an example time series for plot 2 (not stored in results pkl)
     if use_saved:
         sim_data_test = ci_sim(seed=42, npre=npre, npost=npost_max, level=level,
-                               trend=[trend_control, example_trend], sigma=sigma)
+                               trend=[trend_control, trend_control + example_trend], sigma=sigma)
         stats_test = trend_stats(y_ctr=sim_data_test['y_ctr'], y_itv=sim_data_test['y_itv'],
                                  nt=npre + npost_max)
 

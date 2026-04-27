@@ -7,7 +7,12 @@ plots
 # Folders to ignore
 plans
 reviews
+architecture
 
+# AI Assistansts
+.claude/settings.local.json
+.gemini/settings.json
+.codex/config.json
 
 # Python
 __pycache__
