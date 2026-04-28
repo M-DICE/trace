@@ -8,6 +8,7 @@ Equivalent to: Rewild_distribution_change_AMOC.R
 """
 
 import argparse
+import time
 import numpy as np
 import warnings
 import os
@@ -24,6 +25,13 @@ from plotting import (plot_simulation_results, plot_power_curves,
                       plot_distribution_difference, plot_power_curves_mu_sigma)
 
 warnings.filterwarnings('ignore')
+
+
+def _fmt_elapsed(seconds: float) -> str:
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    m, s = divmod(int(seconds), 60)
+    return f"{m}m {s:02d}s"
 
 
 # ============================================================================
@@ -114,7 +122,7 @@ def _main_sim_worker_cdf_mu(args):
         tmax_vec[j] = stats['Tmax']
         cpt_vec[j]  = stats['cpt']
 
-    return delay, tmax_vec, cpt_vec, sim
+    return delay, tmax_vec, cpt_vec, seed
 
 def _main_sim_worker_cdf_mu_ba(args):
     (sim_idx, trend_mu, trend_idx, n_trends, npre, npost_max, npost_vec,
@@ -143,7 +151,7 @@ def _main_sim_worker_cdf_mu_ba(args):
         tmax_vec[j] = stats['Tmax']
         cpt_vec[j]  = stats['cpt']
 
-    return delay, tmax_vec, cpt_vec, sim
+    return delay, tmax_vec, cpt_vec, seed
 
 def _main_sim_worker_cdf_sigma(args):
     (sim_idx, trend_sigma, trend_idx, n_trends, npre, npost_max, npost_vec,
@@ -170,56 +178,63 @@ def _main_sim_worker_cdf_sigma(args):
         tmax_vec[j] = stats['Tmax']
         cpt_vec[j]  = stats['cpt']
 
-    return delay, tmax_vec, cpt_vec, sim
+    return delay, tmax_vec, cpt_vec, seed
 
 # Orchestration functions
 
 def calculate_critical_values_cdf(Nsim, npre, mu, sigma, ns, dist_measure, bw, nd, alpha=0.95):
     critical_values = {}
     n_workers = os.cpu_count() or 1
-    
-    for npost, label in [(CRITICAL_VALUE_NPOST_SHORT, "24"), 
-                         (CRITICAL_VALUE_NPOST_MEDIUM, "72"), 
+
+    for npost, label in [(CRITICAL_VALUE_NPOST_SHORT, "24"),
+                         (CRITICAL_VALUE_NPOST_MEDIUM, "72"),
                          (CRITICAL_VALUE_NPOST_LONG, "120")]:
-        print(f"  npost = {npost} months:")
+        t0 = time.perf_counter()
+        print(f"  npost = {npost} months ({Nsim} null sims) ...", end="", flush=True)
         args_list = [(i, npre, npost, mu, sigma, ns, dist_measure, bw, nd) for i in range(1, Nsim + 1)]
         with ProcessPoolExecutor(max_workers=n_workers) as executor:
             results = list(executor.map(_null_sim_worker_cdf, args_list))
-        
+
         cv = np.percentile(results, alpha * 100)
         critical_values[f'npost_{label}'] = {'critical_value': cv, 'null_dist': np.array(results)}
-        print(f"    Critical value: {cv:.4f}")
-        
+        print(f" done in {_fmt_elapsed(time.perf_counter() - t0)}  cv = {cv:.4f}")
+
     return critical_values
 
 def run_main_simulation_mu(simN, trend_increase_mu, critical_value, npre, npost_max, npost_vec,
-                           mu, sigma, ns, dist_measure, bw, nd, delay_set, ba=False):
-    detection_results = {}
+                           mu, sigma, ns, dist_measure, bw, nd, delay_set, ba=False,
+                           existing_results=None, on_trend_done=None):
+    detection_results = dict(existing_results or {})
     n_trends = len(trend_increase_mu)
     n_workers = os.cpu_count() or 1
     worker_func = _main_sim_worker_cdf_mu_ba if ba else _main_sim_worker_cdf_mu
 
     for trend_idx, trend_mu in enumerate(trend_increase_mu, start=1):
-        print(f"  Trend mu increment {trend_idx}/{n_trends}: {trend_mu:.4f}")
+        if trend_mu in detection_results:
+            print(f"  [{trend_idx}/{n_trends}] trend_mu={trend_mu:.4f}  (cached, skipping)")
+            continue
+
+        t0 = time.perf_counter()
+        print(f"  [{trend_idx}/{n_trends}] trend_mu={trend_mu:.4f}  ({simN} sims) ...", end="", flush=True)
         args_list = [(sim_idx, trend_mu, trend_idx, n_trends, npre, npost_max, npost_vec,
                       mu, sigma, ns, dist_measure, bw, nd, delay_set)
                      for sim_idx in range(1, simN + 1)]
-        
+
         with ProcessPoolExecutor(max_workers=n_workers) as executor:
             results = list(executor.map(worker_func, args_list))
-            
+
         delays = [r[0] for r in results]
         tmax_matrix = np.array([r[1] for r in results])
         cpt_matrix = np.array([r[2] for r in results])
-        simulated_data = [r[3] for r in results]
-        
+        seeds = [r[3] for r in results]
+
         detected_matrix = tmax_matrix > critical_value
         detection_rates = detected_matrix.mean(axis=0)
-        
+
         true_cpts = np.array([npre + d for d in delays])
         error_matrix = np.abs(cpt_matrix - true_cpts[:, np.newaxis])
         mean_errors = error_matrix.mean(axis=0)
-        
+
         detection_results[trend_mu] = {
             'tmax_matrix': tmax_matrix,
             'cpt_matrix': cpt_matrix,
@@ -227,37 +242,48 @@ def run_main_simulation_mu(simN, trend_increase_mu, critical_value, npre, npost_
             'delays': delays,
             'detection_rates': detection_rates,
             'mean_errors': mean_errors,
-            'simulated_data': simulated_data
+            'seeds': seeds,
         }
+        print(f" done in {_fmt_elapsed(time.perf_counter() - t0)}")
+
+        if on_trend_done:
+            on_trend_done(detection_results)
+
     return detection_results
 
 def run_main_simulation_sigma(simN, trend_increase_sigma, critical_value, npre, npost_max, npost_vec,
-                              mu, sigma, ns, dist_measure, bw, nd, delay_set):
-    detection_results = {}
+                              mu, sigma, ns, dist_measure, bw, nd, delay_set,
+                              existing_results=None, on_trend_done=None):
+    detection_results = dict(existing_results or {})
     n_trends = len(trend_increase_sigma)
     n_workers = os.cpu_count() or 1
 
     for trend_idx, trend_sigma in enumerate(trend_increase_sigma, start=1):
-        print(f"  Trend sigma increment {trend_idx}/{n_trends}: {trend_sigma:.4f}")
+        if trend_sigma in detection_results:
+            print(f"  [{trend_idx}/{n_trends}] trend_sigma={trend_sigma:.4f}  (cached, skipping)")
+            continue
+
+        t0 = time.perf_counter()
+        print(f"  [{trend_idx}/{n_trends}] trend_sigma={trend_sigma:.4f}  ({simN} sims) ...", end="", flush=True)
         args_list = [(sim_idx, trend_sigma, trend_idx, n_trends, npre, npost_max, npost_vec,
                       mu, sigma, ns, dist_measure, bw, nd, delay_set)
                      for sim_idx in range(1, simN + 1)]
-        
+
         with ProcessPoolExecutor(max_workers=n_workers) as executor:
             results = list(executor.map(_main_sim_worker_cdf_sigma, args_list))
-            
+
         delays = [r[0] for r in results]
         tmax_matrix = np.array([r[1] for r in results])
         cpt_matrix = np.array([r[2] for r in results])
-        simulated_data = [r[3] for r in results]
-        
+        seeds = [r[3] for r in results]
+
         detected_matrix = tmax_matrix > critical_value
         detection_rates = detected_matrix.mean(axis=0)
-        
+
         true_cpts = np.array([npre + d for d in delays])
         error_matrix = np.abs(cpt_matrix - true_cpts[:, np.newaxis])
         mean_errors = error_matrix.mean(axis=0)
-        
+
         detection_results[trend_sigma] = {
             'tmax_matrix': tmax_matrix,
             'cpt_matrix': cpt_matrix,
@@ -265,8 +291,13 @@ def run_main_simulation_sigma(simN, trend_increase_sigma, critical_value, npre, 
             'delays': delays,
             'detection_rates': detection_rates,
             'mean_errors': mean_errors,
-            'simulated_data': simulated_data
+            'seeds': seeds,
         }
+        print(f" done in {_fmt_elapsed(time.perf_counter() - t0)}")
+
+        if on_trend_done:
+            on_trend_done(detection_results)
+
     return detection_results
 
 if __name__ == "__main__":
@@ -281,45 +312,101 @@ if __name__ == "__main__":
 
     plots_dir = file_utils.setup_plots_directory(FOLDER)
     file_utils.setup_results_directory(FOLDER)
-    loaded_data = file_utils.load_simulation_results(FOLDER)
 
-    if args.plots_only and loaded_data is None:
+    # Load whatever has been saved so far (may be partial).
+    loaded_data = file_utils.load_simulation_results(FOLDER) or {}
+
+    if args.plots_only and not loaded_data:
         print("Error: No saved results found.")
         exit(1)
 
-    if loaded_data and 'detection_results_mu' in loaded_data:
-        critical_values = loaded_data['critical_values']
-        detection_results_mu = loaded_data['detection_results_mu']
-        detection_results_sigma = loaded_data['detection_results_sigma']
-        detection_results_mu_ba = loaded_data.get('detection_results_mu_ba')
-        use_saved = True
-    else:
-        use_saved = False
+    critical_values        = loaded_data.get('critical_values')
+    detection_results_mu   = loaded_data.get('detection_results_mu',    {})
+    detection_results_mu_ba = loaded_data.get('detection_results_mu_ba', {})
+    detection_results_sigma = loaded_data.get('detection_results_sigma', {})
 
-    if not use_saved:
-        print("PHASE 1: Critical Values")
-        critical_values = calculate_critical_values_cdf(Nsim, npre, mu, sigma, ns, dist_measure, bw, nd, alpha)
-        
-        cv = critical_values['npost_24']['critical_value']
-        
-        print("\nPHASE 2A: Mean Change (BACI)")
-        detection_results_mu = run_main_simulation_mu(simN, trend_increase_mu, cv, npre, npost_max, npost_vec,
-                                                    mu, sigma, ns, dist_measure, bw, nd, delay_set)
-        
-        print("\nPHASE 2A': Mean Change (BA)")
-        detection_results_mu_ba = run_main_simulation_mu(simN, trend_increase_mu, cv, npre, npost_max, npost_vec,
-                                                       mu, sigma, ns, dist_measure, bw, nd, delay_set, ba=True)
-
-        print("\nPHASE 2B: Variance Change")
-        detection_results_sigma = run_main_simulation_sigma(simN, trend_increase_sigma, cv, npre, npost_max, npost_vec,
-                                                         mu, sigma, ns, dist_measure, bw, nd, delay_set)
-        
+    def _save():
         file_utils.save_simulation_results(FOLDER, {
-            'critical_values':          critical_values,
-            'detection_results_mu':     detection_results_mu,
-            'detection_results_sigma':  detection_results_sigma,
-            'detection_results_mu_ba':  detection_results_mu_ba,
+            'critical_values':           critical_values,
+            'detection_results_mu':      detection_results_mu,
+            'detection_results_sigma':   detection_results_sigma,
+            'detection_results_mu_ba':   detection_results_mu_ba,
         })
+
+    if not args.plots_only:
+        t_total = time.perf_counter()
+
+        # ── Phase 1: Critical Values ───────────────────────────────────────────
+        if critical_values is not None:
+            print("PHASE 1: Critical Values (loaded from cache, skipping)")
+        else:
+            print("PHASE 1: Critical Values")
+            t0 = time.perf_counter()
+            critical_values = calculate_critical_values_cdf(
+                Nsim, npre, mu, sigma, ns, dist_measure, bw, nd, alpha)
+            print(f"  Phase 1 total: {_fmt_elapsed(time.perf_counter() - t0)}")
+            _save()
+
+        cv = critical_values['npost_24']['critical_value']
+
+        # ── Phase 2A: Mean Change (BACI) ───────────────────────────────────────
+        n_mu_done = len(detection_results_mu)
+        print(f"\nPHASE 2A: Mean Change BACI  ({n_mu_done}/{len(trend_increase_mu)} cached)")
+        t0 = time.perf_counter()
+
+        def on_done_mu(r):
+            global detection_results_mu
+            detection_results_mu = r
+            _save()
+
+        detection_results_mu = run_main_simulation_mu(
+            simN, trend_increase_mu, cv, npre, npost_max, npost_vec,
+            mu, sigma, ns, dist_measure, bw, nd, delay_set,
+            existing_results=detection_results_mu,
+            on_trend_done=on_done_mu,
+        )
+        _save()
+        print(f"  Phase 2A total: {_fmt_elapsed(time.perf_counter() - t0)}")
+
+        # ── Phase 2A': Mean Change (BA) ────────────────────────────────────────
+        n_mu_ba_done = len(detection_results_mu_ba)
+        print(f"\nPHASE 2A': Mean Change BA  ({n_mu_ba_done}/{len(trend_increase_mu)} cached)")
+        t0 = time.perf_counter()
+
+        def on_done_mu_ba(r):
+            global detection_results_mu_ba
+            detection_results_mu_ba = r
+            _save()
+
+        detection_results_mu_ba = run_main_simulation_mu(
+            simN, trend_increase_mu, cv, npre, npost_max, npost_vec,
+            mu, sigma, ns, dist_measure, bw, nd, delay_set, ba=True,
+            existing_results=detection_results_mu_ba,
+            on_trend_done=on_done_mu_ba,
+        )
+        _save()
+        print(f"  Phase 2A' total: {_fmt_elapsed(time.perf_counter() - t0)}")
+
+        # ── Phase 2B: Variance Change ──────────────────────────────────────────
+        n_sigma_done = len(detection_results_sigma)
+        print(f"\nPHASE 2B: Variance Change  ({n_sigma_done}/{len(trend_increase_sigma)} cached)")
+        t0 = time.perf_counter()
+
+        def on_done_sigma(r):
+            global detection_results_sigma
+            detection_results_sigma = r
+            _save()
+
+        detection_results_sigma = run_main_simulation_sigma(
+            simN, trend_increase_sigma, cv, npre, npost_max, npost_vec,
+            mu, sigma, ns, dist_measure, bw, nd, delay_set,
+            existing_results=detection_results_sigma,
+            on_trend_done=on_done_sigma,
+        )
+        _save()
+        print(f"  Phase 2B total: {_fmt_elapsed(time.perf_counter() - t0)}")
+
+        print(f"\nAll phases complete in {_fmt_elapsed(time.perf_counter() - t_total)}")
 
     # Summary table
     print("\nRESULTS SUMMARY (at npost_max)")
@@ -333,10 +420,13 @@ if __name__ == "__main__":
 
     # Plotting
     print("\nGenerating plots...")
-    # Example distance TS
+    # Example distance TS — regenerate run 0 on the fly from its stored seed
     example_mu = trend_increase_mu[5]
     res = detection_results_mu[example_mu]
-    sim_data = res['simulated_data'][0]
+    _ex_seed  = res['seeds'][0]
+    _ex_delay = res['delays'][0]
+    sim_data = ci_sim_cdf(seed=_ex_seed, npre=npre + _ex_delay, npost=npost_max - _ex_delay,
+                          level=[mu, sigma], trend=[example_mu, 0], ns=ns)
     nt = npre + npost_max
     if dist_measure == "wasserstein":
         dist_ts = wasserstein_distance_baci(sim_data['sample_ctr'], sim_data['sample_itv'])

@@ -53,6 +53,16 @@ def load_results():
         return pickle.load(f)
 
 
+@st.cache_data(show_spinner="Regenerating simulation run…")
+def _regenerate_sim(seed: int, delay: int, trend_mu: float, trend_sigma: float):
+    npre_delay  = NPRE + delay
+    npost_delay = NPOST_MAX - delay
+    return ci_sim_cdf(
+        seed=seed, npre=npre_delay, npost=npost_delay,
+        level=[MU, SIGMA], trend=[trend_mu, trend_sigma], ns=NS,
+    )
+
+
 def dist_label(trend_val, pct):
     return f"{pct}% ({trend_val:.4f}/mo)"
 
@@ -117,6 +127,8 @@ else:
     res_sigma = data["detection_results_sigma"]
     trends_mu    = sorted(res_mu.keys())
     trends_sigma = sorted(res_sigma.keys())
+    mu_pct_to_trend    = dict(zip(EFFECT_SIZES_MU_PCT,    trends_mu))
+    sigma_pct_to_trend = dict(zip(EFFECT_SIZES_SIGMA_PCT, trends_sigma))
     results_available = True
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -228,27 +240,25 @@ if results_available:
         with delay_c2:
             if delay_change_type == "Mean (Mu)":
                 delay_effect_pct = st.select_slider(
-                    "Effect size", options=EFFECT_SIZES_MU_PCT, value=30,
+                    "Effect size", options=list(mu_pct_to_trend.keys()), value=30,
                     format_func=lambda x: f"{x}%", key="delay_effect_mu",
                 )
-                delay_results = res_mu
-                delay_trends  = trends_mu
-                delay_pcts    = EFFECT_SIZES_MU_PCT
+                delay_results   = res_mu
+                delay_pct_map   = mu_pct_to_trend
             else:
                 delay_effect_pct = st.select_slider(
-                    "Effect size", options=EFFECT_SIZES_SIGMA_PCT, value=100,
+                    "Effect size", options=list(sigma_pct_to_trend.keys()), value=100,
                     format_func=lambda x: f"{x}%", key="delay_effect_sigma",
                 )
-                delay_results = res_sigma
-                delay_trends  = trends_sigma
-                delay_pcts    = EFFECT_SIZES_SIGMA_PCT
+                delay_results   = res_sigma
+                delay_pct_map   = sigma_pct_to_trend
         with delay_c3:
             delay_view = st.radio(
                 "View", ["Line chart", "Heatmap"],
                 horizontal=True, key="delay_view",
             )
 
-        delay_trend_key = delay_trends[delay_pcts.index(delay_effect_pct)]
+        delay_trend_key = delay_pct_map[delay_effect_pct]
         unique_delays   = np.arange(1, 21)
         _n_per_bin = int((np.array(delay_results[delay_trend_key]["delays"]) == 1).sum())
 
@@ -473,14 +483,14 @@ if results_available:
                             horizontal=True, key="exp_type")
     with exp_c2:
         if exp_type == "Mean (Mu)":
-            exp_pct = st.select_slider("Effect size", options=EFFECT_SIZES_MU_PCT, value=30,
+            exp_pct = st.select_slider("Effect size", options=list(mu_pct_to_trend.keys()), value=30,
                                        format_func=lambda x: f"{x}%", key="exp_pct_mu")
-            exp_trend   = trends_mu[EFFECT_SIZES_MU_PCT.index(exp_pct)]
+            exp_trend   = mu_pct_to_trend[exp_pct]
             exp_results = res_mu
         else:
-            exp_pct = st.select_slider("Effect size", options=EFFECT_SIZES_SIGMA_PCT, value=100,
+            exp_pct = st.select_slider("Effect size", options=list(sigma_pct_to_trend.keys()), value=100,
                                        format_func=lambda x: f"{x}%", key="exp_pct_sigma")
-            exp_trend   = trends_sigma[EFFECT_SIZES_SIGMA_PCT.index(exp_pct)]
+            exp_trend   = sigma_pct_to_trend[exp_pct]
             exp_results = res_sigma
     with exp_c3:
         exp_npost = st.select_slider(
@@ -499,13 +509,19 @@ if results_available:
     if "exp_nav_slider" not in st.session_state:
         st.session_state["exp_nav_slider"] = 1
 
+    n_runs = len(exp_results[exp_trend]["delays"])
+
+    run_i = min(st.session_state.get("exp_nav_idx", 0), n_runs - 1)
+    st.session_state["exp_nav_idx"]    = run_i
+    st.session_state["exp_nav_slider"] = min(st.session_state.get("exp_nav_slider", 1), n_runs)
+
     def _exp_prev():
         new = max(0, st.session_state["exp_nav_idx"] - 1)
         st.session_state["exp_nav_idx"]    = new
         st.session_state["exp_nav_slider"] = new + 1
 
     def _exp_next():
-        new = min(999, st.session_state["exp_nav_idx"] + 1)
+        new = min(n_runs - 1, st.session_state["exp_nav_idx"] + 1)
         st.session_state["exp_nav_idx"]    = new
         st.session_state["exp_nav_slider"] = new + 1
 
@@ -516,18 +532,20 @@ if results_available:
     with en1:
         st.button("◀", on_click=_exp_prev, key="exp_nav_prev", width="stretch")
     with en2:
-        st.slider("Run", 1, 1000, key="exp_nav_slider", on_change=_exp_on_slider)
+        st.slider("Run", 1, n_runs, key="exp_nav_slider", on_change=_exp_on_slider)
     with en3:
         st.button("▶", on_click=_exp_next, key="exp_nav_next", width="stretch")
 
-    run_i = st.session_state.get("exp_nav_idx", 0)
-
     _delay    = int(exp_results[exp_trend]["delays"][run_i])
+    _seed     = int(exp_results[exp_trend]["seeds"][run_i])
     _true_cpt = NPRE + _delay
     _tmax     = float(exp_results[exp_trend]["tmax_matrix"][run_i, npost_i_exp])
     _cpt      = int(exp_results[exp_trend]["cpt_matrix"][run_i, npost_i_exp])
     _detected = bool(exp_results[exp_trend]["detected_matrix"][run_i, npost_i_exp])
-    _sim_data = exp_results[exp_trend]["simulated_data"][run_i]
+
+    _trend_mu_val    = float(exp_trend) if exp_type == "Mean (Mu)"      else 0.0
+    _trend_sigma_val = 0.0              if exp_type == "Mean (Mu)"      else float(exp_trend)
+    _sim_data = _regenerate_sim(_seed, _delay, _trend_mu_val, _trend_sigma_val)
 
     # ── Metrics row ───────────────────────────────────────────────────────────
     crit_val = cv.get("npost_24", {}).get("critical_value")
