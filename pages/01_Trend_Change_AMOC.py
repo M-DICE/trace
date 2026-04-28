@@ -53,6 +53,27 @@ def load_results():
         return pickle.load(f)
 
 
+@st.cache_data(show_spinner="Regenerating simulation run…")
+def _regenerate_iid(seed: int, delay: int, trend_inc: float):
+    npre_delay  = NPRE + delay
+    npost_delay = NPOST_MONTHS - delay
+    return ci_sim(
+        seed=seed, npre=npre_delay, npost=npost_delay,
+        level=LEVEL, trend=[TREND_CONTROL, TREND_CONTROL + trend_inc], sigma=SIGMA,
+    )
+
+
+@st.cache_data(show_spinner="Regenerating AR(1) simulation run…")
+def _regenerate_ar(seed: int, delay: int, trend_inc: float):
+    npre_delay  = NPRE + delay
+    npost_delay = NPOST_MONTHS - delay
+    return ci_sim_ar(
+        seed=seed, npre=npre_delay, npost=npost_delay,
+        level=LEVEL, trend=[TREND_CONTROL, TREND_CONTROL + trend_inc],
+        phi=PHI_DEFAULT, sigma=SIGMA,
+    )
+
+
 def trend_label(trend_val, pct):
     return f"{pct}% ({trend_val:.4f}/mo)"
 
@@ -181,7 +202,10 @@ if results_available:
         def power_curve_fig(results, title):
             fig = go.Figure()
             for i, (trend, pct) in enumerate(zip(trends, EFFECT_SIZES_PCT)):
-                rates = results[trend]["detection_rates"]
+                entry = results.get(trend)
+                if entry is None:
+                    continue
+                rates = entry["detection_rates"]
                 fig.add_trace(go.Scatter(
                     x=NPOST_VEC, y=rates,
                     mode="lines",
@@ -264,7 +288,11 @@ if results_available:
             """Return list of (months | None, max_rate_at_120) per effect size."""
             out = []
             for t in trends:
-                rates = results[t]["detection_rates"]
+                entry = results.get(t)
+                if entry is None:
+                    out.append((None, 0.0))
+                    continue
+                rates = entry["detection_rates"]
                 idx = int(np.argmax(rates >= thresh))
                 if rates[idx] >= thresh:
                     out.append((int(NPOST_VEC[idx]), float(rates[-1])))
@@ -511,7 +539,10 @@ if results_available:
         def error_fig(results, title):
             fig = go.Figure()
             for i, (trend, pct) in enumerate(zip(trends, EFFECT_SIZES_PCT)):
-                errs = results[trend]["mean_errors"]
+                entry = results.get(trend)
+                if entry is None:
+                    continue
+                errs = entry["mean_errors"]
                 fig.add_trace(go.Scatter(
                     x=NPOST_VEC, y=errs,
                     mode="lines",
@@ -594,8 +625,12 @@ if results_available:
 
         def delay_series(results, trend, npost_i):
             """Return (rates, lower_se, upper_se) arrays across delays 1-20."""
-            delays_arr = np.array(results[trend]["delays"])
-            detected_arr = results[trend]["detected_matrix"][:, npost_i]
+            entry = results.get(trend)
+            if entry is None:
+                nan = np.full(len(unique_delays), np.nan)
+                return nan, nan, nan
+            delays_arr = np.array(entry["delays"])
+            detected_arr = entry["detected_matrix"][:, npost_i]
             rates, lo, hi = [], [], []
             for d in unique_delays:
                 mask = delays_arr == d
@@ -840,8 +875,14 @@ if results_available:
             ns = []
 
             for trend in trends:
-                det = results[trend]["detected_matrix"][:, npost_i].astype(bool)
-                err = results[trend]["cpt_matrix"][:, npost_i][det] - NPRE
+                entry = results.get(trend)
+                if entry is None:
+                    q1s.append(None); meds.append(None); q3s.append(None)
+                    p5s.append(None); p95s.append(None)
+                    ns.append(0)
+                    continue
+                det = entry["detected_matrix"][:, npost_i].astype(bool)
+                err = entry["cpt_matrix"][:, npost_i][det] - NPRE
                 n = len(err)
                 ns.append(n)
                 if n >= 5:
@@ -991,17 +1032,17 @@ if results_available:
     npost_i_exp = int(np.searchsorted(NPOST_VEC, exp_npost, side="left"))
     npost_i_exp = min(npost_i_exp, len(NPOST_VEC) - 1)
 
-    # Build per-model config: (label, results, critical_value_key)
+    # Build per-model config: (label, results, critical_value_key, use_ar)
     _exp_models = [
-        ("i.i.d. BACI", res_iid, "iid_48"),
-        ("AR(1)",        res_ar,  "ar1_48"),
+        ("i.i.d. BACI", res_iid,    "iid_48",    False),
+        ("AR(1)",        res_ar,     "ar1_48",    True),
     ]
     if res_iid_ba is not None:
-        _exp_models.append(("i.i.d. BA", res_iid_ba, "iid_ba_48"))
+        _exp_models.append(("i.i.d. BA", res_iid_ba, "iid_ba_48", False))
 
     # ── Metrics row — one column per model ────────────────────────────────────
     m_cols = st.columns(len(_exp_models))
-    for col, (label, res, crit_key) in zip(m_cols, _exp_models):
+    for col, (label, res, crit_key, _use_ar) in zip(m_cols, _exp_models):
         _delay    = int(res[exp_trend]["delays"][run_i])
         _true_cpt = NPRE + _delay
         _tmax     = float(res[exp_trend]["tmax_matrix"][run_i, npost_i_exp])
@@ -1023,13 +1064,16 @@ if results_available:
                           help=f"True τ = month {_true_cpt} (pre={NPRE} + delay={_delay})")
 
     # ── Time series tabs — one per model ──────────────────────────────────────
-    def _build_exp_fig(res, trend, run_idx, npost_i, npost_mo, label):
+    def _build_exp_fig(res, trend, run_idx, npost_i, npost_mo, label, use_ar=False):
         _delay    = int(res[trend]["delays"][run_idx])
+        _seed     = int(res[trend]["seeds"][run_idx])
         _true_cpt = NPRE + _delay
         _tmax     = float(res[trend]["tmax_matrix"][run_idx, npost_i])
         _cpt      = int(res[trend]["cpt_matrix"][run_idx, npost_i])
         _detected = bool(res[trend]["detected_matrix"][run_idx, npost_i])
-        _sim_data = res[trend]["simulated_data"][run_idx]
+        _sim_data = (_regenerate_ar(_seed, _delay, float(trend))
+                     if use_ar else
+                     _regenerate_iid(_seed, _delay, float(trend)))
 
         nt     = NPRE + npost_mo
         t      = np.arange(1, nt + 1)
@@ -1110,10 +1154,10 @@ if results_available:
         return fig
 
     _exp_cols = st.columns(len(_exp_models))
-    for col, (label, res, _) in zip(_exp_cols, _exp_models):
+    for col, (label, res, _, use_ar) in zip(_exp_cols, _exp_models):
         with col:
             st.plotly_chart(
-                _build_exp_fig(res, exp_trend, run_i, npost_i_exp, exp_npost, label),
+                _build_exp_fig(res, exp_trend, run_i, npost_i_exp, exp_npost, label, use_ar),
                 width="stretch",
             )
 
