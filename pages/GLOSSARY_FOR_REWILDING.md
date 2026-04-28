@@ -35,8 +35,6 @@
 
 ---
 
-## Noise Models
-
 ### **i.i.d. (Independent and Identically Distributed) Noise**
 **What it is:** Random variation in measurements where each observation is independent of the previous one, drawn from the same distribution.
 
@@ -62,8 +60,6 @@
 
 ---
 
-## Statistical Power & Detection
-
 ### **Power (Statistical Power)**
 **What it is:** The probability of correctly detecting a real change when one exists.
 
@@ -88,14 +84,12 @@
 
 ---
 
-## Data Design Terms
-
-### **CIBA (Control-Intervention Before-After)**
+### **BACI (Before-After Control-Intervention)**
 **What it is:** A study design with two parallel time series — one control (no intervention) and one intervention — observed both before and after a change point.
 
 **Why it matters:** The control series absorbs shared environmental variation (e.g., drought affecting both sites). Subtracting control from intervention isolates the intervention's true effect.
 
-**Plain English:** Monitor two streams — one untouched (control), one restored (intervention). Any difference between them is more likely the restoration's doing.
+**Plain English:** Monitor two streams — one untouched (control), one restored (intervention). Any difference between them is more likely the restoration's doing, because both streams experience the same weather, seasonal cycles, and other background changes.
 
 **Resources:**
 - [Campbell & Cook (1979) "Quasi-Experimentation"](https://www.degruyter.com/document/doi/10.4159/9780674037076/html)
@@ -105,9 +99,21 @@
 ### **BA (Before-After)**
 **What it is:** A simpler design using only the intervention time series, with separate statistical models for before and after the changepoint.
 
-**Why it matters:** When autocorrelation is high (AR(1)), or when there's no control site, BA is used. It compares the trend *before* the change to the trend *after*.
+**Why it matters:** Used when there is no suitable control site, or when autocorrelation is strong enough that the control series adds more noise than it removes. It compares the trend *before* the change to the trend *after*.
 
-**Plain English:** Watch one site before the intervention starts, then after. Did the slope change? That's your answer.
+**Plain English:** Watch one site before the intervention starts, then after. Did the slope — or the distribution — change? That's your answer. The downside is that you cannot distinguish the intervention's effect from background environmental trends.
+
+---
+
+### **Wasserstein Distance**
+**What it is:** A measure of how different two probability distributions are, calculated as the minimum "work" needed to transform one distribution into the other. Also called the Earth Mover's Distance (EMD).
+
+**Why it matters:** When a rewilding intervention changes the *shape* of a population's distribution — not just its average — standard mean-based tests miss it. Wasserstein distance captures changes in mean, variance, skewness, and any other aspect of the distribution simultaneously.
+
+**Plain English:** Imagine two piles of earth (the two distributions). Wasserstein distance is the amount of earth you'd have to shovel, multiplied by the distance you'd move each shovelful, to turn one pile into the other. If the piles look alike, the distance is small; if they look very different, the distance is large.
+
+**Resources:**
+- [Wikipedia: Wasserstein Distance](https://en.wikipedia.org/wiki/Wasserstein_metric)
 
 ---
 
