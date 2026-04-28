@@ -14,8 +14,13 @@ Detection methods covered:
 
 Change types:
 
-- **Trend change** — a shift in the slope (monthly rate of change) of a univariate time series
-- **Distribution change** — a shift in the mean/variance of the population, summarised as Wasserstein distance or AUC difference between control and intervention distributions
+- **Trend change**: a shift in the slope (monthly rate of change) of a univariate time series
+- **Distribution change**: a shift in the mean/variance of the population, summarised as Wasserstein distance or AUC difference between control and intervention distributions
+
+Study designs:
+
+- **BACI** (Before-After Control-Intervention): paired control and intervention series; the test statistic is computed on the difference, removing shared environmental variation
+- **BA** (Before-After): intervention series only
 
 ### Reference implementation
 
@@ -52,22 +57,37 @@ Open **http://localhost:8501** in your browser.
 
 ### Generate pre-computed results (first time only)
 
-The app loads results from `results/*`. If files are missing, run the full simulation first (may take about 30/60 minutes):
+The app loads results from `results/`. Run the simulations before launching the app (these may take some time... grab a cup of ☕!):
 
 ```bash
 uv run python rewild_trend_change_amoc.py
+uv run python rewild_distribution_change_amoc.py
 ```
 
-## Python simulation (command-line)
+## Python simulations (command-line)
 
-Run the full trend-change AMOC simulation:
+### Trend change AMOC
 
 ```bash
+# Full run
 uv run python rewild_trend_change_amoc.py
+
+# Regenerate plots from saved results (no simulation)
+uv run python rewild_trend_change_amoc.py --plots-only
+
+# Fast smoke-test (Nsim=10, simN=10)
+uv run python rewild_trend_change_amoc.py --quick
 ```
 
-To regenerate plots from previously saved results:
+### Distribution change AMOC
 
 ```bash
-uv run python rewild_trend_change_amoc.py --plots-only # It exits with an error if no saved results are found.
+# Full run
+uv run python rewild_distribution_change_amoc.py
+
+# Regenerate plots from saved results (no simulation)
+uv run python rewild_distribution_change_amoc.py --plots-only
+
+# Fast smoke-test (Nsim=10, simN=10)
+uv run python rewild_distribution_change_amoc.py --quick
 ```

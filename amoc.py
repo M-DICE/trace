@@ -1,4 +1,6 @@
 import numpy as np
+import scipy.stats
+import scipy.integrate
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.arima.model import ARIMA
 
@@ -261,3 +263,216 @@ def trend_stats_ar(y_ctr=None, y_itv=None, nt=None):
 
     return {'Tmax': Tmax, 'cpt': cpt}
 
+
+def ci_sim_cdf(seed, npre, npost, level, trend, ns=200):
+    """
+    Generate simulated paired distribution time series (BACI design).
+
+    At each time point, ns samples are drawn from a normal distribution. The
+    control series keeps constant parameters throughout. The intervention series
+    matches the control during the pre-intervention period, then drifts linearly
+    in mean and/or SD during the post-intervention period.
+
+    Equivalent to R's CIsim.cdf().
+
+    Parameters
+    ----------
+    seed : int
+        Random seed for reproducibility (passed to np.random.seed).
+    npre : int
+        Number of time points before the intervention (pre-period).
+    npost : int
+        Number of time points after the intervention (post-period).
+    level : list of float
+        [mu, sigma] — baseline mean and standard deviation.
+    trend : list of float
+        [trend_mu, trend_sigma] — monthly increment applied to mu and sigma
+        respectively during the post-intervention period. Set either to 0 to
+        hold that parameter fixed.
+    ns : int, optional
+        Number of samples drawn per time point (default 200).
+
+    Returns
+    -------
+    dict
+        {'sample_ctr': ndarray (ns, nt), 'sample_itv': ndarray (ns, nt)}
+        where nt = npre + npost. Columns are time points; rows are samples.
+    """
+    mu, sigma = level
+    trend_mu, trend_sigma = trend
+
+    np.random.seed(seed)
+    nt = npre + npost
+
+    sample_ctr = np.zeros((ns, nt))
+    sample_itv = np.zeros((ns, nt))
+
+    mus = np.full(nt, mu, dtype=float)
+    sigmas = np.full(nt, sigma, dtype=float)
+
+    t_post = np.arange(1, npost + 1)
+    mus[npre:] += trend_mu * t_post
+    sigmas[npre:] += trend_sigma * t_post
+
+    # Control: constant distribution throughout
+    for i in range(nt):
+        sample_ctr[:, i] = np.random.normal(mu, sigma, ns)
+
+    # Intervention: pre-period identical to control, post-period drifts
+    for i in range(nt):
+        sample_itv[:, i] = np.random.normal(mus[i], sigmas[i], ns)
+
+    return {'sample_ctr': sample_ctr, 'sample_itv': sample_itv}
+
+
+def wasserstein_distance_baci(sample_ctr, sample_itv):
+    """
+    Compute Wasserstein distance between control and intervention distributions
+    at each time point (BACI design).
+
+    At each time point t the distance is computed between the ns-sample
+    empirical distributions of the control and intervention series. This is the
+    1-Wasserstein (earth mover's) distance, equivalent to R's
+    transport::wasserstein1d(a, b, p=1).
+
+    Equivalent to R's WSdist().
+
+    Parameters
+    ----------
+    sample_ctr : ndarray (ns, nt)
+        Control samples — rows are samples, columns are time points.
+    sample_itv : ndarray (ns, nt)
+        Intervention samples — same shape as sample_ctr.
+
+    Returns
+    -------
+    dist_ts : ndarray (nt,)
+        Wasserstein distance at each time point.
+    """
+    nt = sample_ctr.shape[1]
+    dist_ts = np.zeros(nt)
+    for t in range(nt):
+        dist_ts[t] = scipy.stats.wasserstein_distance(sample_ctr[:, t], sample_itv[:, t])
+    return dist_ts
+
+
+def wasserstein_distance_ba(sample_itv, npre):
+    """
+    Compute Wasserstein distance between each time point and the pooled
+    pre-intervention baseline (BA design, no control series required).
+
+    The baseline is formed by pooling all ns × npre samples from the
+    pre-intervention columns of the intervention series into a single 1-D
+    array. Each time point is then compared against this pooled baseline.
+
+    Equivalent to R's WSdist2(), where y.ctr = sample.itv[, 1:npre] is passed
+    as a matrix to wasserstein1d — R's transport package pools the columns,
+    matching the flatten() applied here.
+
+    Parameters
+    ----------
+    sample_itv : ndarray (ns, nt)
+        Intervention samples — rows are samples, columns are time points.
+    npre : int
+        Number of pre-intervention time points used to build the baseline.
+
+    Returns
+    -------
+    dist_ts : ndarray (nt,)
+        Wasserstein distance from the baseline at each time point.
+    """
+    nt = sample_itv.shape[1]
+    baseline = sample_itv[:, :npre].flatten()
+    dist_ts = np.zeros(nt)
+    for t in range(nt):
+        dist_ts[t] = scipy.stats.wasserstein_distance(baseline, sample_itv[:, t])
+    return dist_ts
+
+
+def auc_diff_ts(sample_ctr, sample_itv, bw=0.3, nd=50):
+    """
+    Compute the AUC of the absolute KDE density difference at each time point.
+
+    For each time point, Gaussian KDEs are fitted to the control and
+    intervention samples over a common grid, and the integral of the absolute
+    difference |f_itv - f_ctr| is returned. This equals twice the total
+    variation distance and matches R's DescTools::AUC(..., absolutearea=TRUE).
+
+    Note on bandwidth: R's density(bw=0.3) uses 0.3 as the kernel standard
+    deviation directly. scipy's gaussian_kde multiplies bw_method by the
+    sample SD, so we pass bw_method = bw / std(data) per column to match R.
+
+    Equivalent to R's AUCdiff() (uses density() + AUC()).
+
+    Parameters
+    ----------
+    sample_ctr : ndarray (ns, nt)
+        Control samples — rows are samples, columns are time points.
+    sample_itv : ndarray (ns, nt)
+        Intervention samples — same shape as sample_ctr.
+    bw : float, optional
+        Kernel standard deviation (default 0.3, matching R's default bw=0.3).
+    nd : int, optional
+        Number of equally-spaced grid points for density evaluation (default 50).
+
+    Returns
+    -------
+    dist_ts : ndarray (nt,)
+        AUC of |f_itv - f_ctr| at each time point.
+    """
+    nt = sample_ctr.shape[1]
+    dist_ts = np.zeros(nt)
+
+    for t in range(nt):
+        data_ctr = sample_ctr[:, t]
+        data_itv = sample_itv[:, t]
+
+        vmin = min(np.min(data_ctr), np.min(data_itv))
+        vmax = max(np.max(data_ctr), np.max(data_itv))
+        grid = np.linspace(vmin, vmax, nd)
+
+        # bw / std converts kernel SD → scipy's scale factor
+        bw_ctr = bw / max(np.std(data_ctr), 1e-10)
+        bw_itv = bw / max(np.std(data_itv), 1e-10)
+
+        kde_ctr = scipy.stats.gaussian_kde(data_ctr, bw_method=bw_ctr)
+        kde_itv = scipy.stats.gaussian_kde(data_itv, bw_method=bw_itv)
+
+        d_ctr = kde_ctr.evaluate(grid)
+        d_itv = kde_itv.evaluate(grid)
+
+        dist_ts[t] = scipy.integrate.trapezoid(np.abs(d_itv - d_ctr), x=grid)
+
+    return dist_ts
+
+
+def trend_stats_cdf(y_dist, nt):
+    """
+    Apply the AMOC trend-change test to a distance time series.
+
+    Thin wrapper around trend_stats() that treats the distance series as the
+    response directly (y_ctr=None), matching the intended behaviour of R's
+    trend.stats.cdf(). The distance series replaces the difference series used
+    in the scalar time series case.
+
+    Note: R's trend.stats.cdf contains a scoping bug — it references free
+    variables y.ctr and y.itv instead of its parameter y, inadvertently
+    inheriting values from the enclosing environment. This wrapper correctly
+    passes y_dist as the response.
+
+    Equivalent to R's trend.stats.cdf().
+
+    Parameters
+    ----------
+    y_dist : array-like (nt,)
+        Distance time series (Wasserstein or AUC) to test for a trend change.
+    nt : int
+        Total length of the time series (npre + npost).
+
+    Returns
+    -------
+    dict
+        {'Tmax': float, 'cpt': int} — maximum test statistic and detected
+        changepoint location (1-indexed month).
+    """
+    return trend_stats(y_ctr=None, y_itv=y_dist, nt=nt)

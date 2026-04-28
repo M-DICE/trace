@@ -16,7 +16,8 @@ import os
 CLR_CTR       = '#607D8B'   # grey   — control series
 CLR_ITV       = '#4CAF50'   # green  — intervention series
 CLR_DIF       = '#FF9800'   # orange — difference series
-CLR_CIBA      = '#2196F3'   # blue   — i.i.d. CIBA noise model
+CLR_BACI      = '#2196F3'   # blue   — i.i.d. BACI noise model
+CLR_CIBA      = CLR_BACI   # legacy alias
 CLR_AR1       = '#FF9800'   # orange — AR(1) noise model
 CLR_BA        = '#4CAF50'   # green  — i.i.d. BA noise model
 CLR_TAU_TRUE  = '#1A237E'   # navy   — true changepoint τ (dashed)
@@ -443,6 +444,12 @@ def plot_detection_heatmap(detection_results_iid, detection_results_ar,
         (axes[0], detection_results_iid, 'i.i.d. noise'),
         (axes[1], detection_results_ar,  'AR(1) noise  (φ = 0.5)'),
     ]:
+        if results is None:
+            ax.text(0.5, 0.5, 'Results not available', 
+                    ha='center', va='center', transform=ax.transAxes)
+            ax.set_title(title, fontsize=12, fontweight='bold')
+            continue
+
         matrix = np.array([results[t]['detection_rates'] for t in trend_increase])
         im = ax.imshow(matrix, aspect='auto', origin='lower',
                        extent=[npost_vec[0], npost_vec[-1],
@@ -484,6 +491,12 @@ def plot_mean_error_curves(detection_results_iid, detection_results_ar,
         (axes[0], detection_results_iid, 'i.i.d. noise'),
         (axes[1], detection_results_ar,  'AR(1) noise  (φ = 0.5)'),
     ]:
+        if results is None:
+            ax.text(0.5, 0.5, 'Results not available', 
+                    ha='center', va='center', transform=ax.transAxes)
+            ax.set_title(title, fontsize=12, fontweight='bold')
+            continue
+
         for color, trend_inc in zip(colors, trend_increase):
             errors = results[trend_inc]['mean_errors']
             ax.plot(npost_vec, errors, color=color, linewidth=1.8,
@@ -509,18 +522,28 @@ def plot_mean_error_curves(detection_results_iid, detection_results_ar,
 def plot_null_distributions(critical_values, npost_short=48, npost_long=96,
                             figsize=(14, 6), savefile=None):
     """
-    Histograms of Tmax under the null hypothesis for all four combinations:
-    iid_{short}, iid_{long}, ar1_{short}, ar1_{long}.
+    Histograms of Tmax under the null hypothesis.
+    Supports both trend-change (4 combinations) and distribution-change patterns.
     """
     s, l = npost_short, npost_long
-    keys = [f'iid_{s}', f'iid_{l}', f'ar1_{s}', f'ar1_{l}']
-    titles = [
-        f'i.i.d. noise, npost = {s} mo', f'i.i.d. noise, npost = {l} mo',
-        f'AR(1) noise,  npost = {s} mo', f'AR(1) noise,  npost = {l} mo',
-    ]
-    colors = [CLR_CIBA, CLR_CIBA, CLR_AR1, CLR_AR1]
+    
+    # Try trend-change keys
+    standard_keys = [f'iid_{s}', f'iid_{l}', f'ar1_{s}', f'ar1_{l}']
+    if all(k in critical_values for k in standard_keys):
+        keys = standard_keys
+        titles = [
+            f'i.i.d. noise, npost = {s} mo', f'i.i.d. noise, npost = {l} mo',
+            f'AR(1) noise,  npost = {s} mo', f'AR(1) noise,  npost = {l} mo',
+        ]
+        colors = [CLR_CIBA, CLR_CIBA, CLR_AR1, CLR_AR1]
+    else:
+        # Fallback: discover any keys that look like npost_X or similar
+        keys = sorted(critical_values.keys())
+        titles = [k.replace('_', ' = ') + ' mo' for k in keys]
+        colors = [CLR_CIBA] * len(keys)
 
-    fig, axes = plt.subplots(1, 4, figsize=figsize, sharey=False)
+    fig, axes = plt.subplots(1, len(keys), figsize=figsize, sharey=False, squeeze=False)
+    axes = axes.flatten()
 
     for ax, key, title, color in zip(axes, keys, titles, colors):
         nd = critical_values[key]['null_dist']
@@ -751,3 +774,217 @@ def compare_methods(results_dict, figsize=(12, 5), savefile=None):
         print(f"Plot saved: {savefile}")
 
     return fig, axes
+
+def plot_distance_time_series(sim_data, npre, dist_ts, stats=None, dist_measure="wasserstein",
+                              figsize=(12, 10), savefile=None):
+    """
+    Two-panel figure for distribution change simulations.
+
+    Top panel: distance time series over time, with vertical lines at the true
+    changepoint (τ = npre) and the detected changepoint (τ̂ from stats).
+
+    Bottom panel: KDE snapshots of the control and intervention distributions at
+    four selected time points (t=10, t=npre, t=npre+12, t=nt). Dashed lines are
+    the control; solid lines are the intervention.
+
+    Parameters
+    ----------
+    sim_data : dict
+        Dictionary with 'sample_ctr' and 'sample_itv' arrays (ns × nt).
+    npre : int
+        Number of pre-intervention time points (true changepoint location).
+    dist_ts : array-like (nt,)
+        Distance time series (Wasserstein or AUC) to plot in the top panel.
+    stats : dict, optional
+        Dictionary with 'cpt' (detected changepoint) from trend_stats_cdf.
+        If provided and non-empty, the detected changepoint is annotated.
+    dist_measure : str, optional
+        Label for the distance type used in the panel title (default 'wasserstein').
+    figsize : tuple, optional
+        Figure size (width, height) in inches (default (12, 10)).
+    savefile : str, optional
+        If provided, save the figure to this file path.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    axes : tuple of matplotlib.axes.Axes
+        (ax_top, ax_bottom)
+    """
+    from scipy.stats import gaussian_kde
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize)
+
+    nt = len(dist_ts)
+    t = np.arange(1, nt + 1)
+
+    ax1.plot(t, dist_ts, color='k', linewidth=1.5, label=f'{dist_measure.capitalize()} distance')
+    ax1.axvline(npre, color=CLR_TAU_TRUE, linestyle='--', linewidth=2,
+                label=f'True changepoint (τ={npre})')
+    if stats and stats.get('cpt'):
+        ax1.axvline(stats['cpt'], color=CLR_TAU_DET, linestyle='-', linewidth=2,
+                    label=f'Detected changepoint (τ̂={stats["cpt"]})')
+    ax1.axvspan(0, npre, alpha=0.07, color='cornflowerblue')
+    ax1.set_title(f'Distance Time Series ({dist_measure})', fontsize=12, fontweight='bold')
+    ax1.set_xlabel('Time (months)', fontsize=11)
+    ax1.set_ylabel('Distance', fontsize=11)
+    ax1.legend(loc='best')
+    ax1.grid(True, alpha=0.3)
+
+    # Bottom: distributions at t=10, t=npre, t=npre+12, t=nt
+    time_points = [tp for tp in [10, npre, npre + 12, nt] if tp <= nt]
+    colors = _VIRIDIS_11[np.linspace(0, 10, len(time_points), dtype=int)]
+
+    for color, tp in zip(colors, time_points):
+        idx = tp - 1
+        data_ctr = sim_data['sample_ctr'][:, idx]
+        data_itv = sim_data['sample_itv'][:, idx]
+
+        vmin = min(np.min(data_ctr), np.min(data_itv))
+        vmax = max(np.max(data_ctr), np.max(data_itv))
+        x = np.linspace(vmin - 1, vmax + 1, 200)
+
+        ax2.plot(x, gaussian_kde(data_ctr).evaluate(x), color=color, linestyle='--',
+                 linewidth=1.2, alpha=0.6)
+        ax2.plot(x, gaussian_kde(data_itv).evaluate(x), color=color, linewidth=1.8,
+                 label=f't={tp}')
+
+    ax2.set_title('Distributions at Selected Time Points (Dashed = Control, Solid = Intervention)',
+                  fontsize=12, fontweight='bold')
+    ax2.set_xlabel('Value', fontsize=11)
+    ax2.set_ylabel('Density', fontsize=11)
+    ax2.legend(loc='best')
+    ax2.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    if savefile:
+        plt.savefig(savefile, dpi=150, bbox_inches='tight')
+        print(f"Plot saved: {savefile}")
+    return fig, (ax1, ax2)
+
+
+def plot_distribution_difference(sim_data, npre, dist_ts, stats=None, dist_measure="wasserstein",
+                                  figsize=(12, 8), savefile=None):
+    """
+    Two-panel figure for distribution change simulations.
+
+    Top panel: distance time series (Wasserstein or AUC).
+    Bottom panel: mean difference (intervention − control) over time, filled to zero.
+    """
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=figsize,
+        gridspec_kw={'height_ratios': [0.55, 0.45]},
+        sharex=True,
+    )
+
+    nt = len(dist_ts)
+    t  = np.arange(1, nt + 1)
+
+    mean_diff = (sim_data['sample_itv'][:, :nt].mean(axis=0)
+                 - sim_data['sample_ctr'][:, :nt].mean(axis=0))
+
+    for ax in (ax1, ax2):
+        ax.axvspan(1, npre, alpha=0.07, color='cornflowerblue')
+        ax.axvline(npre, color=CLR_TAU_TRUE, linestyle='--', linewidth=2,
+                   label=f'True τ={npre}')
+        if stats and stats.get('cpt'):
+            ax.axvline(stats['cpt'], color=CLR_TAU_DET, linestyle='-', linewidth=2,
+                       label=f'Detected τ̂={stats["cpt"]}')
+
+    ax1.plot(t, dist_ts, color='k', linewidth=1.5,
+             label=f'{dist_measure.capitalize()} distance')
+    ax1.set_ylabel(f'{dist_measure.capitalize()} distance', fontsize=11)
+    ax1.set_title(f'Distance Time Series ({dist_measure})', fontsize=12, fontweight='bold')
+    ax1.legend(loc='best', fontsize=9)
+    ax1.grid(True, alpha=0.3)
+
+    ax2.plot(t, mean_diff, color=CLR_DIF, alpha=0.85, linewidth=1.5,
+             label='Mean difference (intervention − control)')
+    ax2.fill_between(t, mean_diff, alpha=0.12, color=CLR_DIF)
+    ax2.axhline(0, color='black', linewidth=1, linestyle=':', alpha=0.3)
+    ax2.set_xlabel('Time (months)', fontsize=11)
+    ax2.set_ylabel('Mean difference', fontsize=11)
+    ax2.set_title('Mean Difference (Intervention − Control)', fontsize=12, fontweight='bold')
+    ax2.legend(loc='best', fontsize=9)
+    ax2.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    if savefile:
+        plt.savefig(savefile, dpi=150, bbox_inches='tight')
+        print(f"Plot saved: {savefile}")
+    return fig, (ax1, ax2)
+
+
+def plot_power_curves_mu_sigma(detection_results_mu, detection_results_sigma,
+                               trend_increase_mu, trend_increase_sigma, npost_vec,
+                               figsize=(14, 6), savefile=None):
+    """
+    Side-by-side power curves for mean-change and variance-change detection.
+
+    Left panel: detection rate vs post-intervention length for each mean-change
+    trend increment (11 lines, Viridis palette).
+
+    Right panel: same for each variance-change trend increment (Plasma palette).
+
+    Mirrors plot_power_curves_comparison() but compares two parameter types
+    (mu and sigma) rather than two noise types (i.i.d. and AR(1)).
+
+    Parameters
+    ----------
+    detection_results_mu : dict
+        Output of run_main_simulation_mu(). Keys are trend increments; each
+        value contains 'detection_rates' — a (len(npost_vec),) array.
+    detection_results_sigma : dict
+        Output of run_main_simulation_sigma(). Same structure as above.
+    trend_increase_mu : array-like
+        Ordered array of mean-change trend increment values.
+    trend_increase_sigma : array-like
+        Ordered array of variance-change trend increment values.
+    npost_vec : array-like
+        Post-intervention lengths used as the x-axis.
+    figsize : tuple, optional
+        Figure size (width, height) in inches (default (14, 6)).
+    savefile : str, optional
+        If provided, save the figure to this file path.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    axes : tuple of matplotlib.axes.Axes
+        (ax_mu, ax_sigma)
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, sharey=True)
+
+    # Left: Mu — use shared viridis palette
+    colors_mu = _VIRIDIS_11[:len(trend_increase_mu)]
+    for color, t_inc in zip(colors_mu, trend_increase_mu):
+        rates = detection_results_mu[t_inc]['detection_rates']
+        ax1.plot(npost_vec, rates, color=color, linewidth=1.8, label=f'{t_inc:.4f}')
+    _add_power_thresholds(ax1)
+    ax1.set_title('Mean change (Mu)', fontsize=12, fontweight='bold')
+    ax1.set_xlabel('Post-intervention length (months)', fontsize=11)
+    ax1.set_ylabel('Detection rate', fontsize=11)
+    ax1.set_ylim([0, 1.05])
+    ax1.grid(True, alpha=0.3)
+    ax1.legend(title='Trend increment', loc='lower right', fontsize=8, ncol=2)
+
+    # Right: Sigma — plasma palette for visual distinction
+    colors_sigma = plt.cm.plasma(np.linspace(0, 0.85, len(trend_increase_sigma)))
+    for color, t_inc in zip(colors_sigma, trend_increase_sigma):
+        rates = detection_results_sigma[t_inc]['detection_rates']
+        ax2.plot(npost_vec, rates, color=color, linewidth=1.8, label=f'{t_inc:.4f}')
+    _add_power_thresholds(ax2)
+    ax2.set_title('Variance change (Sigma)', fontsize=12, fontweight='bold')
+    ax2.set_xlabel('Post-intervention length (months)', fontsize=11)
+    ax2.set_ylim([0, 1.05])
+    ax2.grid(True, alpha=0.3)
+    ax2.legend(title='Trend increment', loc='lower right', fontsize=8)
+
+    fig.suptitle('Power Curves: Mean vs Variance Change Detection\n'
+                 '(detection rate vs post-intervention length, growing window)',
+                 fontsize=13, fontweight='bold')
+    plt.tight_layout()
+    if savefile:
+        plt.savefig(savefile, dpi=150, bbox_inches='tight')
+        print(f"Plot saved: {savefile}")
+    return fig, (ax1, ax2)

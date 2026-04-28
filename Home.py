@@ -29,8 +29,14 @@ with col1:
 
 with col2:
     st.markdown("""
+    ### Distribution Change Detection (AMOC)
+    Detect whether an intervention caused a **shift in the distribution** (mean or variance) 
+    of an ecological indicator, using distance-based AMOC detection.
+    """)
+    st.page_link("pages/02_Distribution_Change_AMOC.py", label="Distribution Change (AMOC)", icon=":material/open_in_new:")
+
+    st.markdown("""
     ### Coming next
-    - **Distribution Change (AMOC)** — detect shifts in the distribution of an indicator
     - **Trend Change (BOCPD)** — online Bayesian changepoint detection
     - **Distribution Change (BOCPD)** — online variant for distributional shifts
     """)
