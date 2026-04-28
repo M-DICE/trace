@@ -1,5 +1,5 @@
 """
-SimRewilding: Trend Change Detection using AMOC (At Most One Change)
+Trend Change Detection using AMOC (At Most One Change)
 
 This script demonstrates changepoint detection for univariate time series
 with trend changes using the AMOC approach (offline batch method).
@@ -10,11 +10,11 @@ Equivalent to: Rewild_trend_change_AMOC.R
 import argparse
 import numpy as np
 import warnings
-import pickle
 import os
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor
 
+import file_utils
 from amoc import ci_sim, ci_sim_ar, trend_stats, trend_stats_ar
 from plotting import (plot_time_series, plot_simulation_results, plot_power_curves,
                       plot_power_curves_comparison, plot_time_to_detection,
@@ -76,72 +76,6 @@ CRITICAL_VALUE_NPOST_LONG  = 96
 
 if __name__ == "__main__":
     print("Finished initialising parameters for simulation")
-
-
-# ============================================================================
-# Utility Functions: Save/Load Simulations
-# ============================================================================
-
-def setup_plots_directory():
-    """Create plots directory if it doesn't exist."""
-    plots_dir = Path("plots") / "amoc_trend"
-    plots_dir.mkdir(parents=True, exist_ok=True)
-    return plots_dir
-
-
-def setup_results_directory():
-    """Create results directory if it doesn't exist."""
-    results_dir = Path("results")
-    results_dir.mkdir(exist_ok=True)
-    return results_dir
-
-
-def save_simulation_results(critical_values, detection_results, detection_results_ar,
-                            test_stats=None, results_dir="results",
-                            detection_results_iid_ba=None):
-    """Save simulation results to file in results directory.
-
-    Parameters
-    ----------
-    critical_values : dict
-        Dict with keys 'iid_48', 'iid_96', 'ar1_48', 'ar1_96', 'iid_ba_48', 'iid_ba_96',
-        each containing {'critical_value': float, 'null_dist': array}
-    detection_results : dict
-        Per-trend detection results from run_main_simulation() (i.i.d. CIBA)
-    detection_results_ar : dict
-        Per-trend detection results from run_main_simulation_ar() (AR(1) BA)
-    test_stats : dict, optional
-        Metadata from the example test run (Tmax, cpt, etc.)
-    results_dir : str
-        Directory to save results into
-    detection_results_iid_ba : dict, optional
-        Per-trend detection results from run_main_simulation_iid_ba() (i.i.d. BA)
-    """
-    results_path = Path(results_dir)
-    results_path.mkdir(exist_ok=True)
-    filepath = results_path / "amoc_trend_results.pkl"
-
-    data = {
-        'critical_values':           critical_values,
-        'detection_results':         detection_results,
-        'detection_results_ar':      detection_results_ar,
-        'detection_results_iid_ba':  detection_results_iid_ba,
-        'test_stats':                test_stats
-    }
-    with open(filepath, 'wb') as f:
-        pickle.dump(data, f)
-    print(f"✓ Simulation results saved: {filepath}")
-
-
-def load_simulation_results(results_dir="results"):
-    """Load previously saved simulation results from results directory."""
-    filepath = Path(results_dir) / "amoc_trend_results.pkl"
-    if not filepath.exists():
-        return None
-    with open(filepath, 'rb') as f:
-        data = pickle.load(f)
-    print(f"✓ Simulation results loaded: {filepath}")
-    return data
 
 
 # ============================================================================
@@ -389,13 +323,13 @@ def calculate_critical_values(Nsim, npre, level, trend_control, sigma, phi, alph
                        (CRITICAL_VALUE_NPOST_LONG,  str(CRITICAL_VALUE_NPOST_LONG))]:
         print(f"  npost = {npost} months ({tag}):")
 
-        # i.i.d. noise, CIBA design
+        # i.i.d. noise, BACI design
         null_iid = _run_null_simulations(Nsim, npre, npost, level, trend_control,
                                          sigma, phi, use_ar=False,
-                                         label=f"i.i.d. CIBA, {npost}mo")
+                                         label=f"i.i.d. BACI, {npost}mo")
         cv_iid = np.percentile(null_iid, alpha * 100)
         critical_values[f'iid_{tag}'] = {'critical_value': cv_iid, 'null_dist': null_iid}
-        print(f"    i.i.d. CIBA critical value ({int(alpha*100)}th pct): {cv_iid:.4f}")
+        print(f"    i.i.d. BACI critical value ({int(alpha*100)}th pct): {cv_iid:.4f}")
 
         # i.i.d. noise, BA design (matches R's getCritical.v2)
         null_iid_ba = _run_null_simulations(Nsim, npre, npost, level, trend_control,
@@ -659,19 +593,28 @@ def run_main_simulation_ar(simN, trend_increase, critical_value, npre, npost_max
 # ============================================================================
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="SimRewilding AMOC trend-change simulation")
+    parser = argparse.ArgumentParser(description="AMOC trend-change simulation")
     parser.add_argument(
         "-p", "--plots-only",
         action="store_true",
         help="Skip simulation phases and generate plots from saved results only",
     )
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Run with Nsim=10, simN=10 for fast smoke-testing",
+    )
     args = parser.parse_args()
 
-    # Setup
-    plots_dir = setup_plots_directory()
-    results_dir = setup_results_directory()
+    if args.quick:
+        Nsim = 10
+        simN = 10
 
-    print("SimRewilding - Trend Change AMOC Detection (Python)")
+    # Setup
+    plots_dir = file_utils.setup_plots_directory("trend_amoc")
+    file_utils.setup_results_directory("trend_amoc")
+
+    print("Trend Change AMOC Detection")
     print("=" * 70)
     print(f"Pre-intervention period: {npre} months")
     print(f"Post-intervention range: {npost_vec[0]} to {npost_max} months")
@@ -685,7 +628,7 @@ if __name__ == "__main__":
 
     # Check if we can load previous results
     print("Checking for saved simulation results...")
-    loaded_data = load_simulation_results(results_dir)
+    loaded_data = file_utils.load_simulation_results("trend_amoc")
 
     if args.plots_only and loaded_data is None:
         print("ERROR: --plots-only requested but no saved results found in results/.")
@@ -850,13 +793,17 @@ if __name__ == "__main__":
         )
         print()
 
-        save_simulation_results(critical_values, detection_results, detection_results_ar,
-                                test_stats, results_dir,
-                                detection_results_iid_ba=detection_results_iid_ba)
+        file_utils.save_simulation_results("trend_amoc", {
+            'critical_values':           critical_values,
+            'detection_results':         detection_results,
+            'detection_results_ar':      detection_results_ar,
+            'detection_results_iid_ba':  detection_results_iid_ba,
+            'test_stats':                test_stats,
+        })
         n_iid    = sum(len(detection_results[t]['simulated_data']) for t in detection_results)
         n_ar1    = sum(len(detection_results_ar[t]['simulated_data']) for t in detection_results_ar)
         n_iid_ba = sum(len(detection_results_iid_ba[t]['simulated_data']) for t in detection_results_iid_ba)
-        print(f"  (i.i.d. CIBA: {n_iid}, AR(1): {n_ar1}, i.i.d. BA: {n_iid_ba} simulations)")
+        print(f"  (i.i.d. BACI: {n_iid}, AR(1): {n_ar1}, i.i.d. BA: {n_iid_ba} simulations)")
 
     # ========================================================================
     # Results Summary — detection rate and mean error at npost_max, all scenarios
@@ -868,7 +815,7 @@ if __name__ == "__main__":
     sep = "-" * len(col)
     print("=" * len(col))
     print(f"RESULTS SUMMARY — at npost_max ({npost_max} months)")
-    print(f"  i.i.d. CIBA critical value: {critical_values[f'iid_{CRITICAL_VALUE_NPOST_SHORT}']['critical_value']:.4f} (iid_{CRITICAL_VALUE_NPOST_SHORT})")
+    print(f"  i.i.d. BACI critical value: {critical_values[f'iid_{CRITICAL_VALUE_NPOST_SHORT}']['critical_value']:.4f} (iid_{CRITICAL_VALUE_NPOST_SHORT})")
     print(f"  AR(1)  BA   critical value: {critical_values[f'ar1_{CRITICAL_VALUE_NPOST_SHORT}']['critical_value']:.4f} (ar1_{CRITICAL_VALUE_NPOST_SHORT})")
     if has_ba:
         print(f"  i.i.d. BA   critical value: {critical_values[f'iid_ba_{CRITICAL_VALUE_NPOST_SHORT}']['critical_value']:.4f} (iid_ba_{CRITICAL_VALUE_NPOST_SHORT})")

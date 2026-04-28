@@ -41,7 +41,7 @@ TREND_INCREASE = np.round(
 )
 EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]   # % of mean / 10 yr
 
-RESULTS_PATH = Path(__file__).parent.parent / "results" / "amoc_trend_results.pkl"
+RESULTS_PATH = Path(__file__).parent.parent / "results" / "trend_amoc" / "sim_results.pkl"
 
 
 # ── Data loading ───────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ Each simulated dataset contains two parallel time series:
   different (steeper) trend after intervention.
 
 Types of noise used:
-- **i.i.d. noise → CIBA** (Control-Intervention Before-After): the test statistic is
+- **i.i.d. noise → BACI** (Before-After Control-Intervention): the test statistic is
   computed on the **difference** series (`intervention − control`), which removes shared
   environmental variation.
 - **i.i.d. noise → BA** (Before-After): same i.i.d. noise but only the intervention
@@ -170,7 +170,7 @@ if results_available:
         to reach reliable detection. Larger effects are detectable within 3–5 years.
         """)
 
-        _power_opts = ["i.i.d. CIBA", "AR(1)", "i.i.d. BA", "Side-by-side comparison"]
+        _power_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "Side-by-side comparison"]
         if res_iid_ba is None:
             _power_opts = [o for o in _power_opts if o != "i.i.d. BA"]
         noise_choice = st.radio(
@@ -203,8 +203,8 @@ if results_available:
             )
             return fig
 
-        if noise_choice == "i.i.d. CIBA":
-            st.plotly_chart(power_curve_fig(res_iid, "Power curves — i.i.d. noise (CIBA)"),
+        if noise_choice == "i.i.d. BACI":
+            st.plotly_chart(power_curve_fig(res_iid, "Power curves — i.i.d. noise (BACI)"),
                             width="stretch")
         elif noise_choice == "AR(1)":
             st.plotly_chart(power_curve_fig(res_ar, "Power curves — AR(1) noise (φ=0.5)"),
@@ -215,7 +215,7 @@ if results_available:
         else:
             cols = st.columns(2 if res_iid_ba is None else 3)
             with cols[0]:
-                st.plotly_chart(power_curve_fig(res_iid, "i.i.d. CIBA"), width="stretch")
+                st.plotly_chart(power_curve_fig(res_iid, "i.i.d. BACI"), width="stretch")
             with cols[1]:
                 st.plotly_chart(power_curve_fig(res_ar, "AR(1) BA (φ=0.5)"), width="stretch")
             if res_iid_ba is not None:
@@ -252,9 +252,9 @@ if results_available:
                 format_func=lambda x: f"{x:.0%}",
             )
         with ctrl_ttd2:
-            _ttd_opts = ["i.i.d. CIBA", "AR(1)", "Both"]
+            _ttd_opts = ["i.i.d. BACI", "AR(1)", "Both"]
             if res_iid_ba is not None:
-                _ttd_opts = ["i.i.d. CIBA", "AR(1)", "i.i.d. BA", "All"]
+                _ttd_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "All"]
             noise_ttd = st.radio(
                 "Noise model", _ttd_opts,
                 horizontal=True, key="ttd_noise",
@@ -322,8 +322,8 @@ if results_available:
             )
 
         fig_ttd = go.Figure()
-        if noise_ttd in ("i.i.d. CIBA", "Both", "All"):
-            fig_ttd.add_trace(make_bar(ttd_iid, COLOR_IID, "i.i.d. CIBA"))
+        if noise_ttd in ("i.i.d. BACI", "Both", "All"):
+            fig_ttd.add_trace(make_bar(ttd_iid, COLOR_IID, "i.i.d. BACI"))
         if noise_ttd in ("AR(1)", "Both", "All"):
             fig_ttd.add_trace(make_bar(ttd_ar, COLOR_AR, "AR(1)"))
         if ttd_iid_ba is not None and noise_ttd in ("i.i.d. BA", "All"):
@@ -359,13 +359,13 @@ if results_available:
             return not_reached
 
         msgs = []
-        if noise_ttd in ("i.i.d. CIBA", "Both", "All"):
-            nr = summarise(ttd_iid, "i.i.d. CIBA")
+        if noise_ttd in ("i.i.d. BACI", "Both", "All"):
+            nr = summarise(ttd_iid, "i.i.d. BACI")
             if nr:
                 pct_str = ", ".join(f"{p}%" for p in nr)
-                msgs.append(f"**i.i.d. CIBA:** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr.")
+                msgs.append(f"**i.i.d. BACI:** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr.")
             else:
-                msgs.append(f"**i.i.d. CIBA:** all effect sizes reach {power_thresh:.0%} within 10 yr.")
+                msgs.append(f"**i.i.d. BACI:** all effect sizes reach {power_thresh:.0%} within 10 yr.")
         if noise_ttd in ("AR(1)", "Both", "All"):
             nr = summarise(ttd_ar, "AR(1)")
             if nr:
@@ -407,8 +407,8 @@ if results_available:
             fig_null = make_subplots(
                 rows=3, cols=2,
                 subplot_titles=[
-                    "i.i.d. CIBA, npost = 48 mo (~4 yr)",
-                    "i.i.d. CIBA, npost = 96 mo (~8 yr)",
+                    "i.i.d. BACI, npost = 48 mo (~4 yr)",
+                    "i.i.d. BACI, npost = 96 mo (~8 yr)",
                     "i.i.d. BA, npost = 48 mo (~4 yr)",
                     "i.i.d. BA, npost = 96 mo (~8 yr)",
                     "AR(1), npost = 48 mo (~4 yr)",
@@ -425,8 +425,8 @@ if results_available:
             fig_null = make_subplots(
                 rows=2, cols=2,
                 subplot_titles=[
-                    "i.i.d. CIBA, npost = 48 mo (~4 yr)",
-                    "i.i.d. CIBA, npost = 96 mo (~8 yr)",
+                    "i.i.d. BACI, npost = 48 mo (~4 yr)",
+                    "i.i.d. BACI, npost = 96 mo (~8 yr)",
                     "AR(1), npost = 48 mo (~4 yr)",
                     "AR(1), npost = 96 mo (~8 yr)",
                 ],
@@ -465,8 +465,8 @@ if results_available:
 
         st.markdown("**Critical values:**")
         cv_scenarios = [
-            ("i.i.d. CIBA, npost=48 mo", "iid_48"),
-            ("i.i.d. CIBA, npost=96 mo", "iid_96"),
+            ("i.i.d. BACI, npost=48 mo", "iid_48"),
+            ("i.i.d. BACI, npost=96 mo", "iid_96"),
             ("AR(1), npost=48 mo",        "ar1_48"),
             ("AR(1), npost=96 mo",        "ar1_96"),
         ]
@@ -502,9 +502,9 @@ if results_available:
         - AR(1) noise generally increases localisation error versus i.i.d. noise.
         """)
 
-        _err_opts = ["i.i.d. CIBA", "AR(1)", "Comparison"]
+        _err_opts = ["i.i.d. BACI", "AR(1)", "Comparison"]
         if res_iid_ba is not None:
-            _err_opts = ["i.i.d. CIBA", "AR(1)", "i.i.d. BA", "Comparison"]
+            _err_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "Comparison"]
         err_noise = st.radio("Noise model", _err_opts,
                              horizontal=True, key="err_noise")
 
@@ -528,8 +528,8 @@ if results_available:
             )
             return fig
 
-        if err_noise == "i.i.d. CIBA":
-            st.plotly_chart(error_fig(res_iid, "Changepoint error — i.i.d. noise (CIBA)"),
+        if err_noise == "i.i.d. BACI":
+            st.plotly_chart(error_fig(res_iid, "Changepoint error — i.i.d. noise (BACI)"),
                             width="stretch")
         elif err_noise == "AR(1)":
             st.plotly_chart(error_fig(res_ar, "Changepoint error — AR(1) noise"),
@@ -540,7 +540,7 @@ if results_available:
         else:
             cols = st.columns(2 if res_iid_ba is None else 3)
             with cols[0]:
-                st.plotly_chart(error_fig(res_iid, "i.i.d. CIBA"), width="stretch")
+                st.plotly_chart(error_fig(res_iid, "i.i.d. BACI"), width="stretch")
             with cols[1]:
                 st.plotly_chart(error_fig(res_ar, "AR(1)"), width="stretch")
             if res_iid_ba is not None:
@@ -574,9 +574,9 @@ if results_available:
                 key="delay_effect",
             )
         with ctrl2:
-            _delay_opts = ["i.i.d. CIBA", "AR(1)", "Both"]
+            _delay_opts = ["i.i.d. BACI", "AR(1)", "Both"]
             if res_iid_ba is not None:
-                _delay_opts = ["i.i.d. CIBA", "AR(1)", "i.i.d. BA", "All"]
+                _delay_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "All"]
             delay_noise = st.radio(
                 "Noise model", _delay_opts,
                 horizontal=True, key="delay_noise",
@@ -619,8 +619,8 @@ if results_available:
             npost_i_line = min(npost_i_line, len(NPOST_VEC) - 1)
 
             noise_configs = []
-            if delay_noise in ("i.i.d. CIBA", "Both", "All"):
-                noise_configs.append(("i.i.d. CIBA", res_iid, "rgba(33,150,243,1)", "rgba(33,150,243,0.15)"))
+            if delay_noise in ("i.i.d. BACI", "Both", "All"):
+                noise_configs.append(("i.i.d. BACI", res_iid, "rgba(33,150,243,1)", "rgba(33,150,243,0.15)"))
             if delay_noise in ("AR(1)", "Both", "All"):
                 noise_configs.append(("AR(1)", res_ar, "rgba(255,152,0,1)", "rgba(255,152,0,0.15)"))
             if res_iid_ba is not None and delay_noise in ("i.i.d. BA", "All"):
@@ -677,7 +677,7 @@ if results_available:
             # Compute slope to give a plain-English summary
             _single_noise = delay_noise not in ("Both", "All")
             if _single_noise:
-                _noise_res = {"i.i.d. CIBA": res_iid, "AR(1)": res_ar, "i.i.d. BA": res_iid_ba}.get(delay_noise, res_iid)
+                _noise_res = {"i.i.d. BACI": res_iid, "AR(1)": res_ar, "i.i.d. BA": res_iid_ba}.get(delay_noise, res_iid)
                 r_arr = delay_series(_noise_res, delay_trend, npost_i_line)[0] if _noise_res else None
             if _single_noise and r_arr is not None:
                 drop = float(np.nanmax(r_arr) - np.nanmin(r_arr))
@@ -692,11 +692,11 @@ if results_available:
 
         # ── Heatmap view ───────────────────────────────────────────────────────
         else:
-            _heat_map = {"i.i.d. CIBA": res_iid, "AR(1)": res_ar, "i.i.d. BA": res_iid_ba}
+            _heat_map = {"i.i.d. BACI": res_iid, "AR(1)": res_ar, "i.i.d. BA": res_iid_ba}
             if delay_noise in ("Both", "All"):
                 _heat_single_opts = (
-                    ["i.i.d. CIBA", "AR(1)", "i.i.d. BA"] if res_iid_ba is not None
-                    else ["i.i.d. CIBA", "AR(1)"]
+                    ["i.i.d. BACI", "AR(1)", "i.i.d. BA"] if res_iid_ba is not None
+                    else ["i.i.d. BACI", "AR(1)"]
                 )
                 heat_label = st.radio(
                     "Noise model for heatmap",
@@ -792,9 +792,9 @@ if results_available:
 
         ctrl_b1, ctrl_b2 = st.columns(2)
         with ctrl_b1:
-            _bias_opts = ["i.i.d. CIBA", "AR(1)", "Both"]
+            _bias_opts = ["i.i.d. BACI", "AR(1)", "Both"]
             if res_iid_ba is not None:
-                _bias_opts = ["i.i.d. CIBA", "AR(1)", "i.i.d. BA", "All"]
+                _bias_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "All"]
             bias_noise = st.radio(
                 "Noise model", _bias_opts,
                 horizontal=True, key="bias_noise",
@@ -813,8 +813,8 @@ if results_available:
         npost_i = min(npost_i, len(NPOST_VEC) - 1)
 
         bias_configs = []
-        if bias_noise in ("i.i.d. CIBA", "Both", "All"):
-            bias_configs.append(("i.i.d. CIBA", res_iid, "rgba(33,150,243,0.85)"))
+        if bias_noise in ("i.i.d. BACI", "Both", "All"):
+            bias_configs.append(("i.i.d. BACI", res_iid, "rgba(33,150,243,0.85)"))
         if bias_noise in ("AR(1)", "Both", "All"):
             bias_configs.append(("AR(1)", res_ar, "rgba(255,152,0,0.85)"))
         if res_iid_ba is not None and bias_noise in ("i.i.d. BA", "All"):
@@ -993,7 +993,7 @@ if results_available:
 
     # Build per-model config: (label, results, critical_value_key)
     _exp_models = [
-        ("i.i.d. CIBA", res_iid, "iid_48"),
+        ("i.i.d. BACI", res_iid, "iid_48"),
         ("AR(1)",        res_ar,  "ar1_48"),
     ]
     if res_iid_ba is not None:
@@ -1127,7 +1127,7 @@ st.markdown("""
 Run a simulation directly in the browser to explore how parameter choices affect
 detection.
 
-All three noise models — **i.i.d. CIBA**, **AR(1)**, and **i.i.d. BA** — run simultaneously
+All three noise models — **i.i.d. BACI**, **AR(1)**, and **i.i.d. BA** — run simultaneously
 so you can compare their detection rates and time series side by side.
 """)
 
@@ -1172,7 +1172,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
             min_value=0.0, max_value=0.95, value=PHI_DEFAULT, step=0.05,
             help=(
                 "Autocorrelation strength for the AR(1) model only "
-                "(i.i.d. CIBA and i.i.d. BA always use independent errors regardless of this setting). "
+                "(i.i.d. BACI and i.i.d. BA always use independent errors regardless of this setting). "
                 "φ = 0.5 is a moderate default. 0 = no autocorrelation; 0.9 = strong memory."
             ),
         )
@@ -1228,7 +1228,7 @@ if run_btn:
     nt_total  = npre_sim + npost_sim
 
     _mini_models = {
-        "i.i.d. CIBA": {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ciba},
+        "i.i.d. BACI": {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ciba},
         "AR(1)":        {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ar},
         "i.i.d. BA":    {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ba},
     }
@@ -1236,7 +1236,7 @@ if run_btn:
     progress_bar = st.progress(0, text="Starting…")
 
     for i in range(n_sim):
-        # i.i.d. data — shared between CIBA (uses control+intervention) and BA (intervention only)
+        # i.i.d. data — shared between BACI (uses control+intervention) and BA (intervention only)
         sim_iid    = ci_sim(seed=int(base_seed) + i, npre=true_cpt, npost=effective_npost,
                             level=LEVEL, trend=(TREND_CONTROL, trend_interv), sigma=SIGMA)
         stats_ciba = trend_stats(y_ctr=sim_iid["y_ctr"], y_itv=sim_iid["y_itv"], nt=nt_total)
@@ -1248,7 +1248,7 @@ if run_btn:
         stats_ar = trend_stats_ar(y_itv=sim_ar["y_itv"], nt=nt_total)
 
         for label, sim_data, stats in [
-            ("i.i.d. CIBA", sim_iid, stats_ciba),
+            ("i.i.d. BACI", sim_iid, stats_ciba),
             ("AR(1)",        sim_ar,  stats_ar),
             ("i.i.d. BA",   sim_iid, stats_ba),
         ]:
@@ -1271,7 +1271,7 @@ if run_btn:
         mdata["valid_cpts"] = [c for c in cpts if not np.isnan(c)]
 
     first_det = next(
-        (i for i, d in enumerate(_mini_models["i.i.d. CIBA"]["detected_flags"]) if d), 0
+        (i for i, d in enumerate(_mini_models["i.i.d. BACI"]["detected_flags"]) if d), 0
     )
     st.session_state["mini_runs"] = {
         "n_sim":      n_sim,
@@ -1325,7 +1325,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     st.subheader("Browse simulation runs")
 
     n_sim_mr    = mr["n_sim"]
-    det_indices = [i for i, d in enumerate(mr["models"]["i.i.d. CIBA"]["detected_flags"]) if d]
+    det_indices = [i for i, d in enumerate(mr["models"]["i.i.d. BACI"]["detected_flags"]) if d]
 
     if "mini_nav_idx" not in st.session_state:
         st.session_state["mini_nav_idx"] = 0
@@ -1355,9 +1355,9 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
 
     det_pct = len(det_indices) / n_sim_mr if n_sim_mr > 0 else 0
     st.caption(
-        f"i.i.d. CIBA detected a change in {len(det_indices)} of {n_sim_mr} runs ({det_pct:.0%})."
+        f"i.i.d. BACI detected a change in {len(det_indices)} of {n_sim_mr} runs ({det_pct:.0%})."
         if det_indices else
-        "No runs detected a change (i.i.d. CIBA) — try a larger effect size or longer window."
+        "No runs detected a change (i.i.d. BACI) — try a larger effect size or longer window."
     )
 
     # ── Current run ───────────────────────────────────────────────────────────
