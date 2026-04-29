@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import scipy.stats
 import scipy.integrate
@@ -476,3 +477,165 @@ def trend_stats_cdf(y_dist, nt):
         changepoint location (1-indexed month).
     """
     return trend_stats(y_ctr=None, y_itv=y_dist, nt=nt)
+
+
+def page_cusum(errors, m, h):
+    """
+    Two-sided Page-CUSUM detector on standardised forecast errors.
+
+    Equivalent to R's cptForecast(..., detector="PageCUSUM",
+    forecastErrorType="Both") from the changepoint.forecast package.
+
+    Maintains separate upper and lower cumulative sums. Detection fires the
+    first time either arm exceeds threshold h. The standard deviation is
+    estimated from the in-sample (pre-period) residuals.
+
+    Parameters
+    ----------
+    errors : array-like (m + npost,)
+        Residual series: in-sample residuals concatenated with out-of-sample
+        forecast errors. Matches R's r.ts = c(lmfit$residuals, lm.predict - y).
+    m : int
+        Number of in-sample (pre-period) residuals used for variance estimation.
+    h : float
+        Detection threshold. Calibrated via null simulations (95th percentile
+        of max CUSUM statistic under no-change hypothesis).
+
+    Returns
+    -------
+    int or float
+        1-indexed detection time in the post-period (i.e. t - m + 1), or
+        np.inf if no detection within the observed window.
+    """
+    errors = np.asarray(errors, dtype=float)
+    sigma_hat = np.std(errors[:m], ddof=1)
+    if sigma_hat < 1e-12:
+        return np.inf
+    z = errors / sigma_hat
+    c_upper = 0.0
+    c_lower = 0.0
+    for t in range(m, len(errors)):
+        c_upper = max(0.0, c_upper + z[t])
+        c_lower = max(0.0, c_lower - z[t])
+        if c_upper > h or c_lower > h:
+            return t - m + 1
+    return np.inf
+
+
+def page_cusum_max_stat(errors, m):
+    """
+    Return the maximum two-sided Page-CUSUM statistic over the post-period.
+
+    Used for threshold calibration: run on null simulations and take the
+    alpha-th percentile of the resulting distribution as threshold h.
+
+    Parameters
+    ----------
+    errors : array-like (m + npost,)
+        Residual series (same format as page_cusum).
+    m : int
+        Number of in-sample residuals.
+
+    Returns
+    -------
+    float
+        max(upper_arm, lower_arm) over all post-period time steps.
+    """
+    errors = np.asarray(errors, dtype=float)
+    sigma_hat = np.std(errors[:m], ddof=1)
+    if sigma_hat < 1e-12:
+        return 0.0
+    z = errors / sigma_hat
+    c_upper = 0.0
+    c_lower = 0.0
+    max_stat = 0.0
+    for t in range(m, len(errors)):
+        c_upper = max(0.0, c_upper + z[t])
+        c_lower = max(0.0, c_lower - z[t])
+        if c_upper > max_stat or c_lower > max_stat:
+            max_stat = max(c_upper, c_lower)
+    return max_stat
+
+
+def trend_stats_forecast(y_itv, npre, ntt, phi=None, h=5.0):
+    """
+    Two-stage forecast-based changepoint detection (BA design).
+
+    Equivalent to the inner loop of R's Rewild_trend_change_Forecast.R.
+
+    Stage 1 — fit a linear model (OLS or ARIMA(1,0,0)) on the pre-period,
+    produce multi-step-ahead forecasts, build the residual series, and run
+    Page-CUSUM to find *when* a change is first declared (time_est).
+
+    Stage 2 — if detection occurred, run AMOC trend_stats on the residuals
+    truncated to length npre + time_est to locate *where* the changepoint
+    is (cpt_est).
+
+    Sign convention matches R: in-sample residuals are (actual - fitted);
+    out-of-sample errors are (predicted - actual). The two-sided CUSUM
+    detects shifts in either direction.
+
+    Parameters
+    ----------
+    y_itv : array-like (ntt,)
+        Intervention time series (full length npre + npost_max).
+    npre : int
+        Training period length (months).
+    ntt : int
+        Total time series length (npre + npost_max). Used to build the design
+        matrix for forecasting all post-period steps at once.
+    phi : float or None
+        If provided, fit ARIMA(1,0,0) with AR coefficient; if None, use OLS.
+    h : float
+        Page-CUSUM threshold (default 5.0; calibrate via null simulations).
+
+    Returns
+    -------
+    dict
+        {'time_est': int or inf, 'cpt_est': int or inf}
+        time_est: detection time (1-indexed, relative to post-period start).
+        cpt_est:  estimated changepoint location (1-indexed absolute month).
+    """
+    y = np.asarray(y_itv, dtype=float)
+    t_idx = np.arange(1, ntt + 1)
+    X = np.column_stack([np.ones(ntt), t_idx])
+
+    in_residuals = None
+    out_errors = None
+
+    if phi is not None:
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter('ignore')
+                model = ARIMA(y[:npre], exog=X[:npre], order=(1, 0, 0), trend='n')
+                fit = model.fit(method='innovations_mle', disp=False)
+            in_residuals = np.asarray(fit.resid, dtype=float)
+            # predicted - actual matches R's arima.predict$pred - y.ts
+            forecast_vals = fit.get_forecast(steps=ntt - npre, exog=X[npre:]).predicted_mean
+            out_errors = np.asarray(forecast_vals, dtype=float) - y[npre:]
+        except Exception:
+            in_residuals = None
+
+    if in_residuals is None:
+        # OLS fallback (also used when phi is None)
+        ols = OLS(y[:npre], X[:npre]).fit()
+        in_residuals = np.asarray(ols.resid, dtype=float)
+        # predicted - actual matches R's lm.predict - y.ts
+        out_errors = X[npre:] @ ols.params - y[npre:]
+
+    r = np.concatenate([in_residuals, out_errors])
+    time_est = page_cusum(r, m=npre, h=h)
+
+    if np.isfinite(time_est):
+        time_est_int = int(time_est)
+        nt = npre + time_est_int
+        # trend_stats requires nt >= mint + 4 = 28; fall back to npre if too short
+        if nt >= 28:
+            stats = trend_stats(y_ctr=None, y_itv=r[:nt], nt=nt)
+            cpt_est = stats['cpt']
+        else:
+            cpt_est = npre
+        return {'time_est': time_est_int, 'cpt_est': cpt_est}
+    else:
+        return {'time_est': np.inf, 'cpt_est': np.inf}
+
