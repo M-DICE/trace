@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pickle
+from datetime import datetime
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
@@ -46,10 +47,10 @@ RESULTS_PATH = Path(__file__).parent.parent / "results" / "trend_amoc" / "sim_re
 
 # ── Data loading ───────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Loading pre-computed simulation results…")
-def load_results():
-    if not RESULTS_PATH.exists():
+def load_results(path: Path):
+    if not path.exists():
         return None
-    with open(RESULTS_PATH, "rb") as f:
+    with open(path, "rb") as f:
         return pickle.load(f)
 
 
@@ -139,7 +140,7 @@ with st.sidebar:
 
 
 # ── Load data ─────────────────────────────────────────────────────────────────
-data = load_results()
+data = load_results(RESULTS_PATH)
 
 if data is None:
     st.error(
@@ -149,12 +150,19 @@ if data is None:
     )
     results_available = False
 else:
-    cv = data["critical_values"]
-    res_iid    = data["detection_results"]
-    res_ar     = data["detection_results_ar"]
-    res_iid_ba = data.get("detection_results_iid_ba")   # may be absent in older pickles
-    trends = sorted(res_iid.keys())
-    results_available = True
+    cv         = data.get("critical_values")
+    res_iid    = data.get("detection_results", {})
+    res_ar     = data.get("detection_results_ar", {})
+    res_iid_ba = data.get("detection_results_iid_ba")
+    if cv is None or not res_iid:
+        st.warning(
+            "Saved results are incomplete (critical values or detection results missing). "
+            "Re-run `python rewild_trend_change_amoc.py` to regenerate."
+        )
+        results_available = False
+    else:
+        trends = sorted(res_iid.keys())
+        results_available = True
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1029,6 +1037,7 @@ if results_available:
 
     exp_trend   = trends[EFFECT_SIZES_PCT.index(exp_effect_pct)]
     run_i       = st.session_state.get("exp_nav_idx", 0)
+
     npost_i_exp = int(np.searchsorted(NPOST_VEC, exp_npost, side="left"))
     npost_i_exp = min(npost_i_exp, len(NPOST_VEC) - 1)
 
@@ -1039,6 +1048,14 @@ if results_available:
     ]
     if res_iid_ba is not None:
         _exp_models.append(("i.i.d. BA", res_iid_ba, "iid_ba_48", False))
+
+    _n_runs_exp = min(len(res[exp_trend]["delays"]) for _, res, _, _ in _exp_models)
+    if run_i >= _n_runs_exp:
+        st.warning(
+            "It looks like you have run fewer simulations than expected. "
+            "Please re-run the full simulation."
+        )
+        st.stop()
 
     # ── Metrics row — one column per model ────────────────────────────────────
     m_cols = st.columns(len(_exp_models))
@@ -1175,6 +1192,16 @@ All three noise models — **i.i.d. BACI**, **AR(1)**, and **i.i.d. BA** — run
 so you can compare their detection rates and time series side by side.
 """)
 
+if "mini_pending_restore" in st.session_state:
+    _pr = st.session_state.pop("mini_pending_restore")
+    st.session_state["mini_p_n_sim"]      = _pr["n_sim"]
+    st.session_state["mini_p_base_seed"]  = _pr["base_seed"]
+    st.session_state["mini_p_effect_pct"] = _pr["effect_pct"]
+    st.session_state["mini_p_phi"]        = _pr["phi_input"]
+    st.session_state["mini_p_npre"]       = _pr["npre_sim"]
+    st.session_state["mini_p_npost"]      = _pr["npost_sim"]
+    st.session_state["mini_p_delay"]      = _pr["delay_sim"]
+
 with st.expander("⚙️ Simulation parameters", expanded=True):
     st.caption(
         "Defaults match the benchmark simulations exactly — change any value to explore "
@@ -1186,6 +1213,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         n_sim = st.slider(
             "N simulations",
             min_value=10, max_value=200, value=30, step=10,
+            key="mini_p_n_sim",
             help=(
                 "Each simulation generates a fresh (control, intervention) pair with different "
                 "random noise. Detection rate = fraction of runs where T_max exceeds the critical "
@@ -1195,6 +1223,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         base_seed = st.number_input(
             "Random seed",
             min_value=0, max_value=99999, value=42, step=1,
+            key="mini_p_base_seed",
             help=(
                 "Simulation i uses seed = base_seed + i. "
                 "Change the seed to get a different draw of noise realisations."
@@ -1206,6 +1235,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
             "Effect size (% of mean / 10 yr)",
             options=EFFECT_SIZES_PCT,
             value=30,
+            key="mini_p_effect_pct",
             help=(
                 "Additional trend added by the intervention, expressed as a percentage of the "
                 "baseline level accumulated over 10 years."
@@ -1214,6 +1244,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         phi_input = st.slider(
             "φ (AR(1) coefficient)",
             min_value=0.0, max_value=0.95, value=PHI_DEFAULT, step=0.05,
+            key="mini_p_phi",
             help=(
                 "Autocorrelation strength for the AR(1) model only "
                 "(i.i.d. BACI and i.i.d. BA always use independent errors regardless of this setting). "
@@ -1223,6 +1254,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         npre_sim = st.slider(
             "Pre-intervention period (months)",
             min_value=6, max_value=60, value=NPRE, step=6,
+            key="mini_p_npre",
             help=(
                 f"How long the site was monitored before the intervention. "
                 f"Sets where the true changepoint sits in the time series. "
@@ -1234,6 +1266,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         npost_sim = st.slider(
             "Monitoring window (months)",
             min_value=24, max_value=NPOST_MONTHS, value=60, step=6,
+            key="mini_p_npost",
             help=(
                 "Number of post-intervention months included in the test. "
                 "Longer windows accumulate more evidence and generally increase power."
@@ -1242,12 +1275,43 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         delay_sim = st.slider(
             "Intervention delay (months)",
             min_value=0, max_value=20, value=10, step=1,
+            key="mini_p_delay",
             help=(
                 "Months between the formal intervention date and when the ecological response begins."
             ),
         )
 
+_cur_params = {
+    "n_sim": n_sim, "base_seed": int(base_seed), "effect_pct": effect_pct,
+    "phi_input": phi_input, "npre_sim": npre_sim, "npost_sim": npost_sim, "delay_sim": delay_sim,
+}
+if "mini_runs_last_params" in st.session_state:
+    if st.session_state["mini_runs_last_params"] != _cur_params:
+        for _k in ("mini_runs", "mini_nav_idx", "mnav_slider"):
+            st.session_state.pop(_k, None)
+        st.session_state["mini_hist_sel_gen"] = st.session_state.get("mini_hist_sel_gen", 0) + 1
+
 run_btn = st.button("▶ Run simulation", type="primary")
+
+_mini_history = st.session_state.get("mini_runs_history", [])
+if _mini_history:
+    _sel = st.selectbox(
+        "Previous runs",
+        options=range(len(_mini_history)),
+        format_func=lambda i: _mini_history[i]["label"],
+        index=None,
+        placeholder="Select a previous run to restore…",
+        key=f"mini_hist_sel_{st.session_state.get('mini_hist_sel_gen', 0)}",
+    )
+    if _sel is not None:
+        _h  = _mini_history[_sel]
+        _hp = _h["params"]
+        st.session_state["mini_pending_restore"]  = _hp
+        st.session_state["mini_runs"]             = _h["data"]
+        st.session_state["mini_nav_idx"]          = _h["nav_idx"]
+        st.session_state["mnav_slider"]           = _h["nav_idx"] + 1
+        st.session_state["mini_runs_last_params"] = _hp
+        st.session_state["mini_hist_sel_gen"] = st.session_state.get("mini_hist_sel_gen", 0) + 1
 
 if run_btn:
     trend_delta  = LEVEL * (effect_pct / 100) / NPOST_MONTHS
@@ -1329,6 +1393,23 @@ if run_btn:
     }
     st.session_state["mini_nav_idx"] = first_det
     st.session_state["mnav_slider"]  = first_det + 1
+
+    _run_n     = len(st.session_state.get("mini_runs_history", [])) + 1
+    _baci_rate = _mini_models["i.i.d. BACI"]["det_rate"]
+    _ts        = datetime.now().strftime("%H:%M")
+    _hist_lbl  = (
+        f"#{_run_n} · {_ts} · N={n_sim} seed={int(base_seed)} eff={effect_pct}% φ={phi_input:.2f} "
+        f"pre={npre_sim}mo post={npost_sim}mo delay={delay_sim}mo · det={_baci_rate:.0%}"
+    )
+    if "mini_runs_history" not in st.session_state:
+        st.session_state["mini_runs_history"] = []
+    st.session_state["mini_runs_history"].insert(0, {
+        "label":   _hist_lbl,
+        "data":    st.session_state["mini_runs"],
+        "nav_idx": first_det,
+        "params":  _cur_params,
+    })
+    st.session_state["mini_runs_last_params"] = _cur_params
 
 
 # ── Results — persists across rerenders via session state ─────────────────────
