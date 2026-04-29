@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pickle
+from datetime import datetime
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
@@ -46,10 +47,10 @@ RESULTS_PATH = Path(__file__).parent.parent / "results" / "distribution_amoc" / 
 
 # ── Data loading ───────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Loading distribution simulation results…")
-def load_results():
-    if not RESULTS_PATH.exists():
+def load_results(path: Path):
+    if not path.exists():
         return None
-    with open(RESULTS_PATH, "rb") as f:
+    with open(path, "rb") as f:
         return pickle.load(f)
 
 
@@ -112,7 +113,7 @@ with st.sidebar:
     """)
 
 # ── Load data ──────────────────────────────────────────────────────────────────
-data = load_results()
+data = load_results(RESULTS_PATH)
 
 if data is None:
     st.error(
@@ -122,14 +123,21 @@ if data is None:
     )
     results_available = False
 else:
-    cv        = data["critical_values"]
-    res_mu    = data["detection_results_mu"]
-    res_sigma = data["detection_results_sigma"]
-    trends_mu    = sorted(res_mu.keys())
-    trends_sigma = sorted(res_sigma.keys())
-    mu_pct_to_trend    = dict(zip(EFFECT_SIZES_MU_PCT,    trends_mu))
-    sigma_pct_to_trend = dict(zip(EFFECT_SIZES_SIGMA_PCT, trends_sigma))
-    results_available = True
+    cv        = data.get("critical_values")
+    res_mu    = data.get("detection_results_mu", {})
+    res_sigma = data.get("detection_results_sigma", {})
+    if cv is None or not res_mu or not res_sigma:
+        st.warning(
+            "Saved results are incomplete (critical values or detection results missing). "
+            "Re-run `python rewild_distribution_change_amoc.py` to regenerate."
+        )
+        results_available = False
+    else:
+        trends_mu    = sorted(res_mu.keys())
+        trends_sigma = sorted(res_sigma.keys())
+        mu_pct_to_trend    = dict(zip(EFFECT_SIZES_MU_PCT,    trends_mu))
+        sigma_pct_to_trend = dict(zip(EFFECT_SIZES_SIGMA_PCT, trends_sigma))
+        results_available = True
 
 # ══════════════════════════════════════════════════════════════════════════════
 # RESULTS EXPLORER
@@ -419,6 +427,14 @@ if results_available:
                 f"{cv[f'npost_{label}']['critical_value']:.3f}" if f"npost_{label}" in cv else "—"
                 for label, _ in null_keys
             ],
+            "Null mean": [
+                f"{np.mean(cv[f'npost_{label}']['null_dist']):.3f}" if f"npost_{label}" in cv else "—"
+                for label, _ in null_keys
+            ],
+            "Null SD": [
+                f"{np.std(cv[f'npost_{label}']['null_dist']):.3f}" if f"npost_{label}" in cv else "—"
+                for label, _ in null_keys
+            ],
         }
         st.table(cv_table)
 
@@ -672,6 +688,16 @@ if results_available:
 st.divider()
 st.header("🔬 Run your own simulation")
 
+if "dist_pending_restore" in st.session_state:
+    _pr = st.session_state.pop("dist_pending_restore")
+    st.session_state["dist_p_n_sim"]      = _pr["n_sim"]
+    st.session_state["dist_p_base_seed"]  = _pr["base_seed"]
+    st.session_state["dist_p_npre"]       = _pr["s_npre"]
+    st.session_state["dist_p_npost"]      = _pr["s_npost"]
+    st.session_state["dist_p_mu_inc"]     = _pr["s_mu_inc"]
+    st.session_state["dist_p_sigma_inc"]  = _pr["s_sigma_inc"]
+    st.session_state["dist_p_ns"]         = _pr["s_ns"]
+
 with st.expander("⚙️ Simulation parameters", expanded=True):
     col_a, col_b, col_c = st.columns(3)
 
@@ -679,6 +705,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         n_sim = st.slider(
             "N simulations",
             min_value=10, max_value=200, value=30, step=10,
+            key="dist_p_n_sim",
             help=(
                 "Each simulation generates a fresh (control, intervention) pair with different "
                 "random noise. Detection rate = fraction of runs where T_max exceeds the critical value."
@@ -687,19 +714,51 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         base_seed = st.number_input(
             "Random seed",
             min_value=0, max_value=99999, value=42, step=1,
+            key="dist_p_base_seed",
             help="Simulation i uses seed = base_seed + i. Change to get a different draw of noise realisations.",
         )
 
     with col_b:
-        s_npre  = st.slider("Pre-intervention (months)", 12, 48, 24)
-        s_npost = st.slider("Post-intervention (months)", 24, 120, 60)
+        s_npre  = st.slider("Pre-intervention (months)", 12, 48, 24, key="dist_p_npre")
+        s_npost = st.slider("Post-intervention (months)", 24, 120, 60, key="dist_p_npost")
 
     with col_c:
-        s_mu_inc    = st.slider("Mean increment per month (Mu trend)", 0.0, 0.10, 0.04, step=0.005)
-        s_sigma_inc = st.slider("SD increment per month (Sigma trend)", 0.0, 0.01, 0.0, step=0.001)
-        s_ns        = st.slider("Samples per time point (ns)", 50, 500, 100, step=50)
+        s_mu_inc    = st.slider("Mean increment per month (Mu trend)", 0.0, 0.10, 0.04, step=0.005, key="dist_p_mu_inc")
+        s_sigma_inc = st.slider("SD increment per month (Sigma trend)", 0.0, 0.01, 0.0, step=0.001, key="dist_p_sigma_inc")
+        s_ns        = st.slider("Samples per time point (ns)", 50, 500, 100, step=50, key="dist_p_ns")
+
+_cur_params = {
+    "n_sim": n_sim, "base_seed": int(base_seed),
+    "s_npre": s_npre, "s_npost": s_npost,
+    "s_mu_inc": s_mu_inc, "s_sigma_inc": s_sigma_inc, "s_ns": s_ns,
+}
+if "dist_mini_last_params" in st.session_state:
+    if st.session_state["dist_mini_last_params"] != _cur_params:
+        for _k in ("dist_mini_runs", "dist_mini_nav_idx", "dist_mnav_slider"):
+            st.session_state.pop(_k, None)
+        st.session_state["dist_hist_sel_gen"] = st.session_state.get("dist_hist_sel_gen", 0) + 1
 
 s_run = st.button("▶ Run simulation", type="primary")
+
+_dist_history = st.session_state.get("dist_mini_history", [])
+if _dist_history:
+    _sel = st.selectbox(
+        "Previous runs",
+        options=range(len(_dist_history)),
+        format_func=lambda i: _dist_history[i]["label"],
+        index=None,
+        placeholder="Select a previous run to restore…",
+        key=f"dist_hist_sel_{st.session_state.get('dist_hist_sel_gen', 0)}",
+    )
+    if _sel is not None:
+        _h  = _dist_history[_sel]
+        _hp = _h["params"]
+        st.session_state["dist_pending_restore"]      = _hp
+        st.session_state["dist_mini_runs"]            = _h["data"]
+        st.session_state["dist_mini_nav_idx"]         = _h["nav_idx"]
+        st.session_state["dist_mnav_slider"]          = _h["nav_idx"] + 1
+        st.session_state["dist_mini_last_params"]     = _hp
+        st.session_state["dist_hist_sel_gen"] = st.session_state.get("dist_hist_sel_gen", 0) + 1
 
 if s_run:
     _crit_val = cv.get("npost_24", {}).get("critical_value", 2.5) if results_available else 2.5
@@ -743,6 +802,23 @@ if s_run:
     }
     st.session_state["dist_mini_nav_idx"]    = first_det
     st.session_state["dist_mnav_slider"]     = first_det + 1
+
+    _run_n    = len(st.session_state.get("dist_mini_history", [])) + 1
+    _det_rate = sum(detected_flags) / n_sim
+    _ts       = datetime.now().strftime("%H:%M")
+    _hist_lbl = (
+        f"#{_run_n} · {_ts} · N={n_sim} seed={int(base_seed)} pre={s_npre}mo post={s_npost}mo "
+        f"μ={s_mu_inc:.3f} σ={s_sigma_inc:.3f} ns={s_ns} · det={_det_rate:.0%}"
+    )
+    if "dist_mini_history" not in st.session_state:
+        st.session_state["dist_mini_history"] = []
+    st.session_state["dist_mini_history"].insert(0, {
+        "label":   _hist_lbl,
+        "data":    st.session_state["dist_mini_runs"],
+        "nav_idx": first_det,
+        "params":  _cur_params,
+    })
+    st.session_state["dist_mini_last_params"] = _cur_params
 
 
 # ── Results — persisted across rerenders via session state ────────────────────
