@@ -1202,6 +1202,13 @@ if "mini_pending_restore" in st.session_state:
     st.session_state["mini_p_npost"]      = _pr["npost_sim"]
     st.session_state["mini_p_delay"]      = _pr["delay_sim"]
 
+for _k, _v in [
+    ("mini_p_n_sim", 30), ("mini_p_base_seed", 42), ("mini_p_effect_pct", 30),
+    ("mini_p_phi", PHI_DEFAULT), ("mini_p_npre", NPRE), ("mini_p_npost", 60), ("mini_p_delay", 10),
+]:
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
+
 with st.expander("⚙️ Simulation parameters", expanded=True):
     st.caption(
         "Defaults match the benchmark simulations exactly — change any value to explore "
@@ -1212,7 +1219,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
     with col_a:
         n_sim = st.slider(
             "N simulations",
-            min_value=10, max_value=200, value=30, step=10,
+            min_value=10, max_value=200, step=10,
             key="mini_p_n_sim",
             help=(
                 "Each simulation generates a fresh (control, intervention) pair with different "
@@ -1222,7 +1229,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         base_seed = st.number_input(
             "Random seed",
-            min_value=0, max_value=99999, value=42, step=1,
+            min_value=0, max_value=99999, step=1,
             key="mini_p_base_seed",
             help=(
                 "Simulation i uses seed = base_seed + i. "
@@ -1234,7 +1241,6 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         effect_pct = st.select_slider(
             "Effect size (% of mean / 10 yr)",
             options=EFFECT_SIZES_PCT,
-            value=30,
             key="mini_p_effect_pct",
             help=(
                 "Additional trend added by the intervention, expressed as a percentage of the "
@@ -1243,7 +1249,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         phi_input = st.slider(
             "φ (AR(1) coefficient)",
-            min_value=0.0, max_value=0.95, value=PHI_DEFAULT, step=0.05,
+            min_value=0.0, max_value=0.95, step=0.05,
             key="mini_p_phi",
             help=(
                 "Autocorrelation strength for the AR(1) model only "
@@ -1253,7 +1259,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         npre_sim = st.slider(
             "Pre-intervention period (months)",
-            min_value=6, max_value=60, value=NPRE, step=6,
+            min_value=6, max_value=60, step=6,
             key="mini_p_npre",
             help=(
                 f"How long the site was monitored before the intervention. "
@@ -1265,7 +1271,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
     with col_c:
         npost_sim = st.slider(
             "Monitoring window (months)",
-            min_value=24, max_value=NPOST_MONTHS, value=60, step=6,
+            min_value=24, max_value=NPOST_MONTHS, step=6,
             key="mini_p_npost",
             help=(
                 "Number of post-intervention months included in the test. "
@@ -1274,7 +1280,7 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         delay_sim = st.slider(
             "Intervention delay (months)",
-            min_value=0, max_value=20, value=10, step=1,
+            min_value=0, max_value=20, step=1,
             key="mini_p_delay",
             help=(
                 "Months between the formal intervention date and when the ecological response begins."

@@ -857,26 +857,33 @@ if "fcst_pending_restore" in st.session_state:
     st.session_state["fcst_p_delay"]      = _pr["delay_mini"]
     st.session_state["fcst_p_npost"]      = _pr["npost_mini"]
 
+for _k, _v in [
+    ("fcst_p_n_sim", 20), ("fcst_p_base_seed", 42), ("fcst_p_effect_pct", 30),
+    ("fcst_p_phi", PHI_DEFAULT), ("fcst_p_npre", NPRE), ("fcst_p_delay", 10), ("fcst_p_npost", 60),
+]:
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
+
 with st.expander("⚙️ Simulation parameters", expanded=True):
     col_a, col_b, col_c = st.columns(3)
     with col_a:
-        n_sim_mini = st.slider("N simulations", 5, 100, 20, step=5,
+        n_sim_mini = st.slider("N simulations", 5, 100, step=5,
                                key="fcst_p_n_sim",
                                help="Number of independent realisations to run.")
-        base_seed_mini = st.number_input("Random seed", 0, 99999, 42, step=1,
+        base_seed_mini = st.number_input("Random seed", 0, 99999, step=1,
                                          key="fcst_p_base_seed")
     with col_b:
         effect_pct_mini = st.select_slider(
-            "Effect size (% of mean / 10 yr)", options=EFFECT_SIZES_PCT, value=30,
+            "Effect size (% of mean / 10 yr)", options=EFFECT_SIZES_PCT,
             key="fcst_p_effect_pct",
         )
-        phi_mini = st.slider("φ (AR(1))", 0.0, 0.95, PHI_DEFAULT, step=0.05,
+        phi_mini = st.slider("φ (AR(1))", 0.0, 0.95, step=0.05,
                              key="fcst_p_phi",
                              help="AR(1) autocorrelation coefficient.")
     with col_c:
-        npre_mini = st.slider("Pre-period (months)", 6, 60, NPRE, step=6, key="fcst_p_npre")
-        delay_mini = st.slider("Intervention delay (months)", 0, 20, 10, key="fcst_p_delay")
-        npost_mini = st.slider("Post-period (months)", 12, NPOST_MAX, 60, step=6, key="fcst_p_npost")
+        npre_mini = st.slider("Pre-period (months)", 6, 60, step=6, key="fcst_p_npre")
+        delay_mini = st.slider("Intervention delay (months)", 0, 20, key="fcst_p_delay")
+        npost_mini = st.slider("Post-period (months)", 12, NPOST_MAX, step=6, key="fcst_p_npost")
 
 _cur_params = {
     "n_sim_mini": n_sim_mini, "base_seed_mini": int(base_seed_mini),

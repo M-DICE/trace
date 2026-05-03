@@ -698,13 +698,20 @@ if "dist_pending_restore" in st.session_state:
     st.session_state["dist_p_sigma_inc"]  = _pr["s_sigma_inc"]
     st.session_state["dist_p_ns"]         = _pr["s_ns"]
 
+for _k, _v in [
+    ("dist_p_n_sim", 30), ("dist_p_base_seed", 42), ("dist_p_npre", 24),
+    ("dist_p_npost", 60), ("dist_p_mu_inc", 0.04), ("dist_p_sigma_inc", 0.0), ("dist_p_ns", 100),
+]:
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
+
 with st.expander("⚙️ Simulation parameters", expanded=True):
     col_a, col_b, col_c = st.columns(3)
 
     with col_a:
         n_sim = st.slider(
             "N simulations",
-            min_value=10, max_value=200, value=30, step=10,
+            min_value=10, max_value=200, step=10,
             key="dist_p_n_sim",
             help=(
                 "Each simulation generates a fresh (control, intervention) pair with different "
@@ -713,19 +720,19 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         base_seed = st.number_input(
             "Random seed",
-            min_value=0, max_value=99999, value=42, step=1,
+            min_value=0, max_value=99999, step=1,
             key="dist_p_base_seed",
             help="Simulation i uses seed = base_seed + i. Change to get a different draw of noise realisations.",
         )
 
     with col_b:
-        s_npre  = st.slider("Pre-intervention (months)", 12, 48, 24, key="dist_p_npre")
-        s_npost = st.slider("Post-intervention (months)", 24, 120, 60, key="dist_p_npost")
+        s_npre  = st.slider("Pre-intervention (months)", 12, 48, key="dist_p_npre")
+        s_npost = st.slider("Post-intervention (months)", 24, 120, key="dist_p_npost")
 
     with col_c:
-        s_mu_inc    = st.slider("Mean increment per month (Mu trend)", 0.0, 0.10, 0.04, step=0.005, key="dist_p_mu_inc")
-        s_sigma_inc = st.slider("SD increment per month (Sigma trend)", 0.0, 0.01, 0.0, step=0.001, key="dist_p_sigma_inc")
-        s_ns        = st.slider("Samples per time point (ns)", 50, 500, 100, step=50, key="dist_p_ns")
+        s_mu_inc    = st.slider("Mean increment per month (Mu trend)", 0.0, 0.10, step=0.005, key="dist_p_mu_inc")
+        s_sigma_inc = st.slider("SD increment per month (Sigma trend)", 0.0, 0.01, step=0.001, key="dist_p_sigma_inc")
+        s_ns        = st.slider("Samples per time point (ns)", 50, 500, step=50, key="dist_p_ns")
 
 _cur_params = {
     "n_sim": n_sim, "base_seed": int(base_seed),
