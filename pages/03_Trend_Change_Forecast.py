@@ -19,7 +19,10 @@ from plotly.subplots import make_subplots
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.arima.model import ARIMA
 
-from amoc import ci_sim, ci_sim_ar, page_cusum_max_stat, trend_stats_forecast
+from amoc import ci_sim, ci_sim_ar, load_crit_val_table, lookup_crit_val, trend_stats_forecast
+
+_CRIT_VAL_TABLE = load_crit_val_table()
+CRIT_VAL = lookup_crit_val(_CRIT_VAL_TABLE)
 
 warnings.filterwarnings("ignore")
 
@@ -61,15 +64,19 @@ def load_results(path: Path):
 
 
 # ── CUSUM path helper (for individual run explorer) ───────────────────────────
-def compute_cusum_path(y_itv, npre, ntt, phi=None):
-    """Return (r, c_upper, c_lower) arrays over the full residual series."""
+def compute_cusum_path(y_itv, npre, ntt, crit_val, gamma=0.0, phi=None):
+    """
+    Weighted Page-CUSUM path matching amoc.page_cusum.
+
+    Returns (r, c_upper, c_lower, threshold_curve) where threshold_curve[t]
+    is T(k) = w(k) * crit_val * sigma for k = t - npre + 1 (post-period only;
+    pre-period entries are 0).
+    """
     y = np.asarray(y_itv, dtype=float)
     t_idx = np.arange(1, ntt + 1)
     X = np.column_stack([np.ones(ntt), t_idx])
 
     in_residuals = None
-    out_errors = None
-
     if phi is not None:
         try:
             with warnings.catch_warnings():
@@ -88,18 +95,22 @@ def compute_cusum_path(y_itv, npre, ntt, phi=None):
         out_errors = X[npre:] @ ols.params - y[npre:]
 
     r = np.concatenate([in_residuals, out_errors])
-    sigma_hat = np.std(r[:npre], ddof=1)
-    if sigma_hat < 1e-12:
-        return r, np.zeros(len(r)), np.zeros(len(r))
+    train_mean = np.mean(r[:npre])
+    sigma = np.std(r[:npre], ddof=1)
 
-    z = r / sigma_hat
     c_upper = np.zeros(len(r))
     c_lower = np.zeros(len(r))
-    for t in range(npre, len(r)):
-        c_upper[t] = max(0.0, c_upper[t - 1] + z[t])
-        c_lower[t] = max(0.0, c_lower[t - 1] - z[t])
+    threshold_curve = np.zeros(len(r))
 
-    return r, c_upper, c_lower
+    if sigma >= 1e-12:
+        for k in range(1, ntt - npre + 1):
+            inc = r[npre + k - 1] - train_mean
+            c_upper[npre + k - 1] = max(0.0, c_upper[npre + k - 2] + inc)
+            c_lower[npre + k - 1] = max(0.0, c_lower[npre + k - 2] - inc)
+            weight = np.sqrt(npre) * (1.0 + k / npre) * ((k / (k + npre)) ** gamma)
+            threshold_curve[npre + k - 1] = weight * crit_val * sigma
+
+    return r, c_upper, c_lower, threshold_curve
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -135,7 +146,7 @@ with st.sidebar:
     | **level** | {LEVEL} | Baseline indicator value |
     | **trend_control** | {TREND_CONTROL}/mo | Pre-intervention slope |
     | **φ (phi)** | {PHI_DEFAULT} | AR(1) autocorrelation |
-    | **Nsim** | 1,000 | Null sims for threshold calibration |
+    | **crit_val** | {CRIT_VAL:.6f} | Page-CUSUM critical value (PageCUSUM, γ=0, α=0.05) |
     | **simN** | 1,000 | Main simulations per effect size |
     """)
 
@@ -154,9 +165,8 @@ else:
     res_iid    = data.get("detection_results_iid")
     res_ar     = data.get("detection_results_ar")
 
-    if thresholds is None or res_iid is None or res_ar is None:
+    if res_iid is None or res_ar is None:
         missing = [k for k, v in [
-            ("thresholds", thresholds),
             ("detection_results_iid", res_iid),
             ("detection_results_ar", res_ar),
         ] if v is None]
@@ -329,63 +339,28 @@ if results_available:
 
     # ── Tab 3: Null Distributions ──────────────────────────────────────────────
     with tab_null:
-        st.subheader("Null distributions of max Page-CUSUM statistic")
+        st.subheader("Critical value table (CritValTable.json)")
         st.markdown("""
-        The histograms show the max CUSUM under the null hypothesis (no change) for i.i.d. and AR(1) noise.
-        The crimson line marks the **95th percentile** — the threshold used to declare a detection.
+        The weighted Page-CUSUM threshold is determined analytically from a
+        pre-simulated lookup table shipped with the R codebase, not by
+        re-running null simulations at each execution. The table below shows
+        all available configurations.
         """)
-
-        fig_null = make_subplots(
-            rows=1, cols=2,
-            subplot_titles=[
-                "i.i.d. BA — max CUSUM under null",
-                "AR(1) BA — max CUSUM under null",
-            ],
-        )
-        for col_i, (key, colour) in enumerate([("iid", "#2196F3"), ("ar1", "#FF9800")], start=1):
-            entry = thresholds[key]
-            dist = entry["null_dist"]
-            h    = entry["threshold"]
-            fig_null.add_trace(
-                go.Histogram(
-                    x=dist, nbinsx=50,
-                    marker_color=colour, opacity=0.75,
-                    showlegend=False,
-                    hovertemplate="max CUSUM: %{x:.1f}<br>Count: %{y}<extra></extra>",
-                ),
-                row=1, col=col_i,
+        import json as _json
+        _tbl_path = Path(__file__).parent.parent / "r_exports" / "CritValTable.json"
+        if _tbl_path.exists():
+            with open(_tbl_path) as _f:
+                _rows = _json.load(_f)
+            st.dataframe(_rows, hide_index=True, use_container_width=True)
+            st.caption(
+                f"Active configuration: Detector=PageCUSUM, Gamma=0.0, Alpha=0.05 → "
+                f"crit_val = **{CRIT_VAL:.6f}**"
             )
-            fig_null.add_vline(
-                x=h, line_dash="dash", line_color="crimson",
-                annotation_text=f"h = {h:.2f}",
-                annotation_position="top right",
-                row=1, col=col_i,
+        else:
+            st.error(
+                f"`{_tbl_path}` not found. Run `Rscript scripts/export_crit_val_table.R` "
+                "to generate it from `SimRewilding/CritValTable.rds`."
             )
-
-        fig_null.update_layout(
-            height=400,
-            title="Null distribution of max Page-CUSUM statistic (1,000 simulations each)",
-        )
-        fig_null.update_xaxes(title_text="max CUSUM")
-        fig_null.update_yaxes(title_text="Count")
-        st.plotly_chart(fig_null, width="stretch")
-
-        cv_tbl = {
-            "Noise model":       ["i.i.d. BA", "AR(1) BA"],
-            "Threshold (95th pct)": [
-                f"{thresholds['iid']['threshold']:.3f}",
-                f"{thresholds['ar1']['threshold']:.3f}",
-            ],
-            "Null mean": [
-                f"{np.mean(thresholds['iid']['null_dist']):.3f}",
-                f"{np.mean(thresholds['ar1']['null_dist']):.3f}",
-            ],
-            "Null SD": [
-                f"{np.std(thresholds['iid']['null_dist']):.3f}",
-                f"{np.std(thresholds['ar1']['null_dist']):.3f}",
-            ],
-        }
-        st.table(cv_tbl)
 
     # ── Tab 4: Changepoint Error ───────────────────────────────────────────────
     with tab_err:
@@ -689,7 +664,6 @@ if results_available:
         )
         st.stop()
     ir_phi      = None if ir_noise == "i.i.d. BA" else PHI_DEFAULT
-    ir_h        = thresholds["iid"]["threshold"] if ir_noise == "i.i.d. BA" else thresholds["ar1"]["threshold"]
 
     ir_delay    = int(ir_results[ir_trend]["delays"][ir_run_i])
     ir_true_cpt = NPRE + ir_delay
@@ -727,7 +701,7 @@ if results_available:
 
     # Compute CUSUM path for this run
     y_itv_full = ir_sim_data["y_itv"]
-    r, c_upper, c_lower = compute_cusum_path(y_itv_full, NPRE, NTT, phi=ir_phi)
+    r, c_upper, c_lower, thresh_curve = compute_cusum_path(y_itv_full, NPRE, NTT, crit_val=CRIT_VAL, phi=ir_phi)
     t_full = np.arange(1, NTT + 1)
 
     # Build 3-panel figure
@@ -788,10 +762,11 @@ if results_available:
         x=t_post, y=c_lower[NPRE:], mode="lines", name="CUSUM (lower)",
         line=dict(color="steelblue", width=2, dash="dash"),
     ), row=3, col=1)
-    fig_run.add_hline(y=ir_h, line_dash="dash", line_color="black", line_width=1.5,
-                      annotation_text=f"h = {ir_h:.1f}",
-                      annotation_position="top right",
-                      row=3, col=1)
+    fig_run.add_trace(go.Scatter(
+        x=t_post, y=thresh_curve[NPRE:], mode="lines", name="Threshold T(k)",
+        line=dict(color="black", width=1.5, dash="dash"),
+        hovertemplate="k=%{x}<br>T(k)=%{y:.2f}<extra>Threshold</extra>",
+    ), row=3, col=1)
 
     # Vertical lines: true τ, detection time
     for row in [1, 2, 3]:
@@ -930,13 +905,6 @@ if run_mini_btn:
     true_cpt_mini = npre_mini + delay_mini
     ntt_mini      = npre_mini + npost_mini
 
-    if results_available:
-        h_iid_mini = thresholds["iid"]["threshold"]
-        h_ar_mini  = thresholds["ar1"]["threshold"]
-    else:
-        # Approximate thresholds from a small calibration
-        h_iid_mini = h_ar_mini = 5.0
-
     mini_iid_runs, mini_ar_runs = [], []
     prog = st.progress(0, text="Running…")
 
@@ -946,7 +914,7 @@ if run_mini_btn:
         sim_iid = ci_sim(seed=seed, npre=true_cpt_mini, npost=effective_npost,
                          level=LEVEL, trend=[TREND_CONTROL, trend_interv_mini], sigma=SIGMA)
         res_iid_mini = trend_stats_forecast(
-            sim_iid["y_itv"], npre=npre_mini, ntt=ntt_mini, phi=None, h=h_iid_mini
+            sim_iid["y_itv"], npre=npre_mini, ntt=ntt_mini, phi=None, crit_val=CRIT_VAL
         )
         mini_iid_runs.append((sim_iid, res_iid_mini, seed))
 
@@ -954,7 +922,7 @@ if run_mini_btn:
                            level=LEVEL, trend=[TREND_CONTROL, trend_interv_mini],
                            phi=phi_mini, sigma=SIGMA)
         res_ar_mini = trend_stats_forecast(
-            sim_ar["y_itv"], npre=npre_mini, ntt=ntt_mini, phi=phi_mini, h=h_ar_mini
+            sim_ar["y_itv"], npre=npre_mini, ntt=ntt_mini, phi=phi_mini, crit_val=CRIT_VAL
         )
         mini_ar_runs.append((sim_ar, res_ar_mini, seed))
 
@@ -971,7 +939,7 @@ if run_mini_btn:
         "n_sim": n_sim_mini, "true_cpt": true_cpt_mini,
         "npre": npre_mini, "npost": npost_mini, "ntt": ntt_mini,
         "delay": delay_mini, "effect_pct": effect_pct_mini,
-        "phi": phi_mini, "h_iid": h_iid_mini, "h_ar": h_ar_mini,
+        "phi": phi_mini,
         "base_seed": int(base_seed_mini),
     }
     st.session_state["mini_fcst_idx"] = first_det_idx
@@ -1048,19 +1016,19 @@ if "mini_fcst" in st.session_state:
     sim_ar_show,  res_ar_show,  _        = mf["ar_runs"][show_i]
 
     mini_cols = st.columns(2)
-    for col, (label, sim_show, res_show, phi_val, h_val) in zip(
+    for col, (label, sim_show, res_show, phi_val) in zip(
         mini_cols,
         [
-            ("i.i.d. BA", sim_iid_show, res_iid_show, None,          mf["h_iid"]),
-            ("AR(1) BA",  sim_ar_show,  res_ar_show,  mf["phi"],     mf["h_ar"]),
+            ("i.i.d. BA", sim_iid_show, res_iid_show, None),
+            ("AR(1) BA",  sim_ar_show,  res_ar_show,  mf["phi"]),
         ]
     ):
         detected = np.isfinite(res_show["time_est"])
         det_text = f"✓ month {mf['npre'] + int(res_show['time_est'])}" if detected else "✗ not detected"
         with col:
             st.subheader(f"{label} — Run #{show_i+1} · seed {seed_show} · {det_text}")
-            r_m, c_up_m, c_lo_m = compute_cusum_path(sim_show["y_itv"], mf["npre"],
-                                                       mf["ntt"], phi=phi_val)
+            r_m, c_up_m, c_lo_m, thresh_m = compute_cusum_path(sim_show["y_itv"], mf["npre"],
+                                                                  mf["ntt"], crit_val=CRIT_VAL, phi=phi_val)
             t_m   = np.arange(1, mf["ntt"] + 1)
             t_post_m = t_m[mf["npre"]:]
 
@@ -1093,9 +1061,11 @@ if "mini_fcst" in st.session_state:
                 x=t_post_m, y=c_lo_m[mf["npre"]:], mode="lines", name="CUSUM lower",
                 line=dict(color="steelblue", width=2, dash="dash"),
             ), row=2, col=1)
-            fig_m.add_hline(y=h_val, line_dash="dash", line_color="black",
-                            annotation_text=f"h={h_val:.1f}",
-                            annotation_position="top right", row=2, col=1)
+            fig_m.add_trace(go.Scatter(
+                x=t_post_m, y=thresh_m[mf["npre"]:], mode="lines", name="Threshold T(k)",
+                line=dict(color="black", width=1.5, dash="dash"),
+                hovertemplate="k=%{x}<br>T(k)=%{y:.2f}<extra>Threshold</extra>",
+            ), row=2, col=1)
 
             for row in [1, 2]:
                 if mf["delay"] > 0:

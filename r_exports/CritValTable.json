@@ -1,0 +1,1370 @@
+[
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0,
+    "Alpha": 0.01,
+    "CritVal": 2.7689181323
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0,
+    "Alpha": 0.01,
+    "CritVal": 2.54167371
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0,
+    "Alpha": 0.01,
+    "CritVal": 2.7622940759
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0,
+    "Alpha": 0.01,
+    "CritVal": 2.6043789441
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0,
+    "Alpha": 0.05,
+    "CritVal": 2.1613907715
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0,
+    "Alpha": 0.05,
+    "CritVal": 2.0116464045
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0,
+    "Alpha": 0.05,
+    "CritVal": 2.1705321342
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0,
+    "Alpha": 0.05,
+    "CritVal": 1.9464507316
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0,
+    "Alpha": 0.1,
+    "CritVal": 1.8684521581
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0,
+    "Alpha": 0.1,
+    "CritVal": 1.6342095206
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0,
+    "Alpha": 0.1,
+    "CritVal": 2.024306506
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0,
+    "Alpha": 0.1,
+    "CritVal": 1.6428215275
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.025,
+    "Alpha": 0.01,
+    "CritVal": 2.7936873847
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.025,
+    "Alpha": 0.01,
+    "CritVal": 2.4932634264
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.025,
+    "Alpha": 0.01,
+    "CritVal": 2.894866631
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.025,
+    "Alpha": 0.01,
+    "CritVal": 2.5095726442
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.025,
+    "Alpha": 0.05,
+    "CritVal": 2.1505716426
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.025,
+    "Alpha": 0.05,
+    "CritVal": 1.9510378393
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.025,
+    "Alpha": 0.05,
+    "CritVal": 2.2172742794
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.025,
+    "Alpha": 0.05,
+    "CritVal": 1.9870748269
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.025,
+    "Alpha": 0.1,
+    "CritVal": 1.9015651067
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.025,
+    "Alpha": 0.1,
+    "CritVal": 1.6324254246
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.025,
+    "Alpha": 0.1,
+    "CritVal": 1.9680466843
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.025,
+    "Alpha": 0.1,
+    "CritVal": 1.6351929802
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.05,
+    "Alpha": 0.01,
+    "CritVal": 2.728224762
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.05,
+    "Alpha": 0.01,
+    "CritVal": 2.6481260861
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.05,
+    "Alpha": 0.01,
+    "CritVal": 2.7541550556
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.05,
+    "Alpha": 0.01,
+    "CritVal": 2.5395759557
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.05,
+    "Alpha": 0.05,
+    "CritVal": 2.1590884552
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.05,
+    "Alpha": 0.05,
+    "CritVal": 1.9560166382
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.05,
+    "Alpha": 0.05,
+    "CritVal": 2.2789594992
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.05,
+    "Alpha": 0.05,
+    "CritVal": 1.9165559477
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.05,
+    "Alpha": 0.1,
+    "CritVal": 1.9579559869
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.05,
+    "Alpha": 0.1,
+    "CritVal": 1.6051577793
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.05,
+    "Alpha": 0.1,
+    "CritVal": 2.0312071189
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.05,
+    "Alpha": 0.1,
+    "CritVal": 1.6546902333
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.075,
+    "Alpha": 0.01,
+    "CritVal": 2.6347871148
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.075,
+    "Alpha": 0.01,
+    "CritVal": 2.5548073313
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.075,
+    "Alpha": 0.01,
+    "CritVal": 2.8936548767
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.075,
+    "Alpha": 0.01,
+    "CritVal": 2.56025862
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.075,
+    "Alpha": 0.05,
+    "CritVal": 2.2049957253
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.075,
+    "Alpha": 0.05,
+    "CritVal": 1.9909462851
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.075,
+    "Alpha": 0.05,
+    "CritVal": 2.2947363534
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.075,
+    "Alpha": 0.05,
+    "CritVal": 1.9658431282
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.075,
+    "Alpha": 0.1,
+    "CritVal": 1.9596782141
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.075,
+    "Alpha": 0.1,
+    "CritVal": 1.6460243061
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.075,
+    "Alpha": 0.1,
+    "CritVal": 2.0133928599
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.075,
+    "Alpha": 0.1,
+    "CritVal": 1.7668354889
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.1,
+    "Alpha": 0.01,
+    "CritVal": 2.8119311751
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.1,
+    "Alpha": 0.01,
+    "CritVal": 2.5393016893
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.1,
+    "Alpha": 0.01,
+    "CritVal": 2.8709110419
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.1,
+    "Alpha": 0.01,
+    "CritVal": 2.6503118919
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.1,
+    "Alpha": 0.05,
+    "CritVal": 2.1947094051
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.1,
+    "Alpha": 0.05,
+    "CritVal": 1.9155625339
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.1,
+    "Alpha": 0.05,
+    "CritVal": 2.2083529146
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.1,
+    "Alpha": 0.05,
+    "CritVal": 2.0103029005
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.1,
+    "Alpha": 0.1,
+    "CritVal": 2.0421326163
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.1,
+    "Alpha": 0.1,
+    "CritVal": 1.6370185293
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.1,
+    "Alpha": 0.1,
+    "CritVal": 2.0276847171
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.1,
+    "Alpha": 0.1,
+    "CritVal": 1.7458076274
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.125,
+    "Alpha": 0.01,
+    "CritVal": 2.7047411183
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.125,
+    "Alpha": 0.01,
+    "CritVal": 2.7215256201
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.125,
+    "Alpha": 0.01,
+    "CritVal": 2.9597066575
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.125,
+    "Alpha": 0.01,
+    "CritVal": 2.4319812401
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.125,
+    "Alpha": 0.05,
+    "CritVal": 2.2306793881
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.125,
+    "Alpha": 0.05,
+    "CritVal": 1.9244416849
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.125,
+    "Alpha": 0.05,
+    "CritVal": 2.3004886726
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.125,
+    "Alpha": 0.05,
+    "CritVal": 2.0221981041
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.125,
+    "Alpha": 0.1,
+    "CritVal": 1.9967451193
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.125,
+    "Alpha": 0.1,
+    "CritVal": 1.6147593536
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.125,
+    "Alpha": 0.1,
+    "CritVal": 1.9979896919
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.125,
+    "Alpha": 0.1,
+    "CritVal": 1.6666519638
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.15,
+    "Alpha": 0.01,
+    "CritVal": 2.8100352575
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.15,
+    "Alpha": 0.01,
+    "CritVal": 2.6965427394
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.15,
+    "Alpha": 0.01,
+    "CritVal": 2.7934796808
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.15,
+    "Alpha": 0.01,
+    "CritVal": 2.5199000305
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.15,
+    "Alpha": 0.05,
+    "CritVal": 2.2995927675
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.15,
+    "Alpha": 0.05,
+    "CritVal": 2.0430686184
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.15,
+    "Alpha": 0.05,
+    "CritVal": 2.3171492185
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.15,
+    "Alpha": 0.05,
+    "CritVal": 2.0657949265
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.15,
+    "Alpha": 0.1,
+    "CritVal": 1.9687398703
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.15,
+    "Alpha": 0.1,
+    "CritVal": 1.6973939258
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.15,
+    "Alpha": 0.1,
+    "CritVal": 2.0621763392
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.15,
+    "Alpha": 0.1,
+    "CritVal": 1.7514220303
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.175,
+    "Alpha": 0.01,
+    "CritVal": 2.941198396
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.175,
+    "Alpha": 0.01,
+    "CritVal": 2.5990534823
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.175,
+    "Alpha": 0.01,
+    "CritVal": 2.9435343484
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.175,
+    "Alpha": 0.01,
+    "CritVal": 2.602119579
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.175,
+    "Alpha": 0.05,
+    "CritVal": 2.2748534803
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.175,
+    "Alpha": 0.05,
+    "CritVal": 2.0233566834
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.175,
+    "Alpha": 0.05,
+    "CritVal": 2.2384269943
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.175,
+    "Alpha": 0.05,
+    "CritVal": 2.111526648
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.175,
+    "Alpha": 0.1,
+    "CritVal": 2.0319303996
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.175,
+    "Alpha": 0.1,
+    "CritVal": 1.6715824734
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.175,
+    "Alpha": 0.1,
+    "CritVal": 2.0892978567
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.175,
+    "Alpha": 0.1,
+    "CritVal": 1.7822728089
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.2,
+    "Alpha": 0.01,
+    "CritVal": 2.7523396681
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.2,
+    "Alpha": 0.01,
+    "CritVal": 2.604200246
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.2,
+    "Alpha": 0.01,
+    "CritVal": 2.7678954453
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.2,
+    "Alpha": 0.01,
+    "CritVal": 2.6950936675
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.2,
+    "Alpha": 0.05,
+    "CritVal": 2.2875470602
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.2,
+    "Alpha": 0.05,
+    "CritVal": 2.0606659352
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.2,
+    "Alpha": 0.05,
+    "CritVal": 2.3128035607
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.2,
+    "Alpha": 0.05,
+    "CritVal": 2.0859719127
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.2,
+    "Alpha": 0.1,
+    "CritVal": 1.9848027611
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.2,
+    "Alpha": 0.1,
+    "CritVal": 1.7209616726
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.2,
+    "Alpha": 0.1,
+    "CritVal": 2.1646167294
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.2,
+    "Alpha": 0.1,
+    "CritVal": 1.8189281539
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.225,
+    "Alpha": 0.01,
+    "CritVal": 2.8491939688
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.225,
+    "Alpha": 0.01,
+    "CritVal": 2.5732367226
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.225,
+    "Alpha": 0.01,
+    "CritVal": 2.9422359042
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.225,
+    "Alpha": 0.01,
+    "CritVal": 2.7607782811
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.225,
+    "Alpha": 0.05,
+    "CritVal": 2.4255226619
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.225,
+    "Alpha": 0.05,
+    "CritVal": 2.0663942025
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.225,
+    "Alpha": 0.05,
+    "CritVal": 2.3937299098
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.225,
+    "Alpha": 0.05,
+    "CritVal": 2.0500451965
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.225,
+    "Alpha": 0.1,
+    "CritVal": 2.0593143645
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.225,
+    "Alpha": 0.1,
+    "CritVal": 1.7544751715
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.225,
+    "Alpha": 0.1,
+    "CritVal": 2.1183791066
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.225,
+    "Alpha": 0.1,
+    "CritVal": 1.82036244
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.25,
+    "Alpha": 0.01,
+    "CritVal": 2.7852861369
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.25,
+    "Alpha": 0.01,
+    "CritVal": 2.7372913485
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.25,
+    "Alpha": 0.01,
+    "CritVal": 2.7377916617
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.25,
+    "Alpha": 0.01,
+    "CritVal": 2.6806707989
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.25,
+    "Alpha": 0.05,
+    "CritVal": 2.4227676462
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.25,
+    "Alpha": 0.05,
+    "CritVal": 2.1007302532
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.25,
+    "Alpha": 0.05,
+    "CritVal": 2.2884746127
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.25,
+    "Alpha": 0.05,
+    "CritVal": 2.0421180927
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.25,
+    "Alpha": 0.1,
+    "CritVal": 2.1298219723
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.25,
+    "Alpha": 0.1,
+    "CritVal": 1.802176966
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.25,
+    "Alpha": 0.1,
+    "CritVal": 2.1878844909
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.25,
+    "Alpha": 0.1,
+    "CritVal": 1.8149319249
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.275,
+    "Alpha": 0.01,
+    "CritVal": 2.8999622165
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.275,
+    "Alpha": 0.01,
+    "CritVal": 2.5507094802
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.275,
+    "Alpha": 0.01,
+    "CritVal": 2.8643095198
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.275,
+    "Alpha": 0.01,
+    "CritVal": 2.7871595207
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.275,
+    "Alpha": 0.05,
+    "CritVal": 2.3343833333
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.275,
+    "Alpha": 0.05,
+    "CritVal": 2.0348228273
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.275,
+    "Alpha": 0.05,
+    "CritVal": 2.4546184223
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.275,
+    "Alpha": 0.05,
+    "CritVal": 2.1690944017
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.275,
+    "Alpha": 0.1,
+    "CritVal": 2.1096635203
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.275,
+    "Alpha": 0.1,
+    "CritVal": 1.7940878012
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.275,
+    "Alpha": 0.1,
+    "CritVal": 2.1611118476
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.275,
+    "Alpha": 0.1,
+    "CritVal": 1.9201646218
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.3,
+    "Alpha": 0.01,
+    "CritVal": 2.8991793546
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.3,
+    "Alpha": 0.01,
+    "CritVal": 2.6041039264
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.3,
+    "Alpha": 0.01,
+    "CritVal": 2.8888344606
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.3,
+    "Alpha": 0.01,
+    "CritVal": 2.5976135883
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.3,
+    "Alpha": 0.05,
+    "CritVal": 2.429290346
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.3,
+    "Alpha": 0.05,
+    "CritVal": 2.1493038206
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.3,
+    "Alpha": 0.05,
+    "CritVal": 2.4515068447
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.3,
+    "Alpha": 0.05,
+    "CritVal": 2.2399127092
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.3,
+    "Alpha": 0.1,
+    "CritVal": 2.1033351856
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.3,
+    "Alpha": 0.1,
+    "CritVal": 1.838505576
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.3,
+    "Alpha": 0.1,
+    "CritVal": 2.1498956271
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.3,
+    "Alpha": 0.1,
+    "CritVal": 1.9350357386
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.325,
+    "Alpha": 0.01,
+    "CritVal": 2.903772547
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.325,
+    "Alpha": 0.01,
+    "CritVal": 2.5552054179
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.325,
+    "Alpha": 0.01,
+    "CritVal": 3.1875843785
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.325,
+    "Alpha": 0.01,
+    "CritVal": 2.7628632046
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.325,
+    "Alpha": 0.05,
+    "CritVal": 2.4144255763
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.325,
+    "Alpha": 0.05,
+    "CritVal": 2.0838229622
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.325,
+    "Alpha": 0.05,
+    "CritVal": 2.4122703525
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.325,
+    "Alpha": 0.05,
+    "CritVal": 2.2142091308
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.325,
+    "Alpha": 0.1,
+    "CritVal": 2.1250661017
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.325,
+    "Alpha": 0.1,
+    "CritVal": 1.8846319836
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.325,
+    "Alpha": 0.1,
+    "CritVal": 2.2739632948
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.325,
+    "Alpha": 0.1,
+    "CritVal": 1.960194494
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.35,
+    "Alpha": 0.01,
+    "CritVal": 2.8879196191
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.35,
+    "Alpha": 0.01,
+    "CritVal": 2.7766703382
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.35,
+    "Alpha": 0.01,
+    "CritVal": 3.1919017751
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.35,
+    "Alpha": 0.01,
+    "CritVal": 2.9783611281
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.35,
+    "Alpha": 0.05,
+    "CritVal": 2.4139792331
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.35,
+    "Alpha": 0.05,
+    "CritVal": 2.1988730678
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.35,
+    "Alpha": 0.05,
+    "CritVal": 2.4116428775
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.35,
+    "Alpha": 0.05,
+    "CritVal": 2.2031903099
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.35,
+    "Alpha": 0.1,
+    "CritVal": 2.2838392091
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.35,
+    "Alpha": 0.1,
+    "CritVal": 1.8660716533
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.35,
+    "Alpha": 0.1,
+    "CritVal": 2.2847285933
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.35,
+    "Alpha": 0.1,
+    "CritVal": 1.9839357078
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.375,
+    "Alpha": 0.01,
+    "CritVal": 3.0803481333
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.375,
+    "Alpha": 0.01,
+    "CritVal": 2.7283774991
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.375,
+    "Alpha": 0.01,
+    "CritVal": 3.1788106099
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.375,
+    "Alpha": 0.01,
+    "CritVal": 2.8575205009
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.375,
+    "Alpha": 0.05,
+    "CritVal": 2.5472312496
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.375,
+    "Alpha": 0.05,
+    "CritVal": 2.2801847012
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.375,
+    "Alpha": 0.05,
+    "CritVal": 2.5490875997
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.375,
+    "Alpha": 0.05,
+    "CritVal": 2.2999745022
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.375,
+    "Alpha": 0.1,
+    "CritVal": 2.2269220921
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.375,
+    "Alpha": 0.1,
+    "CritVal": 1.9019021576
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.375,
+    "Alpha": 0.1,
+    "CritVal": 2.3442269028
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.375,
+    "Alpha": 0.1,
+    "CritVal": 2.0458649462
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.4,
+    "Alpha": 0.01,
+    "CritVal": 2.8918576595
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.4,
+    "Alpha": 0.01,
+    "CritVal": 2.7906047675
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.4,
+    "Alpha": 0.01,
+    "CritVal": 3.1405847844
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.4,
+    "Alpha": 0.01,
+    "CritVal": 2.9031387335
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.4,
+    "Alpha": 0.05,
+    "CritVal": 2.5684703293
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.4,
+    "Alpha": 0.05,
+    "CritVal": 2.3483389185
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.4,
+    "Alpha": 0.05,
+    "CritVal": 2.6267255379
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.4,
+    "Alpha": 0.05,
+    "CritVal": 2.331028426
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.4,
+    "Alpha": 0.1,
+    "CritVal": 2.3114548778
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.4,
+    "Alpha": 0.1,
+    "CritVal": 2.0087615861
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.4,
+    "Alpha": 0.1,
+    "CritVal": 2.3629654848
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.4,
+    "Alpha": 0.1,
+    "CritVal": 2.101222367
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.425,
+    "Alpha": 0.01,
+    "CritVal": 3.0287638641
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.425,
+    "Alpha": 0.01,
+    "CritVal": 2.8708087415
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.425,
+    "Alpha": 0.01,
+    "CritVal": 3.0787546717
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.425,
+    "Alpha": 0.01,
+    "CritVal": 2.8890928554
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.425,
+    "Alpha": 0.05,
+    "CritVal": 2.6209829783
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.425,
+    "Alpha": 0.05,
+    "CritVal": 2.3072550848
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.425,
+    "Alpha": 0.05,
+    "CritVal": 2.7044615572
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.425,
+    "Alpha": 0.05,
+    "CritVal": 2.5255461308
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.425,
+    "Alpha": 0.1,
+    "CritVal": 2.3177428482
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.425,
+    "Alpha": 0.1,
+    "CritVal": 2.031167789
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.425,
+    "Alpha": 0.1,
+    "CritVal": 2.4003346321
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.425,
+    "Alpha": 0.1,
+    "CritVal": 2.1849945127
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.45,
+    "Alpha": 0.01,
+    "CritVal": 3.4292832236
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.45,
+    "Alpha": 0.01,
+    "CritVal": 2.8163926462
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.45,
+    "Alpha": 0.01,
+    "CritVal": 3.3780658624
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.45,
+    "Alpha": 0.01,
+    "CritVal": 3.0409232612
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.45,
+    "Alpha": 0.05,
+    "CritVal": 2.6652597267
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.45,
+    "Alpha": 0.05,
+    "CritVal": 2.4385921147
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.45,
+    "Alpha": 0.05,
+    "CritVal": 2.74165921
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.45,
+    "Alpha": 0.05,
+    "CritVal": 2.5212729389
+  },
+  {
+    "Detector": "CUSUM",
+    "Gamma": 0.45,
+    "Alpha": 0.1,
+    "CritVal": 2.427139194
+  },
+  {
+    "Detector": "CUSUM1",
+    "Gamma": 0.45,
+    "Alpha": 0.1,
+    "CritVal": 2.1448784128
+  },
+  {
+    "Detector": "PageCUSUM",
+    "Gamma": 0.45,
+    "Alpha": 0.1,
+    "CritVal": 2.517672629
+  },
+  {
+    "Detector": "PageCUSUM1",
+    "Gamma": 0.45,
+    "Alpha": 0.1,
+    "CritVal": 2.2948092932
+  }
+]

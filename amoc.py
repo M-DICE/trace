@@ -1,9 +1,25 @@
+import json
+import pathlib
 import warnings
 import numpy as np
 import scipy.stats
 import scipy.integrate
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.arima.model import ARIMA
+
+_CRIT_VAL_TABLE_PATH = pathlib.Path(__file__).parent / "r_exports" / "CritValTable.json"
+
+
+def load_crit_val_table(path=_CRIT_VAL_TABLE_PATH):
+    with open(path) as f:
+        return json.load(f)
+
+
+def lookup_crit_val(table, detector="PageCUSUM", gamma=0.0, alpha=0.05):
+    for row in table:
+        if row["Detector"] == detector and row["Gamma"] == gamma and row["Alpha"] == alpha:
+            return row["CritVal"]
+    raise KeyError(f"No entry for detector={detector}, gamma={gamma}, alpha={alpha}")
 
 
 def ci_sim(seed=10, npre=24, npost=24, level=10, trend=None, sigma=0.05):
@@ -479,85 +495,35 @@ def trend_stats_cdf(y_dist, nt):
     return trend_stats(y_ctr=None, y_itv=y_dist, nt=nt)
 
 
-def page_cusum(errors, m, h):
+def page_cusum(errors, m, crit_val, gamma=0.0):
     """
-    Two-sided Page-CUSUM detector on standardised forecast errors.
+    Weighted two-sided Page-CUSUM matching R's cptSeqCUSUM (Forecast_functions.R).
 
-    Equivalent to R's cptForecast(..., detector="PageCUSUM",
-    forecastErrorType="Both") from the changepoint.forecast package.
+    Accumulates raw centered errors against a time-varying threshold
+    T(k) = w(k) * crit_val * sigma, where w(k) = sqrt(m) * (1 + k/m) * (k/(k+m))^gamma.
+    crit_val must be resolved from CritValTable.json via lookup_crit_val().
 
-    Maintains separate upper and lower cumulative sums. Detection fires the
-    first time either arm exceeds threshold h. The standard deviation is
-    estimated from the in-sample (pre-period) residuals.
-
-    Parameters
-    ----------
-    errors : array-like (m + npost,)
-        Residual series: in-sample residuals concatenated with out-of-sample
-        forecast errors. Matches R's r.ts = c(lmfit$residuals, lm.predict - y).
-    m : int
-        Number of in-sample (pre-period) residuals used for variance estimation.
-    h : float
-        Detection threshold. Calibrated via null simulations (95th percentile
-        of max CUSUM statistic under no-change hypothesis).
-
-    Returns
-    -------
-    int or float
-        1-indexed detection time in the post-period (i.e. t - m + 1), or
-        np.inf if no detection within the observed window.
+    Returns 1-indexed detection step in the post-period, or np.inf.
     """
     errors = np.asarray(errors, dtype=float)
-    sigma_hat = np.std(errors[:m], ddof=1)
-    if sigma_hat < 1e-12:
+    n = len(errors) - m
+    train_mean = np.mean(errors[:m])
+    sigma = np.std(errors[:m], ddof=1)
+    if sigma < 1e-12:
         return np.inf
-    z = errors / sigma_hat
-    c_upper = 0.0
-    c_lower = 0.0
-    for t in range(m, len(errors)):
-        c_upper = max(0.0, c_upper + z[t])
-        c_lower = max(0.0, c_lower - z[t])
-        if c_upper > h or c_lower > h:
-            return t - m + 1
+    c_upper = c_lower = 0.0
+    for k in range(1, n + 1):
+        inc = errors[m + k - 1] - train_mean
+        c_upper = max(0.0, c_upper + inc)
+        c_lower = max(0.0, c_lower - inc)
+        weight = np.sqrt(m) * (1.0 + k / m) * ((k / (k + m)) ** gamma)
+        threshold = weight * crit_val * sigma
+        if c_upper > threshold or c_lower > threshold:
+            return k
     return np.inf
 
 
-def page_cusum_max_stat(errors, m):
-    """
-    Return the maximum two-sided Page-CUSUM statistic over the post-period.
-
-    Used for threshold calibration: run on null simulations and take the
-    alpha-th percentile of the resulting distribution as threshold h.
-
-    Parameters
-    ----------
-    errors : array-like (m + npost,)
-        Residual series (same format as page_cusum).
-    m : int
-        Number of in-sample residuals.
-
-    Returns
-    -------
-    float
-        max(upper_arm, lower_arm) over all post-period time steps.
-    """
-    errors = np.asarray(errors, dtype=float)
-    sigma_hat = np.std(errors[:m], ddof=1)
-    if sigma_hat < 1e-12:
-        return 0.0
-    z = errors / sigma_hat
-    c_upper = 0.0
-    c_lower = 0.0
-    max_stat = 0.0
-    for t in range(m, len(errors)):
-        c_upper = max(0.0, c_upper + z[t])
-        c_lower = max(0.0, c_lower - z[t])
-        if c_upper > max_stat or c_lower > max_stat:
-            max_stat = max(c_upper, c_lower)
-    return max_stat
-
-
-def trend_stats_forecast(y_itv, npre, ntt, phi=None, h=5.0):
+def trend_stats_forecast(y_itv, npre, ntt, phi=None, crit_val=2.1705321342):
     """
     Two-stage forecast-based changepoint detection (BA design).
 
@@ -586,8 +552,9 @@ def trend_stats_forecast(y_itv, npre, ntt, phi=None, h=5.0):
         matrix for forecasting all post-period steps at once.
     phi : float or None
         If provided, fit ARIMA(1,0,0) with AR coefficient; if None, use OLS.
-    h : float
-        Page-CUSUM threshold (default 5.0; calibrate via null simulations).
+    crit_val : float
+        Page-CUSUM critical value from CritValTable.json (default: PageCUSUM,
+        gamma=0, alpha=0.05).
 
     Returns
     -------
@@ -624,7 +591,7 @@ def trend_stats_forecast(y_itv, npre, ntt, phi=None, h=5.0):
         out_errors = X[npre:] @ ols.params - y[npre:]
 
     r = np.concatenate([in_residuals, out_errors])
-    time_est = page_cusum(r, m=npre, h=h)
+    time_est = page_cusum(r, m=npre, crit_val=crit_val)
 
     if np.isfinite(time_est):
         time_est_int = int(time_est)
