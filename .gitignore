@@ -13,6 +13,7 @@ architecture
 .claude/settings.local.json
 .gemini/settings.json
 .codex/config.json
+CLAUDE.md
 
 # Python
 __pycache__
