@@ -10,7 +10,7 @@ Detection methods covered:
 |--------|------|-------|----------|
 | **AMOC** (At Most One Change) | Offline batch | i.i.d. & AR(1) | End-of-monitoring analysis |
 | **BOCPD** (Bayesian Online Changepoint Detection) | Online | i.i.d. | Real-time monitoring |
-| **Forecast-based** (`changepoint.forecast`) | Online | AR(1) | Autocorrelated real-time monitoring |
+| **Forecast** (Forecast error-based method) | Online | i.i.d. & AR(1) | Real-time monitoring |
 
 Change types:
 
