@@ -161,13 +161,13 @@ if data is None:
     )
     results_available = False
 else:
-    thresholds = data.get("thresholds")
-    res_iid    = data.get("detection_results_iid")
+    thresholds = data.get("critical_values") or data.get("thresholds")
+    res_iid    = data.get("detection_results") or data.get("detection_results_iid")
     res_ar     = data.get("detection_results_ar")
 
     if res_iid is None or res_ar is None:
         missing = [k for k, v in [
-            ("detection_results_iid", res_iid),
+            ("detection_results", res_iid),
             ("detection_results_ar", res_ar),
         ] if v is None]
         st.warning(

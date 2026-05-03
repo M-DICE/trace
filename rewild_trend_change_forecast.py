@@ -286,12 +286,13 @@ if __name__ == "__main__":
         print("ERROR: --plots-only requested but no saved results found.")
         raise SystemExit(1)
 
-    detection_results_iid  = loaded_data.get('detection_results_iid', {})
+    detection_results_iid  = loaded_data.get('detection_results', loaded_data.get('detection_results_iid', {}))
     detection_results_ar   = loaded_data.get('detection_results_ar',  {})
 
     def _save():
         file_utils.save_simulation_results("trend_forecast", {
-            'detection_results_iid':  detection_results_iid,
+            'critical_values':        _CRIT_VAL,
+            'detection_results':      detection_results_iid,
             'detection_results_ar':   detection_results_ar,
         })
 
