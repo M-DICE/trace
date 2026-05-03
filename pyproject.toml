@@ -1,7 +1,7 @@
 [project]
-name = "simpy"
+name = "trace"
 version = "0.1.0"
-description = "Add your description here"
+description = "Temporal Rewilding Analysis for Changepoint Estimation"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
