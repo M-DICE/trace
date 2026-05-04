@@ -669,12 +669,12 @@ def plot_changepoint_bias(detection_results_iid, detection_results_ar,
             true_cpts = npre + delays
             signed_errors.append(cpts - true_cpts)
 
-        parts = ax.violinplot(signed_errors,
-                              positions=np.arange(len(trend_increase)),
-                              showmedians=True, showmeans=False)
-        for pc in parts['bodies']:
-            pc.set_facecolor(color)
-            pc.set_alpha(0.6)
+        bp = ax.boxplot(signed_errors,
+                        positions=np.arange(len(trend_increase)),
+                        patch_artist=True, medianprops=dict(color='black'))
+        for patch in bp['boxes']:
+            patch.set_facecolor(color)
+            patch.set_alpha(0.6)
 
         ax.axhline(0, color=CLR_TAU_TRUE, linewidth=1.5, linestyle='--', label='Zero bias')
         ax.set_xticks(np.arange(len(trend_increase)))
