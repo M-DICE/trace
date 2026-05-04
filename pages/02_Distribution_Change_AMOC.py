@@ -147,8 +147,8 @@ if results_available:
         "Charts below are drawn from pre-computed simulations (1,000 runs per effect size)."
     )
 
-    _tabs = ["Power curves", "Detection by delay", "Null distributions", "Estimation error"]
-    tab_power, tab_delay, tab_null, tab_err = st.tabs(_tabs)
+    _tabs = ["Power curves", "Detection by delay", "Null distributions", "Estimation error", "FDR heatmap"]
+    tab_power, tab_delay, tab_null, tab_err, tab_fdr = st.tabs(_tabs)
 
     # ── Tab 1: Power curves ────────────────────────────────────────────────────
     with tab_power:
@@ -483,6 +483,158 @@ if results_available:
             height=460,
         )
         st.plotly_chart(fig_err, width="stretch")
+
+    # ── Tab 5: FDR Heatmap ─────────────────────────────────────────────────────
+    with tab_fdr:
+        st.subheader("False Discovery Rate heatmap")
+        st.markdown("""
+        The **False Discovery Rate** at each grid cell is the fraction of *detected* runs
+        where τ̂ falls **before** the true changepoint — a spurious early detection.
+
+        Low FDR = detections are mostly at the right time.
+        High FDR (dark red) = many early false alarms.
+        """)
+
+        fdr_dist_type = st.radio(
+            "Change type",
+            ["Mean shifts (Mu)", "Variance shifts (Sigma)", "Side-by-side"],
+            horizontal=True,
+            key="fdr_dist_type",
+        )
+
+        def _fdr_matrix_dist(results, trend_list):
+            matrix = []
+            for t in trend_list:
+                entry = results.get(t)
+                if entry is None:
+                    matrix.append([0.0] * len(NPOST_VEC))
+                    continue
+                delays_arr = np.array(entry["delays"])
+                true_cpts  = NPRE + delays_arr
+                det_mat    = entry["detected_matrix"]
+                cpt_mat    = entry["cpt_matrix"]
+                row = []
+                for j in range(len(NPOST_VEC)):
+                    det_mask = det_mat[:, j].astype(bool)
+                    n_det    = det_mask.sum()
+                    if n_det > 0:
+                        row.append(
+                            float((cpt_mat[:, j][det_mask] < true_cpts[det_mask]).sum()) / n_det
+                        )
+                    else:
+                        row.append(0.0)
+                matrix.append(row)
+            return matrix
+
+        def _fdr_fig_dist(matrix, pct_list, title):
+            fig = go.Figure()
+            fig.add_trace(go.Heatmap(
+                x=NPOST_VEC,
+                y=[f"{p}%" for p in pct_list],
+                z=matrix,
+                colorscale="YlOrRd",
+                zmin=0, zmax=1,
+                colorbar=dict(title="FDR", tickformat=".0%"),
+                hovertemplate="npost: %{x} mo<br>Effect: %{y}<br>FDR: %{z:.1%}<extra></extra>",
+            ))
+            fig.update_layout(
+                title=title,
+                xaxis_title="Post-intervention monitoring window (months)",
+                yaxis_title="Effect size",
+                yaxis=dict(autorange="reversed"),
+                height=480,
+            )
+            return fig
+
+        if fdr_dist_type == "Mean shifts (Mu)":
+            st.plotly_chart(
+                _fdr_fig_dist(
+                    _fdr_matrix_dist(res_mu, trends_mu),
+                    EFFECT_SIZES_MU_PCT, "FDR heatmap — mean shifts (Mu)",
+                ),
+                width="stretch",
+            )
+        elif fdr_dist_type == "Variance shifts (Sigma)":
+            st.plotly_chart(
+                _fdr_fig_dist(
+                    _fdr_matrix_dist(res_sigma, trends_sigma),
+                    EFFECT_SIZES_SIGMA_PCT, "FDR heatmap — variance shifts (Sigma)",
+                ),
+                width="stretch",
+            )
+        else:
+            _fdr_cols = st.columns(2)
+            with _fdr_cols[0]:
+                st.plotly_chart(
+                    _fdr_fig_dist(
+                        _fdr_matrix_dist(res_mu, trends_mu),
+                        EFFECT_SIZES_MU_PCT, "Mean shifts (Mu)",
+                    ),
+                    width="stretch",
+                )
+            with _fdr_cols[1]:
+                st.plotly_chart(
+                    _fdr_fig_dist(
+                        _fdr_matrix_dist(res_sigma, trends_sigma),
+                        EFFECT_SIZES_SIGMA_PCT, "Variance shifts (Sigma)",
+                    ),
+                    width="stretch",
+                )
+
+    # ── Detection summary table ────────────────────────────────────────────────
+    st.divider()
+    st.subheader("Detection summary table")
+    st.markdown("""
+    Key statistics per effect size **at npost_max (120 months)**.
+    **Delay** = τ̂ − τ_true (months). Only detected runs contribute to delay statistics.
+    """)
+
+    import pandas as _pd
+
+    _summ_c1, _summ_c2 = st.columns(2)
+    with _summ_c1:
+        st.markdown("**Mean shifts (Mu)**")
+        _rows_mu = []
+        for _t, _pct in zip(trends_mu, EFFECT_SIZES_MU_PCT):
+            _entry = res_mu.get(_t)
+            if _entry is None:
+                continue
+            _delays_arr = np.array(_entry["delays"])
+            _detected   = _entry["detected_matrix"][:, -1].astype(bool)
+            _cpts       = _entry["cpt_matrix"][:, -1]
+            _true_cpts  = NPRE + _delays_arr
+            _det_lags   = (_cpts[_detected] - _true_cpts[_detected]).astype(float)
+            _rows_mu.append({
+                "Effect": f"{_pct}%",
+                "True_pos": f"{_detected.mean():.1%}",
+                "Median delay": f"{np.median(_det_lags):.1f}" if len(_det_lags) > 0 else "n/a",
+                "Mean delay":   f"{np.mean(_det_lags):.1f}"   if len(_det_lags) > 0 else "n/a",
+                "Std delay":    f"{np.std(_det_lags):.1f}"    if len(_det_lags) > 0 else "n/a",
+                "No detect":    int(len(_detected) - _detected.sum()),
+            })
+        st.dataframe(_pd.DataFrame(_rows_mu), hide_index=True, width="stretch")
+
+    with _summ_c2:
+        st.markdown("**Variance shifts (Sigma)**")
+        _rows_sigma = []
+        for _t, _pct in zip(trends_sigma, EFFECT_SIZES_SIGMA_PCT):
+            _entry = res_sigma.get(_t)
+            if _entry is None:
+                continue
+            _delays_arr = np.array(_entry["delays"])
+            _detected   = _entry["detected_matrix"][:, -1].astype(bool)
+            _cpts       = _entry["cpt_matrix"][:, -1]
+            _true_cpts  = NPRE + _delays_arr
+            _det_lags   = (_cpts[_detected] - _true_cpts[_detected]).astype(float)
+            _rows_sigma.append({
+                "Effect": f"{_pct}%",
+                "True_pos": f"{_detected.mean():.1%}",
+                "Median delay": f"{np.median(_det_lags):.1f}" if len(_det_lags) > 0 else "n/a",
+                "Mean delay":   f"{np.mean(_det_lags):.1f}"   if len(_det_lags) > 0 else "n/a",
+                "Std delay":    f"{np.std(_det_lags):.1f}"    if len(_det_lags) > 0 else "n/a",
+                "No detect":    int(len(_detected) - _detected.sum()),
+            })
+        st.dataframe(_pd.DataFrame(_rows_sigma), hide_index=True, width="stretch")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # INDIVIDUAL RUN EXPLORER

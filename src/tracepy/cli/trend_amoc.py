@@ -22,6 +22,7 @@ from tracepy.plotting.reports import (
     plot_detection_heatmap, plot_mean_error_curves,
     plot_null_distributions, plot_tmax_signal_vs_noise,
     plot_detection_by_delay, plot_changepoint_bias,
+    plot_fdr_heatmap, detection_summary_table,
 )
 from tracepy.params.manager import load_params
 from tracepy.cli._utils import fmt_elapsed
@@ -262,6 +263,14 @@ def _generate_plots(plots_dir, critical_values, detection_results, detection_res
                             savefile=f"{plots_dir}/detection_by_delay.png")
     plot_changepoint_bias(detection_results, detection_results_ar, trend_increase, npre,
                           savefile=f"{plots_dir}/changepoint_bias.png")
+    plot_fdr_heatmap(detection_results, detection_results_ar, trend_increase, npost_vec, npre,
+                     savefile=f"{plots_dir}/fdr_heatmap.png")
+    df_iid = detection_summary_table(detection_results, trend_increase, npre)
+    df_ar  = detection_summary_table(detection_results_ar, trend_increase, npre)
+    print("i.i.d. BACI summary:")
+    print(df_iid.to_string(index=False))
+    print("\nAR(1) summary:")
+    print(df_ar.to_string(index=False))
     print("=" * 70)
     print(f"All plots saved to: {plots_dir}/")
     print("ANALYSIS COMPLETE")

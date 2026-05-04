@@ -21,4 +21,6 @@ from .reports import (
     plot_distance_time_series,
     plot_distribution_difference,
     plot_power_curves_mu_sigma,
+    plot_fdr_heatmap,
+    detection_summary_table,
 )

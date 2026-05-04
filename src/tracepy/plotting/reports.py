@@ -696,6 +696,99 @@ def plot_changepoint_bias(detection_results_iid, detection_results_ar,
     return fig, axes
 
 
+def plot_fdr_heatmap(detection_results_iid, detection_results_ar,
+                     trend_increase, npost_vec, npre,
+                     figsize=(16, 6), savefile=None):
+    """
+    2D heatmap of False Discovery Rate: trend increment (rows) × npost (columns).
+
+    FDR at each cell = fraction of detected runs where τ̂ < τ_true (declared changepoint
+    falls before the true changepoint — a spurious early detection).
+    Complements plot_detection_heatmap (TPR). Uses YlOrRd palette matching R.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=figsize, sharey=True)
+    npost_vec = np.asarray(npost_vec)
+    trend_increase = np.asarray(trend_increase)
+
+    for ax, results, title in [
+        (axes[0], detection_results_iid, 'i.i.d. noise'),
+        (axes[1], detection_results_ar,  'AR(1) noise  (φ = 0.5)'),
+    ]:
+        if results is None:
+            ax.text(0.5, 0.5, 'Results not available',
+                    ha='center', va='center', transform=ax.transAxes)
+            ax.set_title(title, fontsize=12, fontweight='bold')
+            continue
+
+        matrix = np.zeros((len(trend_increase), len(npost_vec)))
+        for i, t in enumerate(trend_increase):
+            entry = results[t]
+            delays = np.array(entry['delays'])
+            detected_mat = entry['detected_matrix']
+            cpt_mat = entry['cpt_matrix']
+            true_cpts = npre + delays
+
+            for j in range(len(npost_vec)):
+                det_mask = detected_mat[:, j].astype(bool)
+                n_det = det_mask.sum()
+                if n_det > 0:
+                    false_disc = (cpt_mat[:, j][det_mask] < true_cpts[det_mask]).sum()
+                    matrix[i, j] = false_disc / n_det
+
+        im = ax.imshow(matrix, aspect='auto', origin='lower',
+                       extent=[npost_vec[0], npost_vec[-1],
+                               -0.5, len(trend_increase) - 0.5],
+                       vmin=0, vmax=1, cmap='YlOrRd')
+        ax.set_xlabel('Post-intervention length (months)', fontsize=11)
+        ax.set_title(title, fontsize=12, fontweight='bold')
+        ax.set_yticks(np.arange(len(trend_increase)))
+        ax.set_yticklabels([f'{t:.4f}' for t in trend_increase], fontsize=7)
+
+    axes[0].set_ylabel('Trend increment', fontsize=11)
+    fig.colorbar(im, ax=axes[1], label='False Discovery Rate')
+    fig.suptitle('False Discovery Rate Heatmap: Trend × Post-Intervention Length\n'
+                 '(FDR = fraction of detections with τ̂ before τ_true)',
+                 fontsize=13, fontweight='bold')
+    plt.tight_layout()
+    if savefile:
+        plt.savefig(savefile, dpi=150, bbox_inches='tight')
+        print(f"Plot saved: {savefile}")
+    return fig, axes
+
+
+def detection_summary_table(detection_results, trend_increase, npre):
+    """
+    Returns a DataFrame with TPR, detection delay stats, and no-detection count
+    per trend increment at npost_max.
+
+    Columns: Trend, True_pos, median_delay, mean_delay, std_delay, no_detection.
+    Matches the format of R's summary matrices. Delay = τ̂ − τ_true (months).
+    """
+    import pandas as pd
+
+    rows = []
+    for trend_inc in trend_increase:
+        entry = detection_results[trend_inc]
+        delays = np.array(entry['delays'])
+        detected = entry['detected_matrix'][:, -1].astype(bool)
+        cpts = entry['cpt_matrix'][:, -1]
+        true_cpts = npre + delays
+
+        det_lags = (cpts[detected] - true_cpts[detected]).astype(float)
+        n_runs = len(detected)
+        n_detected = int(detected.sum())
+
+        rows.append({
+            'Trend': trend_inc,
+            'True_pos': round(float(detected.mean()), 4),
+            'median_delay': float(np.median(det_lags)) if len(det_lags) > 0 else float('nan'),
+            'mean_delay': float(np.mean(det_lags)) if len(det_lags) > 0 else float('nan'),
+            'std_delay': float(np.std(det_lags)) if len(det_lags) > 0 else float('nan'),
+            'no_detection': n_runs - n_detected,
+        })
+    return pd.DataFrame(rows)
+
+
 def compare_methods(results_dict, figsize=(12, 5), savefile=None):
     """
     Compare detection performance across different methods.

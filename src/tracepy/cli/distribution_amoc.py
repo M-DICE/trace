@@ -19,6 +19,7 @@ from tracepy.plotting.reports import (
     plot_simulation_results, plot_power_curves, plot_detection_heatmap,
     plot_mean_error_curves, plot_null_distributions, plot_distance_time_series,
     plot_distribution_difference, plot_power_curves_mu_sigma,
+    plot_fdr_heatmap, detection_summary_table,
 )
 from tracepy.params.manager import load_params
 from tracepy.cli._utils import fmt_elapsed
@@ -226,6 +227,16 @@ def _generate_plots(plots_dir, critical_values, detection_results_mu, detection_
     plot_null_distributions(critical_values, npost_short=CRITICAL_VALUE_NPOST_SHORT_CDF,
                             npost_long=CRITICAL_VALUE_NPOST_LONG_CDF,
                             savefile=f"{plots_dir}/null_distributions.png")
+    plot_fdr_heatmap(detection_results_mu, None, trend_increase_mu, npost_vec, npre,
+                     savefile=f"{plots_dir}/fdr_heatmap_mu.png")
+    plot_fdr_heatmap(detection_results_sigma, None, trend_increase_sigma, npost_vec, npre,
+                     savefile=f"{plots_dir}/fdr_heatmap_sigma.png")
+    df_mu    = detection_summary_table(detection_results_mu, trend_increase_mu, npre)
+    df_sigma = detection_summary_table(detection_results_sigma, trend_increase_sigma, npre)
+    print("Mean-change (Mu) summary:")
+    print(df_mu.to_string(index=False))
+    print("\nVariance-change (Sigma) summary:")
+    print(df_sigma.to_string(index=False))
     print(f"All plots saved to: {plots_dir}/")
     print("ANALYSIS COMPLETE")
     print("=" * 70)
