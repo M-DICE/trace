@@ -22,14 +22,18 @@ stats:
 # Distribution-change specific
 distribution:
   ns: 200                # Samples per time point (ci_sim_cdf)
-  level_mu: 5.0          # Baseline distribution mean
+  level_mu: 10.0         # Baseline distribution mean
   level_sigma: 1.0       # Baseline distribution std dev
   bw: 0.3                # KDE bandwidth for AUC metric
+  nd: 50                 # KDE grid points for AUC metric
+  dist_measure: "wasserstein"  # Distance metric: "wasserstein" or "auc"
+  npost_step: 3          # npost_vec step size (quarterly resolution)
   critical_value_npost_short: 24    # npost for short CV (months)
   critical_value_npost_medium: 72   # npost for medium CV (months)
   critical_value_npost_long: 120    # npost for long CV (months)
 
 # Forecast-change specific
 forecast:
+  phi: 0.8               # AR(1) coefficient (R Forecast uses 0.8, distinct from AMOC's 0.5)
   crit_val_default: 2.1705321342   # PageCUSUM default critical value (gamma=0, alpha=0.05)
   gamma: 0.0             # Page-CUSUM gamma parameter

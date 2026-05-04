@@ -1,0 +1,2 @@
+[console_scripts]
+trace-sim = tracepy.cli:main

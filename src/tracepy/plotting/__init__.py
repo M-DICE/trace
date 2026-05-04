@@ -1,5 +1,5 @@
 from .styles import (
-    CLR_CTR, CLR_ITV, CLR_DIF, CLR_BACI, CLR_CIBA, CLR_AR1, CLR_BA,
+    CLR_CTR, CLR_ITV, CLR_DIF, CLR_BACI, CLR_AR1, CLR_BA,
     CLR_TAU_TRUE, CLR_TAU_DET, CLR_INTV_DATE, CLR_THRESH, _VIRIDIS_11,
     _add_power_thresholds,
 )

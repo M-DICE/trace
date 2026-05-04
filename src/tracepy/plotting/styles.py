@@ -10,7 +10,6 @@ CLR_CTR       = '#607D8B'   # grey   — control series
 CLR_ITV       = '#4CAF50'   # green  — intervention series
 CLR_DIF       = '#FF9800'   # orange — difference series
 CLR_BACI      = '#2196F3'   # blue   — i.i.d. BACI noise model
-CLR_CIBA      = CLR_BACI   # legacy alias
 CLR_AR1       = '#FF9800'   # orange — AR(1) noise model
 CLR_BA        = '#4CAF50'   # green  — i.i.d. BA noise model
 CLR_TAU_TRUE  = '#1A237E'   # navy   — true changepoint τ (dashed)

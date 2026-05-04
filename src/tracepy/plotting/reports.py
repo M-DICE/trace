@@ -11,7 +11,7 @@ from matplotlib.patches import Rectangle
 import os
 
 from .styles import (
-    CLR_CTR, CLR_ITV, CLR_DIF, CLR_BACI, CLR_CIBA, CLR_AR1, CLR_BA,
+    CLR_CTR, CLR_ITV, CLR_DIF, CLR_BACI, CLR_AR1, CLR_BA,
     CLR_TAU_TRUE, CLR_TAU_DET, CLR_INTV_DATE, CLR_THRESH, _VIRIDIS_11,
     _add_power_thresholds,
 )
@@ -125,7 +125,7 @@ def plot_test_statistics(test_stats_vec, npre, npost, detected_cpt=None,
     seg_len = np.arange(mint, maxt + 1)
 
     ax.plot(seg_len, np.abs(test_stats_vec), marker='o', linewidth=2,
-            markersize=4, color=CLR_CIBA, label='|Test Statistic|')
+            markersize=4, color=CLR_BACI, label='|Test Statistic|')
 
     ax.axvline(x=npre, color=CLR_TAU_TRUE, linestyle='--', linewidth=2,
                label=f'True Changepoint (τ={npre})')
@@ -226,7 +226,7 @@ def plot_detection_error_distribution(detection_errors, figsize=(10, 5), savefil
     mean_error = np.mean(detection_errors)
     std_error = np.std(detection_errors)
 
-    ax.hist(detection_errors, bins=30, color=CLR_CIBA, alpha=0.7, edgecolor='black')
+    ax.hist(detection_errors, bins=30, color=CLR_BACI, alpha=0.7, edgecolor='black')
     ax.axvline(x=mean_error, color=CLR_TAU_DET, linestyle='-', linewidth=2,
               label=f'Mean Error: {mean_error:.2f} months')
     ax.axvline(x=0, color=CLR_TAU_TRUE, linestyle='--', linewidth=2,
@@ -377,7 +377,7 @@ def plot_time_to_detection(detection_results_iid, detection_results_ar,
     # colour = noise model; linestyle = power threshold
     threshold_ls = {0.80: '--', 0.95: ':'}
     styles = [
-        (detection_results_iid, 'i.i.d.', CLR_CIBA, 'o', '-'),
+        (detection_results_iid, 'i.i.d.', CLR_BACI, 'o', '-'),
         (detection_results_ar,  'AR(1)',  CLR_AR1,  's', '--'),
     ]
 
@@ -514,12 +514,12 @@ def plot_null_distributions(critical_values, npost_short=48, npost_long=96,
             f'i.i.d. noise, npost = {s} mo', f'i.i.d. noise, npost = {l} mo',
             f'AR(1) noise,  npost = {s} mo', f'AR(1) noise,  npost = {l} mo',
         ]
-        colors = [CLR_CIBA, CLR_CIBA, CLR_AR1, CLR_AR1]
+        colors = [CLR_BACI, CLR_BACI, CLR_AR1, CLR_AR1]
     else:
         # Fallback: discover any keys that look like npost_X or similar
         keys = sorted(critical_values.keys())
         titles = [k.replace('_', ' = ') + ' mo' for k in keys]
-        colors = [CLR_CIBA] * len(keys)
+        colors = [CLR_BACI] * len(keys)
 
     fig, axes = plt.subplots(1, len(keys), figsize=figsize, sharey=False, squeeze=False)
     axes = axes.flatten()
@@ -573,11 +573,11 @@ def plot_tmax_signal_vs_noise(critical_values, detection_results_iid,
 
         bins = np.linspace(0, max(alt_iid.max(), alt_ar.max(), null_iid.max()) + 1, 50)
 
-        ax.hist(null_iid, bins=bins, alpha=0.5, color=CLR_CIBA,  label='Null (i.i.d.)')
+        ax.hist(null_iid, bins=bins, alpha=0.5, color=CLR_BACI,  label='Null (i.i.d.)')
         ax.hist(alt_iid,  bins=bins, alpha=0.5, color=CLR_BA,    label='Alt (i.i.d.)')
         ax.hist(null_ar,  bins=bins, alpha=0.3, color=CLR_AR1,   label='Null AR(1)',
                 linestyle='--', histtype='step', linewidth=1.5)
-        ax.axvline(cv_iid, color=CLR_CIBA, linewidth=1.5, linestyle='--',
+        ax.axvline(cv_iid, color=CLR_BACI, linewidth=1.5, linestyle='--',
                    label=f'CV i.i.d. = {cv_iid:.2f}')
         ax.axvline(cv_ar,  color=CLR_AR1,  linewidth=1.5, linestyle=':',
                    label=f'CV AR(1) = {cv_ar:.2f}')
@@ -611,7 +611,7 @@ def plot_detection_by_delay(detection_results_iid, detection_results_ar,
 
     for ax, trend_inc in zip(axes, picked_trends):
         for results, label, color, marker in [
-            (detection_results_iid, 'i.i.d.', CLR_CIBA, 'o'),
+            (detection_results_iid, 'i.i.d.', CLR_BACI, 'o'),
             (detection_results_ar,  'AR(1)',  CLR_AR1,  's'),
         ]:
             delays    = np.array(results[trend_inc]['delays'])
@@ -659,7 +659,7 @@ def plot_changepoint_bias(detection_results_iid, detection_results_ar,
     trend_increase = np.asarray(trend_increase)
 
     for ax, results, title, color in [
-        (axes[0], detection_results_iid, 'i.i.d. noise', CLR_CIBA),
+        (axes[0], detection_results_iid, 'i.i.d. noise', CLR_BACI),
         (axes[1], detection_results_ar,  'AR(1) noise  (φ = 0.5)', CLR_AR1),
     ]:
         signed_errors = []

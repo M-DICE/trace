@@ -26,7 +26,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── Simulation constants (mirror rewild_distribution_change_amoc.py) ──────────
+# ── Simulation constants ─────────────────────────────────────────────────────
 NPRE = 24
 NPOST_VEC = np.arange(24, 121, 3)
 NPOST_MAX = 120
@@ -117,7 +117,7 @@ data = load_results(RESULTS_PATH)
 if data is None:
     st.error(
         f"Pre-computed results not found at `{RESULTS_PATH}`. "
-        "Run `python rewild_distribution_change_amoc.py` first, "
+        "Run `uv run trace-sim distribution-amoc` first, "
         "or use the Run your own simulation section below."
     )
     results_available = False
@@ -128,7 +128,7 @@ else:
     if cv is None or not res_mu or not res_sigma:
         st.warning(
             "Saved results are incomplete (critical values or detection results missing). "
-            "Re-run `python rewild_distribution_change_amoc.py` to regenerate."
+            "Re-run `uv run trace-sim distribution-amoc` to regenerate."
         )
         results_available = False
     else:

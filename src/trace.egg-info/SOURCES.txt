@@ -3,9 +3,11 @@ pyproject.toml
 src/trace.egg-info/PKG-INFO
 src/trace.egg-info/SOURCES.txt
 src/trace.egg-info/dependency_links.txt
+src/trace.egg-info/entry_points.txt
 src/trace.egg-info/requires.txt
 src/trace.egg-info/top_level.txt
 src/tracepy/__init__.py
+src/tracepy/cli.py
 src/tracepy/changepoint/__init__.py
 src/tracepy/changepoint/amoc.py
 src/tracepy/changepoint/forecast.py

@@ -60,14 +60,14 @@ Open **http://localhost:8501** in your browser.
 The app loads results from `results/`. Run the simulations before launching the app (these may take some time... grab a cup of ☕!):
 
 ```bash
-uv run python scripts/run_sim.py trend-amoc
-uv run python scripts/run_sim.py distribution-amoc
+uv run trace-sim trend-amoc
+uv run trace-sim distribution-amoc
 ```
 
 ## Python simulations (command-line)
 
 ```
-uv run python scripts/run_sim.py <simulation> [--quick] [--plots-only]
+uv run trace-sim <simulation> [--quick] [--plots-only]
 ```
 
 Simulations: `trend-amoc`, `trend-forecast`, `distribution-amoc`
@@ -76,29 +76,29 @@ Simulations: `trend-amoc`, `trend-forecast`, `distribution-amoc`
 
 ```bash
 # Full run
-uv run python scripts/run_sim.py trend-amoc
+uv run trace-sim trend-amoc
 
 # Regenerate plots from saved results (no simulation)
-uv run python scripts/run_sim.py trend-amoc --plots-only
+uv run trace-sim trend-amoc --plots-only
 
 # Fast smoke-test (Nsim=10, simN=10)
-uv run python scripts/run_sim.py trend-amoc --quick
+uv run trace-sim trend-amoc --quick
 ```
 
 ### Trend change Forecast
 
 ```bash
-uv run python scripts/run_sim.py trend-forecast
-uv run python scripts/run_sim.py trend-forecast --plots-only
-uv run python scripts/run_sim.py trend-forecast --quick
+uv run trace-sim trend-forecast
+uv run trace-sim trend-forecast --plots-only
+uv run trace-sim trend-forecast --quick
 ```
 
 ### Distribution change AMOC
 
 ```bash
-uv run python scripts/run_sim.py distribution-amoc
-uv run python scripts/run_sim.py distribution-amoc --plots-only
-uv run python scripts/run_sim.py distribution-amoc --quick
+uv run trace-sim distribution-amoc
+uv run trace-sim distribution-amoc --plots-only
+uv run trace-sim distribution-amoc --quick
 ```
 
 ---

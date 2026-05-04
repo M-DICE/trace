@@ -23,7 +23,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── Simulation constants (mirror rewild_trend_change_amoc.py) ─────────────────
+# ── Simulation constants ─────────────────────────────────────────────────────
 NPRE = 24
 NPOST_YEARS = 10
 NPOST_MONTHS = 12 * NPOST_YEARS
@@ -142,7 +142,7 @@ data = load_results(RESULTS_PATH)
 if data is None:
     st.error(
         f"Pre-computed results not found at `{RESULTS_PATH}`. "
-        "Run `python rewild_trend_change_amoc.py` first, "
+        "Run `uv run trace-sim trend-amoc` first, "
         "or use the Mini-Simulation section below to run a small analysis on the fly."
     )
     results_available = False
@@ -154,7 +154,7 @@ else:
     if cv is None or not res_iid:
         st.warning(
             "Saved results are incomplete (critical values or detection results missing). "
-            "Re-run `python rewild_trend_change_amoc.py` to regenerate."
+            "Re-run `uv run trace-sim trend-amoc` to regenerate."
         )
         results_available = False
     else:
