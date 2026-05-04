@@ -2,7 +2,7 @@
 # export_crit_val_table.R
 #
 # Reads SimRewilding/CritValTable.rds and writes it as JSON to
-# r_exports/CritValTable.json so that the Python simulation code can
+# data/CritValTable.json so that the Python simulation code can
 # load critical values at runtime without hard-coding them.
 #
 # Usage (from the repo root):
@@ -23,7 +23,7 @@ parse_flag <- function(flag, default) {
 }
 
 input_path  <- parse_flag("--input",  file.path("SimRewilding", "CritValTable.rds"))
-output_path <- parse_flag("--output", file.path("r_exports",    "CritValTable.json"))
+output_path <- parse_flag("--output", file.path("data", "CritValTable.json"))
 
 # ── read ──────────────────────────────────────────────────────────────────────
 if (!file.exists(input_path)) {

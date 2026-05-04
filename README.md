@@ -112,7 +112,7 @@ runtime without an R dependency.
 ### Critical value table (`CritValTable.json`)
 
 The weighted Page-CUSUM detector reads its critical values from
-`r_exports/CritValTable.json`. This file is derived from the
+`data/CritValTable.json`. This file is derived from the
 `CritValTable.rds` lookup table shipped with the SimRewilding R codebase and
 pre-simulated by the `changepoint.forecast` package authors.
 
@@ -130,7 +130,7 @@ Custom paths (optional):
 ```bash
 Rscript scripts/export_crit_val_table.R \
   --input  SimRewilding/CritValTable.rds \
-  --output r_exports/CritValTable.json
+  --output data/CritValTable.json
 ```
 
 The output is a JSON array of records with fields `Detector`, `Gamma`, `Alpha`,
