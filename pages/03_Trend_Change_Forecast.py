@@ -3,14 +3,10 @@ SimRewilding — Trend Change Detection using Forecast (Page-CUSUM)
 Interactive analysis page for rewild_trend_change_forecast results.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import pickle
 import warnings
 from datetime import datetime
+from pathlib import Path
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
@@ -19,7 +15,9 @@ from plotly.subplots import make_subplots
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.arima.model import ARIMA
 
-from amoc import ci_sim, ci_sim_ar, load_crit_val_table, lookup_crit_val, trend_stats_forecast
+from tracepy.simulation.trend import ci_sim, ci_sim_ar
+from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
+from tracepy.changepoint.forecast import trend_stats_forecast
 
 _CRIT_VAL_TABLE = load_crit_val_table()
 CRIT_VAL = lookup_crit_val(_CRIT_VAL_TABLE)
@@ -61,6 +59,7 @@ def load_results(path: Path):
         return None
     with open(path, "rb") as f:
         return pickle.load(f)
+
 
 
 # ── CUSUM path helper (for individual run explorer) ───────────────────────────
@@ -186,13 +185,13 @@ else:
 if results_available:
     st.header("📊 Results explorer")
 
-    tab_det, tab_ttd, tab_null, tab_err, tab_delay, tab_bias = st.tabs([
+    tab_det, tab_ttd, tab_err, tab_delay, tab_bias, tab_cv = st.tabs([
         "Detection rates",
         "Time to detection",
-        "Null distributions",
         "Changepoint error",
         "Detection by delay",
         "Changepoint bias",
+        "Critical values",
     ])
 
     # ── Tab 1: Detection Rates ─────────────────────────────────────────────────
@@ -337,32 +336,7 @@ if results_available:
             width="stretch",
         )
 
-    # ── Tab 3: Null Distributions ──────────────────────────────────────────────
-    with tab_null:
-        st.subheader("Critical value table (CritValTable.json)")
-        st.markdown("""
-        The weighted Page-CUSUM threshold is determined analytically from a
-        pre-simulated lookup table shipped with the R codebase, not by
-        re-running null simulations at each execution. The table below shows
-        all available configurations.
-        """)
-        import json as _json
-        _tbl_path = Path(__file__).parent.parent / "r_exports" / "CritValTable.json"
-        if _tbl_path.exists():
-            with open(_tbl_path) as _f:
-                _rows = _json.load(_f)
-            st.dataframe(_rows, hide_index=True, use_container_width=True)
-            st.caption(
-                f"Active configuration: Detector=PageCUSUM, Gamma=0.0, Alpha=0.05 → "
-                f"crit_val = **{CRIT_VAL:.6f}**"
-            )
-        else:
-            st.error(
-                f"`{_tbl_path}` not found. Run `Rscript scripts/export_crit_val_table.R` "
-                "to generate it from `SimRewilding/CritValTable.rds`."
-            )
-
-    # ── Tab 4: Changepoint Error ───────────────────────────────────────────────
+    # ── Tab 3: Changepoint Error ───────────────────────────────────────────────
     with tab_err:
         st.subheader("Changepoint localisation error")
         st.markdown("""
@@ -602,6 +576,31 @@ if results_available:
             n_rows[f"Detected ({label})"] = ns
         st.caption("Detections per 1,000 simulations used to build each box:")
         st.dataframe(n_rows, hide_index=True, width="stretch")
+
+    # ── Tab 6: Critical values ─────────────────────────────────────────────────
+    with tab_cv:
+        import json as _json
+        _tbl_path = Path(__file__).parent.parent / "r_exports" / "CritValTable.json"
+        st.subheader("Critical value table (CritValTable.json)")
+        st.markdown("""
+        The weighted Page-CUSUM threshold is determined analytically from a
+        pre-simulated lookup table shipped with the R codebase, not by
+        re-running null simulations at each execution. The table below shows
+        all available configurations.
+        """)
+        if _tbl_path.exists():
+            with open(_tbl_path) as _f:
+                _rows = _json.load(_f)
+            st.dataframe(_rows, hide_index=True, width='stretch')
+            st.caption(
+                f"Active configuration: Detector=PageCUSUM, Gamma=0.0, Alpha=0.05 → "
+                f"crit_val = **{CRIT_VAL:.6f}**"
+            )
+        else:
+            st.error(
+                f"`{_tbl_path}` not found. Run `Rscript scripts/export_crit_val_table.R` "
+                "to generate it from `SimRewilding/CritValTable.rds`."
+            )
 
 
 # ══════════════════════════════════════════════════════════════════════════════

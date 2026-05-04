@@ -1,3 +1,18 @@
+Metadata-Version: 2.4
+Name: trace
+Version: 0.1.0
+Summary: Temporal Rewilding Analysis for Changepoint Estimation
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: matplotlib>=3.10.8
+Requires-Dist: numpy>=2.4.4
+Requires-Dist: plotly>=5.24.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: pytest>=8.0
+Requires-Dist: scipy>=1.17.1
+Requires-Dist: statsmodels>=0.14.6
+Requires-Dist: streamlit>=1.40.0
+
 # TRACE: Temporal Rewilding Analysis for Changepoint Estimation
 
 ## Overview

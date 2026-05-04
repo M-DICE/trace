@@ -3,20 +3,17 @@ SimRewilding — Trend Change Detection using AMOC
 Interactive analysis page for rewild_trend_change_amoc results.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import pickle
 from datetime import datetime
+from pathlib import Path
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 
-from amoc import ci_sim, ci_sim_ar, trend_stats, trend_stats_ar
+from tracepy.simulation.trend import ci_sim, ci_sim_ar
+from tracepy.stats.metrics import trend_stats, trend_stats_ar
 from scipy.stats import linregress
 
 # ── Page config ────────────────────────────────────────────────────────────────

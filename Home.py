@@ -34,7 +34,6 @@ with col1:
     """)
     st.page_link("pages/02_Distribution_Change_AMOC.py", label="Distribution Change (AMOC)", icon=":material/open_in_new:")
 
-with col2:
     st.markdown("""
     ### Trend Change Detection (Forecast)
     Detect whether an intervention caused a **change in trend** by comparing observed data
@@ -42,6 +41,7 @@ with col2:
     """)
     st.page_link("pages/03_Trend_Change_Forecast.py", label="Trend Change (Forecast)", icon=":material/open_in_new:")
 
+with col2:
     st.markdown("""
     ### Coming next
     - **Trend Change (BOCPD)** — online Bayesian changepoint detection

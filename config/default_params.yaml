@@ -1,0 +1,35 @@
+# Simulation parameters shared across all analyses
+simulation:
+  npre: 24               # Pre-intervention months (2 years)
+  npost_years: 10        # Maximum post-intervention years
+  level: 10              # Baseline level of time series
+  trend_control: 0.005   # Control group trend slope
+  sigma: 0.05            # Noise standard deviation
+  phi: 0.5               # AR(1) autocorrelation coefficient
+  delay_max: 20          # Maximum intervention delay (months)
+
+# Simulation run sizes
+runs:
+  Nsim: 1000             # Null simulations for critical values
+  simN: 1000             # Alternative simulations
+
+# Statistical thresholds
+stats:
+  alpha: 0.95            # Significance level
+  critical_value_npost_short: 48   # npost for short CV (months)
+  critical_value_npost_long: 96    # npost for long CV (months)
+
+# Distribution-change specific
+distribution:
+  ns: 200                # Samples per time point (ci_sim_cdf)
+  level_mu: 5.0          # Baseline distribution mean
+  level_sigma: 1.0       # Baseline distribution std dev
+  bw: 0.3                # KDE bandwidth for AUC metric
+  critical_value_npost_short: 24    # npost for short CV (months)
+  critical_value_npost_medium: 72   # npost for medium CV (months)
+  critical_value_npost_long: 120    # npost for long CV (months)
+
+# Forecast-change specific
+forecast:
+  crit_val_default: 2.1705321342   # PageCUSUM default critical value (gamma=0, alpha=0.05)
+  gamma: 0.0             # Page-CUSUM gamma parameter

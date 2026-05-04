@@ -3,21 +3,20 @@ SimRewilding — Distribution Change Detection using AMOC
 Interactive analysis page for rewild_distribution_change_amoc results.
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 import pickle
 from datetime import datetime
+from pathlib import Path
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 
-from amoc import (ci_sim_cdf, wasserstein_distance_baci, wasserstein_distance_ba,
-                  auc_diff_ts, trend_stats_cdf)
+from tracepy.simulation.distribution import ci_sim_cdf
+from tracepy.stats.metrics import (
+    wasserstein_distance_baci, wasserstein_distance_ba,
+    auc_diff_ts, trend_stats_cdf,
+)
 from scipy.stats import gaussian_kde
 
 # ── Page config ────────────────────────────────────────────────────────────────
