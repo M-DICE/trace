@@ -120,7 +120,7 @@ st.title("🔮 Trend Change Detection (Forecast)")
 st.markdown("""
 **Forecast (Page-CUSUM)** is an *online* changepoint detection method that processes
 data one observation at a time and raises an alarm as soon as sufficient evidence
-accumulates — without waiting for a fixed monitoring window to end.
+accumulates, without waiting for a fixed monitoring window to end.
 
 Unlike AMOC which tests the full series retrospectively, Forecast declares detection as soon
 as the evidence threshold is crossed. This makes it well-suited to real-time monitoring.
@@ -185,64 +185,13 @@ else:
 if results_available:
     st.header("📊 Results explorer")
 
-    tab_det, tab_ttd, tab_err, tab_delay, tab_bias, tab_cv = st.tabs([
-        "Detection rates",
+    tab_ttd, tab_err, tab_delay, tab_bias, tab_cv = st.tabs([
         "Time to detection",
         "Changepoint error",
         "Detection by delay",
         "Changepoint bias",
         "Critical values",
     ])
-
-    # ── Tab 1: Detection Rates ─────────────────────────────────────────────────
-    with tab_det:
-        st.subheader("Detection rate by effect size")
-        st.markdown("""
-        The **detection rate** is the fraction of simulations in which Page-CUSUM
-        declared a changepoint within the maximum 10-year observation window.
-
-        Since Forecast is an online method, this is a combined measure of *sensitivity*
-        and *speed*: a run counts as detected whether the alarm fires at month 25 or
-        month 143. Compare with the time-to-detection tab to separate these dimensions.
-        """)
-
-        iid_rates = [res_iid[t]["detection_rate"] for t in trends]
-        ar_rates  = [res_ar[t]["detection_rate"]  for t in trends]
-        labels    = [f"{p}%" for p in EFFECT_SIZES_PCT]
-
-        fig_det = go.Figure()
-        fig_det.add_trace(go.Bar(
-            x=labels, y=iid_rates,
-            name="i.i.d. BA",
-            marker_color="rgba(33,150,243,0.82)",
-            hovertemplate="%{x} effect<br>Detection: %{y:.1%}<extra>i.i.d. BA</extra>",
-        ))
-        fig_det.add_trace(go.Bar(
-            x=labels, y=ar_rates,
-            name="AR(1) BA",
-            marker_color="rgba(255,152,0,0.82)",
-            hovertemplate="%{x} effect<br>Detection: %{y:.1%}<extra>AR(1) BA</extra>",
-        ))
-        fig_det.add_hline(y=0.80, line_dash="dash", line_color="grey",
-                          annotation_text="80%", annotation_position="right")
-        fig_det.add_hline(y=0.95, line_dash="dot", line_color="grey",
-                          annotation_text="95%", annotation_position="right")
-        fig_det.update_layout(
-            barmode="group",
-            xaxis_title="Effect size (% of mean / 10 yr)",
-            yaxis=dict(title="Detection rate", range=[0, 1.05], tickformat=".0%"),
-            legend_title="Noise model",
-            height=460,
-            title="Detection rate within 10-year observation window",
-        )
-        st.plotly_chart(fig_det, width="stretch")
-
-        st.info(
-            "AR(1) autocorrelation reduces detection rates, especially for small effect sizes. "
-            "The AR(1) threshold is calibrated separately (it must be higher to control false positives "
-            "under autocorrelated noise), which lowers sensitivity for weak signals.",
-            icon="ℹ️",
-        )
 
     # ── Tab 2: Time to Detection ───────────────────────────────────────────────
     with tab_ttd:
@@ -330,7 +279,7 @@ if results_available:
             )
             return fig
 
-        make_fig = box_ttd_fig if ttd_view == "Distribution (box)" else mean_ttd_fig
+        make_fig = box_ttd_fig if ttd_view == "Distribution" else mean_ttd_fig
         st.plotly_chart(
             make_fig(TTD_CONFIGS, "Time to detection — i.i.d. vs AR(1) (BA)"),
             width="stretch",
