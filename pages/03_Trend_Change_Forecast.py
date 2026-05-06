@@ -580,7 +580,7 @@ if results_available:
     # ── Tab 6: Critical values ─────────────────────────────────────────────────
     with tab_cv:
         import json as _json
-        _tbl_path = Path(__file__).parent.parent / "r_exports" / "CritValTable.json"
+        _tbl_path = Path(__file__).parent.parent / "data" / "CritValTable.json"
         st.subheader("Critical value table (CritValTable.json)")
         st.markdown("""
         The weighted Page-CUSUM threshold is determined analytically from a
