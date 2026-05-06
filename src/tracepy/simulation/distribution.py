@@ -63,4 +63,4 @@ def ci_sim_cdf(seed, npre, npost, level, trend, ns=200):
     for i in range(nt):
         sample_itv[:, i] = np.random.normal(mus[i], sigmas[i], ns)
 
-    return {'sample_ctr': sample_ctr, 'sample_itv': sample_itv}
+    return {"sample_ctr": sample_ctr, "sample_itv": sample_itv}

@@ -38,7 +38,7 @@ ALPHA = 0.95
 TREND_INCREASE = np.round(
     LEVEL * np.concatenate([[0.05], np.arange(0.1, 1.1, 0.1)]) / NPOST_MONTHS, 4
 )
-EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]   # % of mean / 10 yr
+EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # % of mean / 10 yr
 
 RESULTS_PATH = Path(__file__).parent.parent / "results" / "trend_amoc" / "sim_results.pkl"
 
@@ -54,22 +54,30 @@ def load_results(path: Path):
 
 @st.cache_data(show_spinner="Regenerating simulation run…")
 def _regenerate_iid(seed: int, delay: int, trend_inc: float):
-    npre_delay  = NPRE + delay
+    npre_delay = NPRE + delay
     npost_delay = NPOST_MONTHS - delay
     return ci_sim(
-        seed=seed, npre=npre_delay, npost=npost_delay,
-        level=LEVEL, trend=[TREND_CONTROL, TREND_CONTROL + trend_inc], sigma=SIGMA,
+        seed=seed,
+        npre=npre_delay,
+        npost=npost_delay,
+        level=LEVEL,
+        trend=[TREND_CONTROL, TREND_CONTROL + trend_inc],
+        sigma=SIGMA,
     )
 
 
 @st.cache_data(show_spinner="Regenerating AR(1) simulation run…")
 def _regenerate_ar(seed: int, delay: int, trend_inc: float):
-    npre_delay  = NPRE + delay
+    npre_delay = NPRE + delay
     npost_delay = NPOST_MONTHS - delay
     return ci_sim_ar(
-        seed=seed, npre=npre_delay, npost=npost_delay,
-        level=LEVEL, trend=[TREND_CONTROL, TREND_CONTROL + trend_inc],
-        phi=PHI_DEFAULT, sigma=SIGMA,
+        seed=seed,
+        npre=npre_delay,
+        npost=npost_delay,
+        level=LEVEL,
+        trend=[TREND_CONTROL, TREND_CONTROL + trend_inc],
+        phi=PHI_DEFAULT,
+        sigma=SIGMA,
     )
 
 
@@ -148,9 +156,9 @@ if data is None:
     )
     results_available = False
 else:
-    cv         = data.get("critical_values")
-    res_iid    = data.get("detection_results", {})
-    res_ar     = data.get("detection_results_ar", {})
+    cv = data.get("critical_values")
+    res_iid = data.get("detection_results", {})
+    res_ar = data.get("detection_results_ar", {})
     res_iid_ba = data.get("detection_results_iid_ba")
     if cv is None or not res_iid:
         st.warning(
@@ -172,15 +180,17 @@ if results_available:
         "Charts below are drawn from pre-computed simulations (1,000 runs per effect size)."
     )
 
-    tab_power, tab_ttd, tab_null, tab_err, tab_delay, tab_bias, tab_fdr = st.tabs([
-        "Power curves",
-        "Time to detection",
-        "Null distributions",
-        "Changepoint error",
-        "Detection by delay",
-        "Changepoint bias",
-        "FDR heatmap",
-    ])
+    tab_power, tab_ttd, tab_null, tab_err, tab_delay, tab_bias, tab_fdr = st.tabs(
+        [
+            "Power curves",
+            "Time to detection",
+            "Null distributions",
+            "Changepoint error",
+            "Detection by delay",
+            "Changepoint bias",
+            "FDR heatmap",
+        ]
+    )
 
     # ── Tab 1: Power Curves ────────────────────────────────────────────────────
     with tab_power:
@@ -201,10 +211,7 @@ if results_available:
         _power_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "Side-by-side comparison"]
         if res_iid_ba is None:
             _power_opts = [o for o in _power_opts if o != "i.i.d. BA"]
-        noise_choice = st.radio(
-            "Noise model", _power_opts,
-            horizontal=True, key="power_noise"
-        )
+        noise_choice = st.radio("Noise model", _power_opts, horizontal=True, key="power_noise")
 
         def power_curve_fig(results, title):
             fig = go.Figure()
@@ -213,17 +220,30 @@ if results_available:
                 if entry is None:
                     continue
                 rates = entry["detection_rates"]
-                fig.add_trace(go.Scatter(
-                    x=NPOST_VEC, y=rates,
-                    mode="lines",
-                    name=f"{pct}%",
-                    line=dict(color=PALETTE[i], width=2),
-                    hovertemplate="npost: %{x} mo<br>Detection rate: %{y:.1%}<extra></extra>",
-                ))
-            fig.add_hline(y=0.80, line_dash="dash", line_color="grey",
-                          annotation_text="80% power", annotation_position="right")
-            fig.add_hline(y=0.95, line_dash="dot", line_color="grey",
-                          annotation_text="95% power", annotation_position="right")
+                fig.add_trace(
+                    go.Scatter(
+                        x=NPOST_VEC,
+                        y=rates,
+                        mode="lines",
+                        name=f"{pct}%",
+                        line=dict(color=PALETTE[i], width=2),
+                        hovertemplate="npost: %{x} mo<br>Detection rate: %{y:.1%}<extra></extra>",
+                    )
+                )
+            fig.add_hline(
+                y=0.80,
+                line_dash="dash",
+                line_color="grey",
+                annotation_text="80% power",
+                annotation_position="right",
+            )
+            fig.add_hline(
+                y=0.95,
+                line_dash="dot",
+                line_color="grey",
+                annotation_text="95% power",
+                annotation_position="right",
+            )
             fig.update_layout(
                 title=title,
                 xaxis_title="Post-intervention monitoring window (months)",
@@ -235,14 +255,17 @@ if results_available:
             return fig
 
         if noise_choice == "i.i.d. BACI":
-            st.plotly_chart(power_curve_fig(res_iid, "Power curves — i.i.d. noise (BACI)"),
-                            width="stretch")
+            st.plotly_chart(
+                power_curve_fig(res_iid, "Power curves — i.i.d. noise (BACI)"), width="stretch"
+            )
         elif noise_choice == "AR(1)":
-            st.plotly_chart(power_curve_fig(res_ar, "Power curves — AR(1) noise (φ=0.5)"),
-                            width="stretch")
+            st.plotly_chart(
+                power_curve_fig(res_ar, "Power curves — AR(1) noise (φ=0.5)"), width="stretch"
+            )
         elif noise_choice == "i.i.d. BA":
-            st.plotly_chart(power_curve_fig(res_iid_ba, "Power curves — i.i.d. noise (BA)"),
-                            width="stretch")
+            st.plotly_chart(
+                power_curve_fig(res_iid_ba, "Power curves — i.i.d. noise (BA)"), width="stretch"
+            )
         else:
             cols = st.columns(2 if res_iid_ba is None else 3)
             with cols[0]:
@@ -279,7 +302,8 @@ if results_available:
         with ctrl_ttd1:
             power_thresh = st.select_slider(
                 "Target power threshold",
-                options=[0.70, 0.80, 0.90, 0.95], value=0.80,
+                options=[0.70, 0.80, 0.90, 0.95],
+                value=0.80,
                 format_func=lambda x: f"{x:.0%}",
             )
         with ctrl_ttd2:
@@ -287,8 +311,10 @@ if results_available:
             if res_iid_ba is not None:
                 _ttd_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "All"]
             noise_ttd = st.radio(
-                "Noise model", _ttd_opts,
-                horizontal=True, key="ttd_noise",
+                "Noise model",
+                _ttd_opts,
+                horizontal=True,
+                key="ttd_noise",
             )
 
         def time_to_thresh(results, thresh):
@@ -307,19 +333,19 @@ if results_available:
                     out.append((None, float(rates[-1])))
             return out
 
-        ttd_iid    = time_to_thresh(res_iid, power_thresh)
-        ttd_ar     = time_to_thresh(res_ar,  power_thresh)
+        ttd_iid = time_to_thresh(res_iid, power_thresh)
+        ttd_ar = time_to_thresh(res_ar, power_thresh)
         ttd_iid_ba = time_to_thresh(res_iid_ba, power_thresh) if res_iid_ba is not None else None
-        labels  = [f"{p}%" for p in EFFECT_SIZES_PCT]
+        labels = [f"{p}%" for p in EFFECT_SIZES_PCT]
 
-        COLOR_IID      = "rgba(33,150,243,0.85)"
-        COLOR_AR       = "rgba(255,152,0,0.85)"
-        COLOR_IID_BA   = "rgba(76,175,80,0.85)"
-        COLOR_NONE     = "rgba(180,180,180,0.55)"
+        COLOR_IID = "rgba(33,150,243,0.85)"
+        COLOR_AR = "rgba(255,152,0,0.85)"
+        COLOR_IID_BA = "rgba(76,175,80,0.85)"
+        COLOR_NONE = "rgba(180,180,180,0.55)"
 
         # Y-axis: show years at every 12-month tick
-        tick_vals  = list(range(0, NPOST_MONTHS + 1, 12))
-        tick_text  = [f"{m // 12} yr" if m > 0 else "0" for m in tick_vals]
+        tick_vals = list(range(0, NPOST_MONTHS + 1, 12))
+        tick_text = [f"{m // 12} yr" if m > 0 else "0" for m in tick_vals]
 
         def make_bar(ttd, reached_color, model_label):
             y_vals, bar_colors, bar_text, hover = [], [], [], []
@@ -339,15 +365,16 @@ if results_available:
                     y_vals.append(m)
                     bar_colors.append(reached_color)
                     prefix = "Already at " if m == int(NPOST_VEC[0]) else ""
-                    bar_text.append(f"{prefix}{m} mo<br>({m/12:.1f} yr)")
+                    bar_text.append(f"{prefix}{m} mo<br>({m / 12:.1f} yr)")
                     hover.append(
                         f"<b>{pct}% effect</b><br>"
-                        f"Reaches {power_thresh:.0%} after <b>{m} months ({m/12:.1f} yr)</b><br>"
+                        f"Reaches {power_thresh:.0%} after <b>{m} months ({m / 12:.1f} yr)</b><br>"
                         f"Detection at 10 yr: {max_rate:.1%}"
                         f"<extra>{model_label}</extra>"
                     )
             return go.Bar(
-                x=labels, y=y_vals,
+                x=labels,
+                y=y_vals,
                 name=model_label,
                 marker_color=bar_colors,
                 text=bar_text,
@@ -374,7 +401,7 @@ if results_available:
             ),
             yaxis=dict(
                 title="Post-intervention monitoring needed",
-                range=[0, NPOST_MONTHS + 26],   # headroom for "Not reached" labels
+                range=[0, NPOST_MONTHS + 26],  # headroom for "Not reached" labels
                 tickvals=tick_vals,
                 ticktext=tick_text,
             ),
@@ -398,23 +425,33 @@ if results_available:
             nr = summarise(ttd_iid, "i.i.d. BACI")
             if nr:
                 pct_str = ", ".join(f"{p}%" for p in nr)
-                msgs.append(f"**i.i.d. BACI:** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr.")
+                msgs.append(
+                    f"**i.i.d. BACI:** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr."
+                )
             else:
-                msgs.append(f"**i.i.d. BACI:** all effect sizes reach {power_thresh:.0%} within 10 yr.")
+                msgs.append(
+                    f"**i.i.d. BACI:** all effect sizes reach {power_thresh:.0%} within 10 yr."
+                )
         if noise_ttd in ("AR(1)", "Both", "All"):
             nr = summarise(ttd_ar, "AR(1)")
             if nr:
                 pct_str = ", ".join(f"{p}%" for p in nr)
-                msgs.append(f"**AR(1):** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr.")
+                msgs.append(
+                    f"**AR(1):** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr."
+                )
             else:
                 msgs.append(f"**AR(1):** all effect sizes reach {power_thresh:.0%} within 10 yr.")
         if ttd_iid_ba is not None and noise_ttd in ("i.i.d. BA", "All"):
             nr = summarise(ttd_iid_ba, "i.i.d. BA")
             if nr:
                 pct_str = ", ".join(f"{p}%" for p in nr)
-                msgs.append(f"**i.i.d. BA:** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr.")
+                msgs.append(
+                    f"**i.i.d. BA:** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr."
+                )
             else:
-                msgs.append(f"**i.i.d. BA:** all effect sizes reach {power_thresh:.0%} within 10 yr.")
+                msgs.append(
+                    f"**i.i.d. BA:** all effect sizes reach {power_thresh:.0%} within 10 yr."
+                )
 
         for msg in msgs:
             st.caption(msg)
@@ -440,7 +477,8 @@ if results_available:
 
         if _has_iid_ba_cv:
             fig_null = make_subplots(
-                rows=3, cols=2,
+                rows=3,
+                cols=2,
                 subplot_titles=[
                     "i.i.d. BACI, npost = 48 mo (~4 yr)",
                     "i.i.d. BACI, npost = 96 mo (~8 yr)",
@@ -451,14 +489,18 @@ if results_available:
                 ],
             )
             null_keys = [
-                ("iid_48", 1, 1), ("iid_96", 1, 2),
-                ("iid_ba_48", 2, 1), ("iid_ba_96", 2, 2),
-                ("ar1_48", 3, 1), ("ar1_96", 3, 2),
+                ("iid_48", 1, 1),
+                ("iid_96", 1, 2),
+                ("iid_ba_48", 2, 1),
+                ("iid_ba_96", 2, 2),
+                ("ar1_48", 3, 1),
+                ("ar1_96", 3, 2),
             ]
             null_height = 780
         else:
             fig_null = make_subplots(
-                rows=2, cols=2,
+                rows=2,
+                cols=2,
                 subplot_titles=[
                     "i.i.d. BACI, npost = 48 mo (~4 yr)",
                     "i.i.d. BACI, npost = 96 mo (~8 yr)",
@@ -475,25 +517,37 @@ if results_available:
             entry = cv[key]
             dist = entry["null_dist"]
             crit = entry["critical_value"]
-            colour = "#4CAF50" if key.startswith("iid_ba") else ("#2196F3" if key.startswith("iid") else "#FF9800")
+            colour = (
+                "#4CAF50"
+                if key.startswith("iid_ba")
+                else ("#2196F3" if key.startswith("iid") else "#FF9800")
+            )
             fig_null.add_trace(
                 go.Histogram(
-                    x=dist, nbinsx=50,
-                    marker_color=colour, opacity=0.75,
+                    x=dist,
+                    nbinsx=50,
+                    marker_color=colour,
+                    opacity=0.75,
                     name=key,
                     showlegend=False,
                     hovertemplate="T_max: %{x:.2f}<br>Count: %{y}<extra></extra>",
                 ),
-                row=row, col=col,
+                row=row,
+                col=col,
             )
             fig_null.add_vline(
-                x=crit, line_dash="dash", line_color="crimson",
+                x=crit,
+                line_dash="dash",
+                line_color="crimson",
                 annotation_text=f"cv = {crit:.2f}",
                 annotation_position="top right",
-                row=row, col=col,
+                row=row,
+                col=col,
             )
 
-        fig_null.update_layout(height=null_height, title="Null distributions of T_max (1,000 simulations each)")
+        fig_null.update_layout(
+            height=null_height, title="Null distributions of T_max (1,000 simulations each)"
+        )
         fig_null.update_xaxes(title_text="T_max")
         fig_null.update_yaxes(title_text="Count")
         st.plotly_chart(fig_null, width="stretch")
@@ -502,8 +556,8 @@ if results_available:
         cv_scenarios = [
             ("i.i.d. BACI, npost=48 mo", "iid_48"),
             ("i.i.d. BACI, npost=96 mo", "iid_96"),
-            ("AR(1), npost=48 mo",        "ar1_48"),
-            ("AR(1), npost=96 mo",        "ar1_96"),
+            ("AR(1), npost=48 mo", "ar1_48"),
+            ("AR(1), npost=96 mo", "ar1_96"),
         ]
         if _has_iid_ba_cv:
             cv_scenarios += [
@@ -513,8 +567,7 @@ if results_available:
         cv_table = {
             "Scenario": [s for s, _ in cv_scenarios],
             "Critical value (95th pct)": [
-                f"{cv[k]['critical_value']:.3f}" if k in cv else "—"
-                for _, k in cv_scenarios
+                f"{cv[k]['critical_value']:.3f}" if k in cv else "—" for _, k in cv_scenarios
             ],
         }
         st.table(cv_table)
@@ -540,8 +593,7 @@ if results_available:
         _err_opts = ["i.i.d. BACI", "AR(1)", "Comparison"]
         if res_iid_ba is not None:
             _err_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "Comparison"]
-        err_noise = st.radio("Noise model", _err_opts,
-                             horizontal=True, key="err_noise")
+        err_noise = st.radio("Noise model", _err_opts, horizontal=True, key="err_noise")
 
         def error_fig(results, title):
             fig = go.Figure()
@@ -550,13 +602,16 @@ if results_available:
                 if entry is None:
                     continue
                 errs = entry["mean_errors"]
-                fig.add_trace(go.Scatter(
-                    x=NPOST_VEC, y=errs,
-                    mode="lines",
-                    name=f"{pct}%",
-                    line=dict(color=PALETTE[i], width=2),
-                    hovertemplate="npost: %{x} mo<br>Mean |error|: %{y:.1f} mo<extra></extra>",
-                ))
+                fig.add_trace(
+                    go.Scatter(
+                        x=NPOST_VEC,
+                        y=errs,
+                        mode="lines",
+                        name=f"{pct}%",
+                        line=dict(color=PALETTE[i], width=2),
+                        hovertemplate="npost: %{x} mo<br>Mean |error|: %{y:.1f} mo<extra></extra>",
+                    )
+                )
             fig.update_layout(
                 title=title,
                 xaxis_title="Post-intervention monitoring window (months)",
@@ -567,14 +622,15 @@ if results_available:
             return fig
 
         if err_noise == "i.i.d. BACI":
-            st.plotly_chart(error_fig(res_iid, "Changepoint error — i.i.d. noise (BACI)"),
-                            width="stretch")
+            st.plotly_chart(
+                error_fig(res_iid, "Changepoint error — i.i.d. noise (BACI)"), width="stretch"
+            )
         elif err_noise == "AR(1)":
-            st.plotly_chart(error_fig(res_ar, "Changepoint error — AR(1) noise"),
-                            width="stretch")
+            st.plotly_chart(error_fig(res_ar, "Changepoint error — AR(1) noise"), width="stretch")
         elif err_noise == "i.i.d. BA":
-            st.plotly_chart(error_fig(res_iid_ba, "Changepoint error — i.i.d. noise (BA)"),
-                            width="stretch")
+            st.plotly_chart(
+                error_fig(res_iid_ba, "Changepoint error — i.i.d. noise (BA)"), width="stretch"
+            )
         else:
             cols = st.columns(2 if res_iid_ba is None else 3)
             with cols[0]:
@@ -616,13 +672,17 @@ if results_available:
             if res_iid_ba is not None:
                 _delay_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "All"]
             delay_noise = st.radio(
-                "Noise model", _delay_opts,
-                horizontal=True, key="delay_noise",
+                "Noise model",
+                _delay_opts,
+                horizontal=True,
+                key="delay_noise",
             )
         with ctrl3:
             delay_view = st.radio(
-                "View", ["Line chart", "Heatmap"],
-                horizontal=True, key="delay_view",
+                "View",
+                ["Line chart", "Heatmap"],
+                horizontal=True,
+                key="delay_view",
             )
 
         delay_idx = EFFECT_SIZES_PCT.index(delay_effect_pct)
@@ -662,42 +722,54 @@ if results_available:
 
             noise_configs = []
             if delay_noise in ("i.i.d. BACI", "Both", "All"):
-                noise_configs.append(("i.i.d. BACI", res_iid, "rgba(33,150,243,1)", "rgba(33,150,243,0.15)"))
+                noise_configs.append(
+                    ("i.i.d. BACI", res_iid, "rgba(33,150,243,1)", "rgba(33,150,243,0.15)")
+                )
             if delay_noise in ("AR(1)", "Both", "All"):
                 noise_configs.append(("AR(1)", res_ar, "rgba(255,152,0,1)", "rgba(255,152,0,0.15)"))
             if res_iid_ba is not None and delay_noise in ("i.i.d. BA", "All"):
-                noise_configs.append(("i.i.d. BA", res_iid_ba, "rgba(76,175,80,1)", "rgba(76,175,80,0.15)"))
+                noise_configs.append(
+                    ("i.i.d. BA", res_iid_ba, "rgba(76,175,80,1)", "rgba(76,175,80,0.15)")
+                )
 
             fig_line = go.Figure()
             for label, results, colour, colour_fill in noise_configs:
                 rates, lo, hi = delay_series(results, delay_trend, npost_i_line)
 
                 # SE band
-                fig_line.add_trace(go.Scatter(
-                    x=np.concatenate([unique_delays, unique_delays[::-1]]),
-                    y=np.concatenate([hi, lo[::-1]]),
-                    fill="toself",
-                    fillcolor=colour_fill,
-                    line=dict(width=0),
-                    showlegend=False,
-                    hoverinfo="skip",
-                ))
+                fig_line.add_trace(
+                    go.Scatter(
+                        x=np.concatenate([unique_delays, unique_delays[::-1]]),
+                        y=np.concatenate([hi, lo[::-1]]),
+                        fill="toself",
+                        fillcolor=colour_fill,
+                        line=dict(width=0),
+                        showlegend=False,
+                        hoverinfo="skip",
+                    )
+                )
                 # Main line
-                fig_line.add_trace(go.Scatter(
-                    x=unique_delays, y=rates,
-                    mode="lines+markers",
-                    name=label,
-                    line=dict(color=colour, width=2.5),
-                    marker=dict(size=7),
-                    hovertemplate=(
-                        "Delay: %{x} mo<br>"
-                        "Detection: %{y:.1%}<br>"
-                        "<extra>" + label + "</extra>"
-                    ),
-                ))
+                fig_line.add_trace(
+                    go.Scatter(
+                        x=unique_delays,
+                        y=rates,
+                        mode="lines+markers",
+                        name=label,
+                        line=dict(color=colour, width=2.5),
+                        marker=dict(size=7),
+                        hovertemplate=(
+                            "Delay: %{x} mo<br>Detection: %{y:.1%}<br><extra>" + label + "</extra>"
+                        ),
+                    )
+                )
 
-            fig_line.add_hline(y=0.80, line_dash="dash", line_color="grey",
-                               annotation_text="80% power", annotation_position="right")
+            fig_line.add_hline(
+                y=0.80,
+                line_dash="dash",
+                line_color="grey",
+                annotation_text="80% power",
+                annotation_position="right",
+            )
             fig_line.update_layout(
                 title=(
                     f"Detection rate vs intervention delay — {delay_effect_pct}% effect, "
@@ -719,8 +791,12 @@ if results_available:
             # Compute slope to give a plain-English summary
             _single_noise = delay_noise not in ("Both", "All")
             if _single_noise:
-                _noise_res = {"i.i.d. BACI": res_iid, "AR(1)": res_ar, "i.i.d. BA": res_iid_ba}.get(delay_noise, res_iid)
-                r_arr = delay_series(_noise_res, delay_trend, npost_i_line)[0] if _noise_res else None
+                _noise_res = {"i.i.d. BACI": res_iid, "AR(1)": res_ar, "i.i.d. BA": res_iid_ba}.get(
+                    delay_noise, res_iid
+                )
+                r_arr = (
+                    delay_series(_noise_res, delay_trend, npost_i_line)[0] if _noise_res else None
+                )
             if _single_noise and r_arr is not None:
                 drop = float(np.nanmax(r_arr) - np.nanmin(r_arr))
                 st.caption(
@@ -737,7 +813,8 @@ if results_available:
             _heat_map = {"i.i.d. BACI": res_iid, "AR(1)": res_ar, "i.i.d. BA": res_iid_ba}
             if delay_noise in ("Both", "All"):
                 _heat_single_opts = (
-                    ["i.i.d. BACI", "AR(1)", "i.i.d. BA"] if res_iid_ba is not None
+                    ["i.i.d. BACI", "AR(1)", "i.i.d. BA"]
+                    if res_iid_ba is not None
                     else ["i.i.d. BACI", "AR(1)"]
                 )
                 heat_label = st.radio(
@@ -761,45 +838,51 @@ if results_available:
                     z[di, :] = det_mat[mask, :].mean(axis=0)
 
             fig_heat2 = go.Figure()
-            fig_heat2.add_trace(go.Heatmap(
-                x=NPOST_VEC,
-                y=unique_delays,
-                z=z,
-                colorscale="Viridis",
-                zmin=0, zmax=1,
-                colorbar=dict(title="Detection rate", tickformat=".0%"),
-                hovertemplate=(
-                    "npost: %{x} mo<br>"
-                    "Delay: %{y} mo<br>"
-                    "Detection: %{z:.1%}"
-                    "<extra></extra>"
-                ),
-            ))
-            fig_heat2.add_trace(go.Contour(
-                x=NPOST_VEC,
-                y=unique_delays,
-                z=z,
-                contours=dict(coloring="fill", start=0.795, end=1.005, size=0.21),
-                colorscale=[[0, "white"], [1, "white"]],
-                opacity=0.15,
-                showscale=False,
-                hoverinfo="skip",
-                line=dict(width=0),
-            ))
-            fig_heat2.add_trace(go.Contour(
-                x=NPOST_VEC,
-                y=unique_delays,
-                z=z,
-                contours=dict(
-                    coloring="none",
-                    showlabels=True,
-                    start=0.80, end=0.95, size=0.15,
-                    labelfont=dict(size=11, color="#1a1a1a"),
-                ),
-                line=dict(color="#1a1a1a", width=2.5, dash="dash"),
-                showscale=False,
-                hoverinfo="skip",
-            ))
+            fig_heat2.add_trace(
+                go.Heatmap(
+                    x=NPOST_VEC,
+                    y=unique_delays,
+                    z=z,
+                    colorscale="Viridis",
+                    zmin=0,
+                    zmax=1,
+                    colorbar=dict(title="Detection rate", tickformat=".0%"),
+                    hovertemplate=(
+                        "npost: %{x} mo<br>Delay: %{y} mo<br>Detection: %{z:.1%}<extra></extra>"
+                    ),
+                )
+            )
+            fig_heat2.add_trace(
+                go.Contour(
+                    x=NPOST_VEC,
+                    y=unique_delays,
+                    z=z,
+                    contours=dict(coloring="fill", start=0.795, end=1.005, size=0.21),
+                    colorscale=[[0, "white"], [1, "white"]],
+                    opacity=0.15,
+                    showscale=False,
+                    hoverinfo="skip",
+                    line=dict(width=0),
+                )
+            )
+            fig_heat2.add_trace(
+                go.Contour(
+                    x=NPOST_VEC,
+                    y=unique_delays,
+                    z=z,
+                    contours=dict(
+                        coloring="none",
+                        showlabels=True,
+                        start=0.80,
+                        end=0.95,
+                        size=0.15,
+                        labelfont=dict(size=11, color="#1a1a1a"),
+                    ),
+                    line=dict(color="#1a1a1a", width=2.5, dash="dash"),
+                    showscale=False,
+                    hoverinfo="skip",
+                )
+            )
             fig_heat2.update_layout(
                 title=(
                     f"Detection rate: intervention delay × monitoring window — "
@@ -849,8 +932,10 @@ if results_available:
             if res_iid_ba is not None:
                 _bias_opts = ["i.i.d. BACI", "AR(1)", "i.i.d. BA", "All"]
             bias_noise = st.radio(
-                "Noise model", _bias_opts,
-                horizontal=True, key="bias_noise",
+                "Noise model",
+                _bias_opts,
+                horizontal=True,
+                key="bias_noise",
             )
         with ctrl_b2:
             npost_idx = st.slider(
@@ -880,7 +965,8 @@ if results_available:
 
         # Shaded "near-zero" zone ±3 months — roughly within one data collection round
         fig_bias.add_hrect(
-            y0=-3, y1=3,
+            y0=-3,
+            y1=3,
             fillcolor="rgba(0,180,0,0.07)",
             line_width=0,
             annotation_text="± 3 months",
@@ -895,8 +981,11 @@ if results_available:
             for trend in trends:
                 entry = results.get(trend)
                 if entry is None:
-                    q1s.append(None); meds.append(None); q3s.append(None)
-                    p5s.append(None); p95s.append(None)
+                    q1s.append(None)
+                    meds.append(None)
+                    q3s.append(None)
+                    p5s.append(None)
+                    p95s.append(None)
                     ns.append(0)
                     continue
                 det = entry["detected_matrix"][:, npost_i].astype(bool)
@@ -910,30 +999,41 @@ if results_available:
                     p5s.append(float(np.percentile(err, 5)))
                     p95s.append(float(np.percentile(err, 95)))
                 else:
-                    q1s.append(None); meds.append(None); q3s.append(None)
-                    p5s.append(None); p95s.append(None)
+                    q1s.append(None)
+                    meds.append(None)
+                    q3s.append(None)
+                    p5s.append(None)
+                    p95s.append(None)
 
             n_table_rows[label] = ns
 
-            fig_bias.add_trace(go.Box(
-                x=x_labels,
-                q1=q1s, median=meds, q3=q3s,
-                lowerfence=p5s, upperfence=p95s,
-                name=label,
-                marker_color=colour,
-                line_color=colour,
-                boxpoints=False,
-                hovertemplate=(
-                    "<b>%{x} effect — " + label + "</b><br>"
-                    "Median: %{median} mo<br>"
-                    "IQR: %{q1} – %{q3} mo<br>"
-                    "5th–95th pct: %{lowerfence} – %{upperfence} mo"
-                    "<extra></extra>"
-                ),
-            ))
+            fig_bias.add_trace(
+                go.Box(
+                    x=x_labels,
+                    q1=q1s,
+                    median=meds,
+                    q3=q3s,
+                    lowerfence=p5s,
+                    upperfence=p95s,
+                    name=label,
+                    marker_color=colour,
+                    line_color=colour,
+                    boxpoints=False,
+                    hovertemplate=(
+                        "<b>%{x} effect — " + label + "</b><br>"
+                        "Median: %{median} mo<br>"
+                        "IQR: %{q1} – %{q3} mo<br>"
+                        "5th–95th pct: %{lowerfence} – %{upperfence} mo"
+                        "<extra></extra>"
+                    ),
+                )
+            )
 
         fig_bias.add_hline(
-            y=0, line_color="black", line_width=1.5, line_dash="dot",
+            y=0,
+            line_color="black",
+            line_width=1.5,
+            line_dash="dot",
             annotation_text="True changepoint timing",
             annotation_position="top left",
             annotation_font=dict(size=10),
@@ -941,14 +1041,24 @@ if results_available:
 
         # Arrow annotations on y-axis to clarify direction
         fig_bias.add_annotation(
-            x=-0.07, y=0.75, xref="paper", yref="paper",
-            text="▲ Late detection", showarrow=False,
-            font=dict(size=10, color="crimson"), textangle=-90,
+            x=-0.07,
+            y=0.75,
+            xref="paper",
+            yref="paper",
+            text="▲ Late detection",
+            showarrow=False,
+            font=dict(size=10, color="crimson"),
+            textangle=-90,
         )
         fig_bias.add_annotation(
-            x=-0.07, y=0.25, xref="paper", yref="paper",
-            text="▼ Early detection", showarrow=False,
-            font=dict(size=10, color="steelblue"), textangle=-90,
+            x=-0.07,
+            y=0.25,
+            xref="paper",
+            yref="paper",
+            text="▼ Early detection",
+            showarrow=False,
+            font=dict(size=10, color="steelblue"),
+            textangle=-90,
         )
 
         fig_bias.update_layout(
@@ -1013,8 +1123,10 @@ if results_available:
         """)
 
         fdr_noise = st.radio(
-            "Noise model", ["i.i.d. BACI", "AR(1)", "Side-by-side"],
-            horizontal=True, key="fdr_noise",
+            "Noise model",
+            ["i.i.d. BACI", "AR(1)", "Side-by-side"],
+            horizontal=True,
+            key="fdr_noise",
         )
 
         def fdr_matrix(results):
@@ -1025,13 +1137,13 @@ if results_available:
                     matrix.append([0.0] * len(NPOST_VEC))
                     continue
                 delays_arr = np.array(entry["delays"])
-                true_cpts  = NPRE + delays_arr
-                det_mat    = entry["detected_matrix"]
-                cpt_mat    = entry["cpt_matrix"]
+                true_cpts = NPRE + delays_arr
+                det_mat = entry["detected_matrix"]
+                cpt_mat = entry["cpt_matrix"]
                 row = []
                 for j in range(len(NPOST_VEC)):
                     det_mask = det_mat[:, j].astype(bool)
-                    n_det    = det_mask.sum()
+                    n_det = det_mask.sum()
                     if n_det > 0:
                         row.append(
                             float((cpt_mat[:, j][det_mask] < true_cpts[det_mask]).sum()) / n_det
@@ -1043,32 +1155,38 @@ if results_available:
 
         def fdr_heatmap_fig(matrix, title):
             fig = go.Figure()
-            fig.add_trace(go.Heatmap(
-                x=NPOST_VEC,
-                y=[f"{p}%" for p in EFFECT_SIZES_PCT],
-                z=matrix,
-                colorscale="YlOrRd",
-                zmin=0, zmax=1,
-                colorbar=dict(title="FDR", tickformat=".0%"),
-                hovertemplate=(
-                    "npost: %{x} mo<br>"
-                    "Effect: %{y}<br>"
-                    "FDR: %{z:.1%}"
-                    "<extra></extra>"
-                ),
-            ))
-            fig.add_trace(go.Contour(
-                x=NPOST_VEC,
-                y=[f"{p}%" for p in EFFECT_SIZES_PCT],
-                z=matrix,
-                contours=dict(
-                    coloring="none", showlabels=True,
-                    start=0.10, end=0.20, size=0.10,
-                    labelfont=dict(size=11, color="#1a1a1a"),
-                ),
-                line=dict(color="#1a1a1a", width=2.5, dash="dash"),
-                showscale=False, hoverinfo="skip",
-            ))
+            fig.add_trace(
+                go.Heatmap(
+                    x=NPOST_VEC,
+                    y=[f"{p}%" for p in EFFECT_SIZES_PCT],
+                    z=matrix,
+                    colorscale="YlOrRd",
+                    zmin=0,
+                    zmax=1,
+                    colorbar=dict(title="FDR", tickformat=".0%"),
+                    hovertemplate=(
+                        "npost: %{x} mo<br>Effect: %{y}<br>FDR: %{z:.1%}<extra></extra>"
+                    ),
+                )
+            )
+            fig.add_trace(
+                go.Contour(
+                    x=NPOST_VEC,
+                    y=[f"{p}%" for p in EFFECT_SIZES_PCT],
+                    z=matrix,
+                    contours=dict(
+                        coloring="none",
+                        showlabels=True,
+                        start=0.10,
+                        end=0.20,
+                        size=0.10,
+                        labelfont=dict(size=11, color="#1a1a1a"),
+                    ),
+                    line=dict(color="#1a1a1a", width=2.5, dash="dash"),
+                    showscale=False,
+                    hoverinfo="skip",
+                )
+            )
             fig.update_layout(
                 title=title,
                 xaxis_title="Post-intervention monitoring window (months)",
@@ -1120,8 +1238,10 @@ if results_available:
     import pandas as _pd
 
     _summ_noise = st.radio(
-        "Noise model", ["i.i.d. BACI", "AR(1)"],
-        horizontal=True, key="summ_noise",
+        "Noise model",
+        ["i.i.d. BACI", "AR(1)"],
+        horizontal=True,
+        key="summ_noise",
     )
     _summ_results = res_iid if _summ_noise == "i.i.d. BACI" else res_ar
 
@@ -1131,19 +1251,21 @@ if results_available:
         if _entry is None:
             continue
         _delays_arr = np.array(_entry["delays"])
-        _detected   = _entry["detected_matrix"][:, -1].astype(bool)
-        _cpts       = _entry["cpt_matrix"][:, -1]
-        _true_cpts  = NPRE + _delays_arr
-        _det_lags   = (_cpts[_detected] - _true_cpts[_detected]).astype(float)
-        _summ_rows.append({
-            "Effect size": f"{_pct}%",
-            "Trend": _trend,
-            "True_pos": f"{_detected.mean():.1%}",
-            "Median delay (mo)": f"{np.median(_det_lags):.1f}" if len(_det_lags) > 0 else "n/a",
-            "Mean delay (mo)":   f"{np.mean(_det_lags):.1f}"   if len(_det_lags) > 0 else "n/a",
-            "Std delay (mo)":    f"{np.std(_det_lags):.1f}"    if len(_det_lags) > 0 else "n/a",
-            "No detection":      int(len(_detected) - _detected.sum()),
-        })
+        _detected = _entry["detected_matrix"][:, -1].astype(bool)
+        _cpts = _entry["cpt_matrix"][:, -1]
+        _true_cpts = NPRE + _delays_arr
+        _det_lags = (_cpts[_detected] - _true_cpts[_detected]).astype(float)
+        _summ_rows.append(
+            {
+                "Effect size": f"{_pct}%",
+                "Trend": _trend,
+                "True_pos": f"{_detected.mean():.1%}",
+                "Median delay (mo)": f"{np.median(_det_lags):.1f}" if len(_det_lags) > 0 else "n/a",
+                "Mean delay (mo)": f"{np.mean(_det_lags):.1f}" if len(_det_lags) > 0 else "n/a",
+                "Std delay (mo)": f"{np.std(_det_lags):.1f}" if len(_det_lags) > 0 else "n/a",
+                "No detection": int(len(_detected) - _detected.sum()),
+            }
+        )
 
     st.dataframe(_pd.DataFrame(_summ_rows), hide_index=True, width="stretch")
 
@@ -1157,8 +1279,11 @@ if results_available:
     exp_c1, exp_c2 = st.columns(2)
     with exp_c1:
         exp_effect_pct = st.select_slider(
-            "Effect size", options=EFFECT_SIZES_PCT, value=30,
-            format_func=lambda x: f"{x}%", key="exp_effect",
+            "Effect size",
+            options=EFFECT_SIZES_PCT,
+            value=30,
+            format_func=lambda x: f"{x}%",
+            key="exp_effect",
         )
     with exp_c2:
         exp_npost = st.select_slider(
@@ -1176,12 +1301,12 @@ if results_available:
 
     def _exp_prev():
         new = max(0, st.session_state["exp_nav_idx"] - 1)
-        st.session_state["exp_nav_idx"]    = new
+        st.session_state["exp_nav_idx"] = new
         st.session_state["exp_nav_slider"] = new + 1
 
     def _exp_next():
         new = min(999, st.session_state["exp_nav_idx"] + 1)
-        st.session_state["exp_nav_idx"]    = new
+        st.session_state["exp_nav_idx"] = new
         st.session_state["exp_nav_slider"] = new + 1
 
     def _exp_on_slider():
@@ -1195,16 +1320,16 @@ if results_available:
     with en3:
         st.button("▶", on_click=_exp_next, key="exp_nav_next", width="stretch")
 
-    exp_trend   = trends[EFFECT_SIZES_PCT.index(exp_effect_pct)]
-    run_i       = st.session_state.get("exp_nav_idx", 0)
+    exp_trend = trends[EFFECT_SIZES_PCT.index(exp_effect_pct)]
+    run_i = st.session_state.get("exp_nav_idx", 0)
 
     npost_i_exp = int(np.searchsorted(NPOST_VEC, exp_npost, side="left"))
     npost_i_exp = min(npost_i_exp, len(NPOST_VEC) - 1)
 
     # Build per-model config: (label, results, critical_value_key, use_ar)
     _exp_models = [
-        ("i.i.d. BACI", res_iid,    "iid_48",    False),
-        ("AR(1)",        res_ar,     "ar1_48",    True),
+        ("i.i.d. BACI", res_iid, "iid_48", False),
+        ("AR(1)", res_ar, "ar1_48", True),
     ]
     if res_iid_ba is not None:
         _exp_models.append(("i.i.d. BA", res_iid_ba, "iid_ba_48", False))
@@ -1220,10 +1345,10 @@ if results_available:
     # ── Metrics row — one column per model ────────────────────────────────────
     m_cols = st.columns(len(_exp_models))
     for col, (label, res, crit_key, _use_ar) in zip(m_cols, _exp_models):
-        _delay    = int(res[exp_trend]["delays"][run_i])
+        _delay = int(res[exp_trend]["delays"][run_i])
         _true_cpt = NPRE + _delay
-        _tmax     = float(res[exp_trend]["tmax_matrix"][run_i, npost_i_exp])
-        _cpt      = int(res[exp_trend]["cpt_matrix"][run_i, npost_i_exp])
+        _tmax = float(res[exp_trend]["tmax_matrix"][run_i, npost_i_exp])
+        _cpt = int(res[exp_trend]["cpt_matrix"][run_i, npost_i_exp])
         _detected = bool(res[exp_trend]["detected_matrix"][run_i, npost_i_exp])
         _crit_val = cv[crit_key]["critical_value"] if crit_key in cv else None
         with col:
@@ -1234,31 +1359,39 @@ if results_available:
             if _detected:
                 _err = _cpt - _true_cpt
                 _dir = "late" if _err > 0 else ("early" if _err < 0 else "exact")
-                st.metric("Timing error", f"{_err:+d} mo ({_dir})",
-                          help=f"True τ = month {_true_cpt} (pre={NPRE} + delay={_delay})")
+                st.metric(
+                    "Timing error",
+                    f"{_err:+d} mo ({_dir})",
+                    help=f"True τ = month {_true_cpt} (pre={NPRE} + delay={_delay})",
+                )
             else:
-                st.metric("Timing error", "—",
-                          help=f"True τ = month {_true_cpt} (pre={NPRE} + delay={_delay})")
+                st.metric(
+                    "Timing error",
+                    "—",
+                    help=f"True τ = month {_true_cpt} (pre={NPRE} + delay={_delay})",
+                )
 
     # ── Time series tabs — one per model ──────────────────────────────────────
     def _build_exp_fig(res, trend, run_idx, npost_i, npost_mo, label, use_ar=False):
-        _delay    = int(res[trend]["delays"][run_idx])
-        _seed     = int(res[trend]["seeds"][run_idx])
+        _delay = int(res[trend]["delays"][run_idx])
+        _seed = int(res[trend]["seeds"][run_idx])
         _true_cpt = NPRE + _delay
-        _tmax     = float(res[trend]["tmax_matrix"][run_idx, npost_i])
-        _cpt      = int(res[trend]["cpt_matrix"][run_idx, npost_i])
+        _tmax = float(res[trend]["tmax_matrix"][run_idx, npost_i])
+        _cpt = int(res[trend]["cpt_matrix"][run_idx, npost_i])
         _detected = bool(res[trend]["detected_matrix"][run_idx, npost_i])
-        _sim_data = (_regenerate_ar(_seed, _delay, float(trend))
-                     if use_ar else
-                     _regenerate_iid(_seed, _delay, float(trend)))
+        _sim_data = (
+            _regenerate_ar(_seed, _delay, float(trend))
+            if use_ar
+            else _regenerate_iid(_seed, _delay, float(trend))
+        )
 
-        nt     = NPRE + npost_mo
-        t      = np.arange(1, nt + 1)
-        y_ctr  = _sim_data["y_ctr"][:nt]
-        y_itv  = _sim_data["y_itv"][:nt]
-        diff   = y_itv - y_ctr
+        nt = NPRE + npost_mo
+        t = np.arange(1, nt + 1)
+        y_ctr = _sim_data["y_ctr"][:nt]
+        y_itv = _sim_data["y_itv"][:nt]
+        diff = y_itv - y_ctr
 
-        t_pre  = t[:_true_cpt]
+        t_pre = t[:_true_cpt]
         t_post = t[_true_cpt:]
         fit_pre = fit_post = None
         if len(t_pre) >= 2:
@@ -1269,53 +1402,130 @@ if results_available:
             fit_post = sl * t_post + ic
 
         fig = make_subplots(
-            rows=2, cols=1, row_heights=[0.62, 0.38],
+            rows=2,
+            cols=1,
+            row_heights=[0.62, 0.38],
             subplot_titles=[
                 "Control vs Intervention — raw series + fitted slopes",
                 "Difference (intervention − control)",
             ],
-            shared_xaxes=True, vertical_spacing=0.10,
+            shared_xaxes=True,
+            vertical_spacing=0.10,
         )
         for row in [1, 2]:
-            fig.add_vrect(x0=1, x1=NPRE, fillcolor="rgba(100,149,237,0.07)",
-                          line_width=0, row=row, col=1)
-        fig.add_trace(go.Scatter(x=t, y=y_ctr, mode="lines", name="Control",
-            line=dict(color="rgba(96,125,139,0.7)", width=1.5)), row=1, col=1)
-        fig.add_trace(go.Scatter(x=t, y=y_itv, mode="lines", name="Intervention",
-            line=dict(color="rgba(76,175,80,0.7)", width=1.5)), row=1, col=1)
+            fig.add_vrect(
+                x0=1, x1=NPRE, fillcolor="rgba(100,149,237,0.07)", line_width=0, row=row, col=1
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=t,
+                y=y_ctr,
+                mode="lines",
+                name="Control",
+                line=dict(color="rgba(96,125,139,0.7)", width=1.5),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=t,
+                y=y_itv,
+                mode="lines",
+                name="Intervention",
+                line=dict(color="rgba(76,175,80,0.7)", width=1.5),
+            ),
+            row=1,
+            col=1,
+        )
         if fit_pre is not None:
-            fig.add_trace(go.Scatter(x=t_pre, y=fit_pre, mode="lines", name="Fitted (pre)",
-                line=dict(color="#1565C0", width=2, dash="dash")), row=1, col=1)
+            fig.add_trace(
+                go.Scatter(
+                    x=t_pre,
+                    y=fit_pre,
+                    mode="lines",
+                    name="Fitted (pre)",
+                    line=dict(color="#1565C0", width=2, dash="dash"),
+                ),
+                row=1,
+                col=1,
+            )
         if fit_post is not None:
-            fig.add_trace(go.Scatter(x=t_post, y=fit_post, mode="lines", name="Fitted (post)",
-                line=dict(color="#2E7D32", width=2, dash="dash")), row=1, col=1)
-        fig.add_trace(go.Scatter(x=t, y=diff, mode="lines", name="Difference",
-            line=dict(color="rgba(255,152,0,0.8)", width=1.5),
-            fill="tozeroy", fillcolor="rgba(255,152,0,0.10)"), row=2, col=1)
-        fig.add_hline(y=0, line_color="rgba(0,0,0,0.3)", line_width=1, line_dash="dot", row=2, col=1)
+            fig.add_trace(
+                go.Scatter(
+                    x=t_post,
+                    y=fit_post,
+                    mode="lines",
+                    name="Fitted (post)",
+                    line=dict(color="#2E7D32", width=2, dash="dash"),
+                ),
+                row=1,
+                col=1,
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=t,
+                y=diff,
+                mode="lines",
+                name="Difference",
+                line=dict(color="rgba(255,152,0,0.8)", width=1.5),
+                fill="tozeroy",
+                fillcolor="rgba(255,152,0,0.10)",
+            ),
+            row=2,
+            col=1,
+        )
+        fig.add_hline(
+            y=0, line_color="rgba(0,0,0,0.3)", line_width=1, line_dash="dot", row=2, col=1
+        )
 
         if _delay > 0:
             for row in [1, 2]:
-                fig.add_vline(x=NPRE, line_dash="dot", line_color="steelblue", line_width=1.5,
+                fig.add_vline(
+                    x=NPRE,
+                    line_dash="dot",
+                    line_color="steelblue",
+                    line_width=1.5,
                     annotation_text="Intervention" if row == 1 else "",
                     annotation_position="top right",
-                    annotation_font=dict(color="steelblue", size=10), row=row, col=1)
+                    annotation_font=dict(color="steelblue", size=10),
+                    row=row,
+                    col=1,
+                )
 
         true_ann_side = "top right" if _true_cpt < nt * 0.75 else "top left"
         for row in [1, 2]:
-            fig.add_vline(x=_true_cpt, line_dash="dash", line_color="#1A237E", line_width=2,
+            fig.add_vline(
+                x=_true_cpt,
+                line_dash="dash",
+                line_color="#1A237E",
+                line_width=2,
                 annotation_text=f"True τ={_true_cpt}" if row == 1 else "",
                 annotation_position=true_ann_side,
-                annotation_font=dict(color="#1A237E", size=10), row=row, col=1)
+                annotation_font=dict(color="#1A237E", size=10),
+                row=row,
+                col=1,
+            )
 
         if _detected:
             close = abs(_cpt - _true_cpt) < 6
-            det_ann_side = ("top left" if true_ann_side == "top right" else "top right") if close else true_ann_side
+            det_ann_side = (
+                ("top left" if true_ann_side == "top right" else "top right")
+                if close
+                else true_ann_side
+            )
             for row in [1, 2]:
-                fig.add_vline(x=_cpt, line_dash="solid", line_color="crimson", line_width=2,
+                fig.add_vline(
+                    x=_cpt,
+                    line_dash="solid",
+                    line_color="crimson",
+                    line_width=2,
                     annotation_text=f"τ̂={_cpt}" if row == 1 else "",
                     annotation_position=det_ann_side,
-                    annotation_font=dict(color="crimson", size=10), row=row, col=1)
+                    annotation_font=dict(color="crimson", size=10),
+                    row=row,
+                    col=1,
+                )
 
         fig.update_layout(
             height=580,
@@ -1324,7 +1534,9 @@ if results_available:
                 f"npost={npost_mo} mo · delay={_delay} mo · "
                 f"T_max={_tmax:.2f} ({'✓ detected' if _detected else '✗ not detected'})"
             ),
-            xaxis2_title="Month", yaxis_title="Indicator value", yaxis2_title="Difference",
+            xaxis2_title="Month",
+            yaxis_title="Indicator value",
+            yaxis2_title="Difference",
             legend=dict(orientation="h", yanchor="bottom", y=-0.22, font=dict(size=11)),
             margin=dict(b=80),
         )
@@ -1354,17 +1566,22 @@ so you can compare their detection rates and time series side by side.
 
 if "mini_pending_restore" in st.session_state:
     _pr = st.session_state.pop("mini_pending_restore")
-    st.session_state["mini_p_n_sim"]      = _pr["n_sim"]
-    st.session_state["mini_p_base_seed"]  = _pr["base_seed"]
+    st.session_state["mini_p_n_sim"] = _pr["n_sim"]
+    st.session_state["mini_p_base_seed"] = _pr["base_seed"]
     st.session_state["mini_p_effect_pct"] = _pr["effect_pct"]
-    st.session_state["mini_p_phi"]        = _pr["phi_input"]
-    st.session_state["mini_p_npre"]       = _pr["npre_sim"]
-    st.session_state["mini_p_npost"]      = _pr["npost_sim"]
-    st.session_state["mini_p_delay"]      = _pr["delay_sim"]
+    st.session_state["mini_p_phi"] = _pr["phi_input"]
+    st.session_state["mini_p_npre"] = _pr["npre_sim"]
+    st.session_state["mini_p_npost"] = _pr["npost_sim"]
+    st.session_state["mini_p_delay"] = _pr["delay_sim"]
 
 for _k, _v in [
-    ("mini_p_n_sim", 30), ("mini_p_base_seed", 42), ("mini_p_effect_pct", 30),
-    ("mini_p_phi", PHI_DEFAULT), ("mini_p_npre", NPRE), ("mini_p_npost", 60), ("mini_p_delay", 10),
+    ("mini_p_n_sim", 30),
+    ("mini_p_base_seed", 42),
+    ("mini_p_effect_pct", 30),
+    ("mini_p_phi", PHI_DEFAULT),
+    ("mini_p_npre", NPRE),
+    ("mini_p_npost", 60),
+    ("mini_p_delay", 10),
 ]:
     if _k not in st.session_state:
         st.session_state[_k] = _v
@@ -1379,7 +1596,9 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
     with col_a:
         n_sim = st.slider(
             "N simulations",
-            min_value=10, max_value=200, step=10,
+            min_value=10,
+            max_value=200,
+            step=10,
             key="mini_p_n_sim",
             help=(
                 "Each simulation generates a fresh (control, intervention) pair with different "
@@ -1389,7 +1608,9 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         base_seed = st.number_input(
             "Random seed",
-            min_value=0, max_value=99999, step=1,
+            min_value=0,
+            max_value=99999,
+            step=1,
             key="mini_p_base_seed",
             help=(
                 "Simulation i uses seed = base_seed + i. "
@@ -1409,7 +1630,9 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         phi_input = st.slider(
             "φ (AR(1) coefficient)",
-            min_value=0.0, max_value=0.95, step=0.05,
+            min_value=0.0,
+            max_value=0.95,
+            step=0.05,
             key="mini_p_phi",
             help=(
                 "Autocorrelation strength for the AR(1) model only "
@@ -1419,19 +1642,23 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         npre_sim = st.slider(
             "Pre-intervention period (months)",
-            min_value=6, max_value=60, step=6,
+            min_value=6,
+            max_value=60,
+            step=6,
             key="mini_p_npre",
             help=(
                 f"How long the site was monitored before the intervention. "
                 f"Sets where the true changepoint sits in the time series. "
-                f"The benchmark used {NPRE} months ({NPRE//12} years)."
+                f"The benchmark used {NPRE} months ({NPRE // 12} years)."
             ),
         )
 
     with col_c:
         npost_sim = st.slider(
             "Monitoring window (months)",
-            min_value=24, max_value=NPOST_MONTHS, step=6,
+            min_value=24,
+            max_value=NPOST_MONTHS,
+            step=6,
             key="mini_p_npost",
             help=(
                 "Number of post-intervention months included in the test. "
@@ -1440,7 +1667,9 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
         delay_sim = st.slider(
             "Intervention delay (months)",
-            min_value=0, max_value=20, step=1,
+            min_value=0,
+            max_value=20,
+            step=1,
             key="mini_p_delay",
             help=(
                 "Months between the formal intervention date and when the ecological response begins."
@@ -1448,8 +1677,13 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
         )
 
 _cur_params = {
-    "n_sim": n_sim, "base_seed": int(base_seed), "effect_pct": effect_pct,
-    "phi_input": phi_input, "npre_sim": npre_sim, "npost_sim": npost_sim, "delay_sim": delay_sim,
+    "n_sim": n_sim,
+    "base_seed": int(base_seed),
+    "effect_pct": effect_pct,
+    "phi_input": phi_input,
+    "npre_sim": npre_sim,
+    "npost_sim": npost_sim,
+    "delay_sim": delay_sim,
 }
 if "mini_runs_last_params" in st.session_state:
     if st.session_state["mini_runs_last_params"] != _cur_params:
@@ -1470,23 +1704,23 @@ if _mini_history:
         key=f"mini_hist_sel_{st.session_state.get('mini_hist_sel_gen', 0)}",
     )
     if _sel is not None:
-        _h  = _mini_history[_sel]
+        _h = _mini_history[_sel]
         _hp = _h["params"]
-        st.session_state["mini_pending_restore"]  = _hp
-        st.session_state["mini_runs"]             = _h["data"]
-        st.session_state["mini_nav_idx"]          = _h["nav_idx"]
-        st.session_state["mnav_slider"]           = _h["nav_idx"] + 1
+        st.session_state["mini_pending_restore"] = _hp
+        st.session_state["mini_runs"] = _h["data"]
+        st.session_state["mini_nav_idx"] = _h["nav_idx"]
+        st.session_state["mnav_slider"] = _h["nav_idx"] + 1
         st.session_state["mini_runs_last_params"] = _hp
         st.session_state["mini_hist_sel_gen"] = st.session_state.get("mini_hist_sel_gen", 0) + 1
 
 if run_btn:
-    trend_delta  = LEVEL * (effect_pct / 100) / NPOST_MONTHS
+    trend_delta = LEVEL * (effect_pct / 100) / NPOST_MONTHS
     trend_interv = TREND_CONTROL + trend_delta
 
     if results_available:
         _cv_baci = cv["iid_48"]["critical_value"]
-        _cv_ar   = cv["ar1_48"]["critical_value"]
-        _cv_ba   = cv.get("iid_ba_48", cv["iid_48"])["critical_value"]
+        _cv_ar = cv["ar1_48"]["critical_value"]
+        _cv_ba = cv.get("iid_ba_48", cv["iid_48"])["critical_value"]
     else:
         _cv_baci = _cv_ar = _cv_ba = 2.5
 
@@ -1499,48 +1733,79 @@ if run_btn:
         st.stop()
 
     true_cpt = npre_sim + delay_sim
-    nt_total  = npre_sim + npost_sim
+    nt_total = npre_sim + npost_sim
 
     _mini_models = {
-        "i.i.d. BACI": {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_baci},
-        "AR(1)":        {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ar},
-        "i.i.d. BA":    {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ba},
+        "i.i.d. BACI": {
+            "all_data": [],
+            "all_stats": [],
+            "detected_flags": [],
+            "detected_cpts": [],
+            "crit_val": _cv_baci,
+        },
+        "AR(1)": {
+            "all_data": [],
+            "all_stats": [],
+            "detected_flags": [],
+            "detected_cpts": [],
+            "crit_val": _cv_ar,
+        },
+        "i.i.d. BA": {
+            "all_data": [],
+            "all_stats": [],
+            "detected_flags": [],
+            "detected_cpts": [],
+            "crit_val": _cv_ba,
+        },
     }
 
     progress_bar = st.progress(0, text="Starting…")
 
     for i in range(n_sim):
         # i.i.d. data — shared between BACI (uses control+intervention) and BA (intervention only)
-        sim_iid    = ci_sim(seed=int(base_seed) + i, npre=true_cpt, npost=effective_npost,
-                            level=LEVEL, trend=(TREND_CONTROL, trend_interv), sigma=SIGMA)
+        sim_iid = ci_sim(
+            seed=int(base_seed) + i,
+            npre=true_cpt,
+            npost=effective_npost,
+            level=LEVEL,
+            trend=(TREND_CONTROL, trend_interv),
+            sigma=SIGMA,
+        )
         stats_baci = trend_stats(y_ctr=sim_iid["y_ctr"], y_itv=sim_iid["y_itv"], nt=nt_total)
-        stats_ba   = trend_stats(y_itv=sim_iid["y_itv"], nt=nt_total)
+        stats_ba = trend_stats(y_itv=sim_iid["y_itv"], nt=nt_total)
 
         # AR(1) data — independent realisation
-        sim_ar   = ci_sim_ar(seed=int(base_seed) + i, npre=true_cpt, npost=effective_npost,
-                             level=LEVEL, trend=(TREND_CONTROL, trend_interv), phi=phi_input, sigma=SIGMA)
+        sim_ar = ci_sim_ar(
+            seed=int(base_seed) + i,
+            npre=true_cpt,
+            npost=effective_npost,
+            level=LEVEL,
+            trend=(TREND_CONTROL, trend_interv),
+            phi=phi_input,
+            sigma=SIGMA,
+        )
         stats_ar = trend_stats_ar(y_itv=sim_ar["y_itv"], nt=nt_total)
 
         for label, sim_data, stats in [
             ("i.i.d. BACI", sim_iid, stats_baci),
-            ("AR(1)",        sim_ar,  stats_ar),
-            ("i.i.d. BA",   sim_iid, stats_ba),
+            ("AR(1)", sim_ar, stats_ar),
+            ("i.i.d. BA", sim_iid, stats_ba),
         ]:
-            crit     = _mini_models[label]["crit_val"]
+            crit = _mini_models[label]["crit_val"]
             detected = stats["Tmax"] > crit
             _mini_models[label]["all_data"].append(sim_data)
             _mini_models[label]["all_stats"].append(stats)
             _mini_models[label]["detected_flags"].append(detected)
             _mini_models[label]["detected_cpts"].append(stats["cpt"] if detected else np.nan)
 
-        progress_bar.progress((i + 1) / n_sim, text=f"Simulation {i+1}/{n_sim}…")
+        progress_bar.progress((i + 1) / n_sim, text=f"Simulation {i + 1}/{n_sim}…")
 
     progress_bar.empty()
 
     for mdata in _mini_models.values():
         flags = mdata["detected_flags"]
-        cpts  = mdata["detected_cpts"]
-        mdata["det_rate"]   = float(np.mean(flags))
+        cpts = mdata["detected_cpts"]
+        mdata["det_rate"] = float(np.mean(flags))
         mdata["n_detected"] = int(sum(flags))
         mdata["valid_cpts"] = [c for c in cpts if not np.isnan(c)]
 
@@ -1548,65 +1813,75 @@ if run_btn:
         (i for i, d in enumerate(_mini_models["i.i.d. BACI"]["detected_flags"]) if d), 0
     )
     st.session_state["mini_runs"] = {
-        "n_sim":      n_sim,
-        "base_seed":  int(base_seed),
+        "n_sim": n_sim,
+        "base_seed": int(base_seed),
         "effect_pct": effect_pct,
-        "npre_sim":   npre_sim,
-        "npost_sim":  npost_sim,
-        "delay_sim":  delay_sim,
-        "true_cpt":   true_cpt,
-        "models":     _mini_models,
+        "npre_sim": npre_sim,
+        "npost_sim": npost_sim,
+        "delay_sim": delay_sim,
+        "true_cpt": true_cpt,
+        "models": _mini_models,
     }
     st.session_state["mini_nav_idx"] = first_det
-    st.session_state["mnav_slider"]  = first_det + 1
+    st.session_state["mnav_slider"] = first_det + 1
 
-    _run_n     = len(st.session_state.get("mini_runs_history", [])) + 1
+    _run_n = len(st.session_state.get("mini_runs_history", [])) + 1
     _baci_rate = _mini_models["i.i.d. BACI"]["det_rate"]
-    _ts        = datetime.now().strftime("%H:%M")
-    _hist_lbl  = (
+    _ts = datetime.now().strftime("%H:%M")
+    _hist_lbl = (
         f"#{_run_n} · {_ts} · N={n_sim} seed={int(base_seed)} eff={effect_pct}% φ={phi_input:.2f} "
         f"pre={npre_sim}mo post={npost_sim}mo delay={delay_sim}mo · det={_baci_rate:.0%}"
     )
     if "mini_runs_history" not in st.session_state:
         st.session_state["mini_runs_history"] = []
-    st.session_state["mini_runs_history"].insert(0, {
-        "label":   _hist_lbl,
-        "data":    st.session_state["mini_runs"],
-        "nav_idx": first_det,
-        "params":  _cur_params,
-    })
+    st.session_state["mini_runs_history"].insert(
+        0,
+        {
+            "label": _hist_lbl,
+            "data": st.session_state["mini_runs"],
+            "nav_idx": first_det,
+            "params": _cur_params,
+        },
+    )
     st.session_state["mini_runs_last_params"] = _cur_params
 
 
 # ── Results — persists across rerenders via session state ─────────────────────
 if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]:
-    mr            = st.session_state["mini_runs"]
+    mr = st.session_state["mini_runs"]
     _model_labels = list(mr["models"].keys())
 
-    det_rates_str = ", ".join(
-        f"**{k}: {mr['models'][k]['det_rate']:.1%}**" for k in _model_labels
-    )
+    det_rates_str = ", ".join(f"**{k}: {mr['models'][k]['det_rate']:.1%}**" for k in _model_labels)
     st.success("Simulation complete!")
 
     # ── Summary metrics — one column per model ─────────────────────────────────
     sm_cols = st.columns(len(_model_labels))
     for col, label in zip(sm_cols, _model_labels):
-        mdata       = mr["models"][label]
-        valid_cpts  = mdata["valid_cpts"]
+        mdata = mr["models"][label]
+        valid_cpts = mdata["valid_cpts"]
         true_cpt_mr = mr["true_cpt"]
         with col:
             st.markdown(f"**{label}**")
-            st.metric("Detection rate", f"{mdata['det_rate']:.1%}",
-                      help=f"{mdata['n_detected']} of {mr['n_sim']} simulations")
+            st.metric(
+                "Detection rate",
+                f"{mdata['det_rate']:.1%}",
+                help=f"{mdata['n_detected']} of {mr['n_sim']} simulations",
+            )
             st.metric("Critical value", f"{mdata['crit_val']:.3f}")
             if valid_cpts:
-                mean_err   = np.mean(np.abs(np.array(valid_cpts) - true_cpt_mr))
+                mean_err = np.mean(np.abs(np.array(valid_cpts) - true_cpt_mr))
                 median_lag = float(np.median(np.array(valid_cpts) - true_cpt_mr))
-                lag_dir    = "late" if median_lag > 0 else ("early" if median_lag < 0 else "exact")
-                st.metric("Mean |timing error|", f"{mean_err:.1f} mo",
-                          help="Average |τ̂ − true τ| across detected runs.")
-                st.metric("Median detection lag", f"{median_lag:+.1f} mo ({lag_dir})",
-                          help="Median (τ̂ − true τ). Positive = declared later than true change.")
+                lag_dir = "late" if median_lag > 0 else ("early" if median_lag < 0 else "exact")
+                st.metric(
+                    "Mean |timing error|",
+                    f"{mean_err:.1f} mo",
+                    help="Average |τ̂ − true τ| across detected runs.",
+                )
+                st.metric(
+                    "Median detection lag",
+                    f"{median_lag:+.1f} mo ({lag_dir})",
+                    help="Median (τ̂ − true τ). Positive = declared later than true change.",
+                )
             else:
                 st.metric("Mean |timing error|", "n/a")
                 st.metric("Median detection lag", "n/a")
@@ -1615,7 +1890,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     st.divider()
     st.subheader("Browse simulation runs")
 
-    n_sim_mr    = mr["n_sim"]
+    n_sim_mr = mr["n_sim"]
     det_indices = [i for i, d in enumerate(mr["models"]["i.i.d. BACI"]["detected_flags"]) if d]
 
     if "mini_nav_idx" not in st.session_state:
@@ -1626,12 +1901,12 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     def _nav_prev():
         new = max(0, st.session_state["mini_nav_idx"] - 1)
         st.session_state["mini_nav_idx"] = new
-        st.session_state["mnav_slider"]  = new + 1
+        st.session_state["mnav_slider"] = new + 1
 
     def _nav_next():
         new = min(n_sim_mr - 1, st.session_state["mini_nav_idx"] + 1)
         st.session_state["mini_nav_idx"] = new
-        st.session_state["mnav_slider"]  = new + 1
+        st.session_state["mnav_slider"] = new + 1
 
     def _on_slider():
         st.session_state["mini_nav_idx"] = st.session_state["mnav_slider"] - 1
@@ -1647,18 +1922,18 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     det_pct = len(det_indices) / n_sim_mr if n_sim_mr > 0 else 0
     st.caption(
         f"i.i.d. BACI detected a change in {len(det_indices)} of {n_sim_mr} runs ({det_pct:.0%})."
-        if det_indices else
-        "No runs detected a change (i.i.d. BACI) — try a larger effect size or longer window."
+        if det_indices
+        else "No runs detected a change (i.i.d. BACI) — try a larger effect size or longer window."
     )
 
     # ── Current run ───────────────────────────────────────────────────────────
-    show_idx   = st.session_state.get("mini_nav_idx", 0)
-    run_num    = show_idx + 1
-    show_seed  = mr["base_seed"] + show_idx
-    true_cpt   = mr["true_cpt"]
-    npre_sim   = mr["npre_sim"]
-    npost_sim  = mr["npost_sim"]
-    delay_sim  = mr["delay_sim"]
+    show_idx = st.session_state.get("mini_nav_idx", 0)
+    run_num = show_idx + 1
+    show_seed = mr["base_seed"] + show_idx
+    true_cpt = mr["true_cpt"]
+    npre_sim = mr["npre_sim"]
+    npost_sim = mr["npost_sim"]
+    delay_sim = mr["delay_sim"]
     effect_pct = mr["effect_pct"]
 
     st.subheader(
@@ -1668,8 +1943,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
         - **Colour code:** `grey = control site`; `green = intervention site`.
         - **Dashed fitted lines** show trends before and after τ on the intervention series.
         - **Bottom panel:** difference (intervention − control) isolates the signal.
-        """
-    )
+        """)
     if delay_sim > 0:
         st.caption(
             f"Blue dotted = month {npre_sim} (formal intervention). "
@@ -1680,38 +1954,50 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     # ── Per-model metrics ──────────────────────────────────────────────────────
     pm_cols = st.columns(len(_model_labels))
     for col, label in zip(pm_cols, _model_labels):
-        mdata        = mr["models"][label]
-        show_stats   = mdata["all_stats"][show_idx]
+        mdata = mr["models"][label]
+        show_stats = mdata["all_stats"][show_idx]
         was_detected = mdata["detected_flags"][show_idx]
-        crit_val     = mdata["crit_val"]
-        det_cpt      = show_stats["cpt"] if was_detected else None
-        err          = (det_cpt - true_cpt) if det_cpt is not None else None
-        err_dir      = "late" if (err and err > 0) else ("early" if (err and err < 0) else "exact")
+        crit_val = mdata["crit_val"]
+        det_cpt = show_stats["cpt"] if was_detected else None
+        err = (det_cpt - true_cpt) if det_cpt is not None else None
+        err_dir = "late" if (err and err > 0) else ("early" if (err and err < 0) else "exact")
         with col:
             st.markdown(f"**{label}**")
-            st.metric("T_max", f"{show_stats['Tmax']:.3f}",
-                      delta=f"threshold {crit_val:.3f}", delta_color="off")
+            st.metric(
+                "T_max",
+                f"{show_stats['Tmax']:.3f}",
+                delta=f"threshold {crit_val:.3f}",
+                delta_color="off",
+            )
             st.metric("Detected τ̂", f"month {det_cpt}" if was_detected else "✗ not detected")
             if was_detected:
-                st.metric("Timing error", f"{err:+d} mo ({err_dir})",
-                          help=f"True τ = month {true_cpt} (pre={npre_sim} + delay={delay_sim})")
+                st.metric(
+                    "Timing error",
+                    f"{err:+d} mo ({err_dir})",
+                    help=f"True τ = month {true_cpt} (pre={npre_sim} + delay={delay_sim})",
+                )
             else:
-                st.metric("Timing error", "—",
-                          help=f"True τ = month {true_cpt} (pre={npre_sim} + delay={delay_sim})")
+                st.metric(
+                    "Timing error",
+                    "—",
+                    help=f"True τ = month {true_cpt} (pre={npre_sim} + delay={delay_sim})",
+                )
 
     # ── Time series charts — one per model, side by side ──────────────────────
-    def _build_mini_fig(sim_data, stats, was_detected, label, npre, npost, delay, true_cpt_val, crit_val):
-        nt     = npre + npost
-        t      = np.arange(1, nt + 1)
-        y_ctr  = sim_data["y_ctr"]
-        y_itv  = sim_data["y_itv"]
-        diff   = y_itv - y_ctr
-        t_pre  = t[:true_cpt_val]
+    def _build_mini_fig(
+        sim_data, stats, was_detected, label, npre, npost, delay, true_cpt_val, crit_val
+    ):
+        nt = npre + npost
+        t = np.arange(1, nt + 1)
+        y_ctr = sim_data["y_ctr"]
+        y_itv = sim_data["y_itv"]
+        diff = y_itv - y_ctr
+        t_pre = t[:true_cpt_val]
         t_post = t[true_cpt_val:]
 
-        sl_pre,  ic_pre,  *_ = linregress(t_pre,  y_itv[:true_cpt_val])
+        sl_pre, ic_pre, *_ = linregress(t_pre, y_itv[:true_cpt_val])
         sl_post, ic_post, *_ = linregress(t_post, y_itv[true_cpt_val:])
-        fit_pre  = sl_pre  * t_pre  + ic_pre
+        fit_pre = sl_pre * t_pre + ic_pre
         fit_post = sl_post * t_post + ic_post
         fit_diff_post = None
         if len(t_post) >= 2:
@@ -1720,54 +2006,140 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
 
         det_badge = "✓ detected" if was_detected else "✗ not detected"
         fig = make_subplots(
-            rows=2, cols=1, row_heights=[0.62, 0.38],
+            rows=2,
+            cols=1,
+            row_heights=[0.62, 0.38],
             subplot_titles=[
                 "Control vs Intervention",
                 "Difference (intervention − control)",
             ],
-            shared_xaxes=True, vertical_spacing=0.10,
+            shared_xaxes=True,
+            vertical_spacing=0.10,
         )
         for row in [1, 2]:
-            fig.add_vrect(x0=1, x1=npre, fillcolor="rgba(100,149,237,0.07)",
-                          line_width=0, row=row, col=1)
-        fig.add_trace(go.Scatter(x=t, y=y_ctr, mode="lines", name="Control",
-            line=dict(color="rgba(96,125,139,0.7)", width=1.5)), row=1, col=1)
-        fig.add_trace(go.Scatter(x=t, y=y_itv, mode="lines", name="Intervention",
-            line=dict(color="rgba(76,175,80,0.7)", width=1.5)), row=1, col=1)
-        fig.add_trace(go.Scatter(x=t_pre, y=fit_pre, mode="lines", name="Fitted (pre)",
-            line=dict(color="#1565C0", width=2, dash="dash")), row=1, col=1)
-        fig.add_trace(go.Scatter(x=t_post, y=fit_post, mode="lines", name="Fitted (post)",
-            line=dict(color="#2E7D32", width=2, dash="dash")), row=1, col=1)
-        fig.add_trace(go.Scatter(x=t, y=diff, mode="lines", name="Difference",
-            line=dict(color="rgba(255,152,0,0.8)", width=1.5),
-            fill="tozeroy", fillcolor="rgba(255,152,0,0.10)"), row=2, col=1)
+            fig.add_vrect(
+                x0=1, x1=npre, fillcolor="rgba(100,149,237,0.07)", line_width=0, row=row, col=1
+            )
+        fig.add_trace(
+            go.Scatter(
+                x=t,
+                y=y_ctr,
+                mode="lines",
+                name="Control",
+                line=dict(color="rgba(96,125,139,0.7)", width=1.5),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=t,
+                y=y_itv,
+                mode="lines",
+                name="Intervention",
+                line=dict(color="rgba(76,175,80,0.7)", width=1.5),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=t_pre,
+                y=fit_pre,
+                mode="lines",
+                name="Fitted (pre)",
+                line=dict(color="#1565C0", width=2, dash="dash"),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=t_post,
+                y=fit_post,
+                mode="lines",
+                name="Fitted (post)",
+                line=dict(color="#2E7D32", width=2, dash="dash"),
+            ),
+            row=1,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=t,
+                y=diff,
+                mode="lines",
+                name="Difference",
+                line=dict(color="rgba(255,152,0,0.8)", width=1.5),
+                fill="tozeroy",
+                fillcolor="rgba(255,152,0,0.10)",
+            ),
+            row=2,
+            col=1,
+        )
         if fit_diff_post is not None:
-            fig.add_trace(go.Scatter(x=t_post, y=fit_diff_post, mode="lines", name="Divergence trend",
-                line=dict(color="#E65100", width=2, dash="dash")), row=2, col=1)
-        fig.add_hline(y=0, line_color="rgba(0,0,0,0.3)", line_width=1, line_dash="dot", row=2, col=1)
+            fig.add_trace(
+                go.Scatter(
+                    x=t_post,
+                    y=fit_diff_post,
+                    mode="lines",
+                    name="Divergence trend",
+                    line=dict(color="#E65100", width=2, dash="dash"),
+                ),
+                row=2,
+                col=1,
+            )
+        fig.add_hline(
+            y=0, line_color="rgba(0,0,0,0.3)", line_width=1, line_dash="dot", row=2, col=1
+        )
 
         if delay > 0:
             for row in [1, 2]:
-                fig.add_vline(x=npre, line_dash="dot", line_color="steelblue", line_width=1.5,
+                fig.add_vline(
+                    x=npre,
+                    line_dash="dot",
+                    line_color="steelblue",
+                    line_width=1.5,
                     annotation_text="Intervention" if row == 1 else "",
                     annotation_position="top right",
-                    annotation_font=dict(color="steelblue", size=10), row=row, col=1)
+                    annotation_font=dict(color="steelblue", size=10),
+                    row=row,
+                    col=1,
+                )
 
         true_ann_side = "top right" if true_cpt_val < nt * 0.75 else "top left"
         for row in [1, 2]:
-            fig.add_vline(x=true_cpt_val, line_dash="dash", line_color="#1A237E", line_width=2,
+            fig.add_vline(
+                x=true_cpt_val,
+                line_dash="dash",
+                line_color="#1A237E",
+                line_width=2,
                 annotation_text=f"True τ={true_cpt_val}" if row == 1 else "",
                 annotation_position=true_ann_side,
-                annotation_font=dict(color="#1A237E", size=10), row=row, col=1)
+                annotation_font=dict(color="#1A237E", size=10),
+                row=row,
+                col=1,
+            )
 
         if was_detected:
-            close        = abs(stats["cpt"] - true_cpt_val) < 6
-            det_ann_side = ("top left" if true_ann_side == "top right" else "top right") if close else true_ann_side
+            close = abs(stats["cpt"] - true_cpt_val) < 6
+            det_ann_side = (
+                ("top left" if true_ann_side == "top right" else "top right")
+                if close
+                else true_ann_side
+            )
             for row in [1, 2]:
-                fig.add_vline(x=stats["cpt"], line_dash="solid", line_color="crimson", line_width=2,
+                fig.add_vline(
+                    x=stats["cpt"],
+                    line_dash="solid",
+                    line_color="crimson",
+                    line_width=2,
                     annotation_text=f"τ̂={stats['cpt']}" if row == 1 else "",
                     annotation_position=det_ann_side,
-                    annotation_font=dict(color="crimson", size=10), row=row, col=1)
+                    annotation_font=dict(color="crimson", size=10),
+                    row=row,
+                    col=1,
+                )
 
         fig.update_layout(
             height=560,
@@ -1782,14 +2154,23 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
 
     ch_cols = st.columns(len(_model_labels))
     for col, label in zip(ch_cols, _model_labels):
-        mdata        = mr["models"][label]
-        show_data    = mdata["all_data"][show_idx]
-        show_stats   = mdata["all_stats"][show_idx]
+        mdata = mr["models"][label]
+        show_data = mdata["all_data"][show_idx]
+        show_stats = mdata["all_stats"][show_idx]
         was_detected = mdata["detected_flags"][show_idx]
-        crit_val     = mdata["crit_val"]
+        crit_val = mdata["crit_val"]
         with col:
             st.plotly_chart(
-                _build_mini_fig(show_data, show_stats, was_detected, label,
-                                npre_sim, npost_sim, delay_sim, true_cpt, crit_val),
+                _build_mini_fig(
+                    show_data,
+                    show_stats,
+                    was_detected,
+                    label,
+                    npre_sim,
+                    npost_sim,
+                    delay_sim,
+                    true_cpt,
+                    crit_val,
+                ),
                 width="stretch",
             )

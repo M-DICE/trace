@@ -119,9 +119,9 @@ def trend_stats_forecast(y_itv, npre, ntt, phi=None, crit_val=2.1705321342):
     if phi is not None:
         try:
             with warnings.catch_warnings():
-                warnings.simplefilter('ignore')
-                model = ARIMA(y[:npre], exog=X[:npre], order=(1, 0, 0), trend='n')
-                fit = model.fit(method='innovations_mle', disp=False)
+                warnings.simplefilter("ignore")
+                model = ARIMA(y[:npre], exog=X[:npre], order=(1, 0, 0), trend="n")
+                fit = model.fit(method="innovations_mle", disp=False)
             in_residuals = np.asarray(fit.resid, dtype=float)
             forecast_vals = fit.get_forecast(steps=ntt - npre, exog=X[npre:]).predicted_mean
             out_errors = np.asarray(forecast_vals, dtype=float) - y[npre:]
@@ -143,17 +143,18 @@ def trend_stats_forecast(y_itv, npre, ntt, phi=None, crit_val=2.1705321342):
         # trend_stats requires nt >= mint + 4 = 28; fall back to npre if too short
         if nt >= 28:
             stats = trend_stats(y_ctr=None, y_itv=r[:nt], nt=nt)
-            cpt_est = stats['cpt']
+            cpt_est = stats["cpt"]
         else:
             cpt_est = npre
-        return {'time_est': time_est_int, 'cpt_est': cpt_est}
+        return {"time_est": time_est_int, "cpt_est": cpt_est}
     else:
-        return {'time_est': np.inf, 'cpt_est': np.inf}
+        return {"time_est": np.inf, "cpt_est": np.inf}
 
 
 # ============================================================================
 # Trend Forecast workers
 # ============================================================================
+
 
 def _forecast_sim_worker_iid(args):
     """
@@ -172,20 +173,39 @@ def _forecast_sim_worker_iid(args):
     tuple
         (cpt_est, time_est, delay, seed)
     """
-    (sim_idx, trend_interv, trend_idx, n_trends, npre, ntt, npost_max,
-     level, trend_control, sigma, delay_set, crit_val) = args
-    warnings.filterwarnings('ignore')
+    (
+        sim_idx,
+        trend_interv,
+        trend_idx,
+        n_trends,
+        npre,
+        ntt,
+        npost_max,
+        level,
+        trend_control,
+        sigma,
+        delay_set,
+        crit_val,
+    ) = args
+    warnings.filterwarnings("ignore")
 
     seed = sim_idx * n_trends + trend_idx
     rng = np.random.default_rng(seed)
     delay = int(rng.choice(delay_set))
 
-    sim_data = ci_sim(seed=seed, npre=npre + delay, npost=npost_max - delay,
-                      level=level, trend=[trend_control, trend_interv], sigma=sigma)
+    sim_data = ci_sim(
+        seed=seed,
+        npre=npre + delay,
+        npost=npost_max - delay,
+        level=level,
+        trend=[trend_control, trend_interv],
+        sigma=sigma,
+    )
 
-    result = trend_stats_forecast(sim_data['y_itv'], npre=npre, ntt=ntt,
-                                  phi=None, crit_val=crit_val)
-    return result['cpt_est'], result['time_est'], delay, seed
+    result = trend_stats_forecast(
+        sim_data["y_itv"], npre=npre, ntt=ntt, phi=None, crit_val=crit_val
+    )
+    return result["cpt_est"], result["time_est"], delay, seed
 
 
 def _forecast_sim_worker_ar(args):
@@ -208,26 +228,45 @@ def _forecast_sim_worker_ar(args):
     tuple
         (cpt_est, time_est, delay, seed)
     """
-    (sim_idx, trend_interv, trend_idx, n_trends, npre, ntt, npost_max,
-     level, trend_control, sigma, phi, delay_set, crit_val) = args
-    warnings.filterwarnings('ignore')
+    (
+        sim_idx,
+        trend_interv,
+        trend_idx,
+        n_trends,
+        npre,
+        ntt,
+        npost_max,
+        level,
+        trend_control,
+        sigma,
+        phi,
+        delay_set,
+        crit_val,
+    ) = args
+    warnings.filterwarnings("ignore")
 
     seed = sim_idx * n_trends + trend_idx
     rng = np.random.default_rng(seed)
     delay = int(rng.choice(delay_set))
 
-    sim_data = ci_sim_ar(seed=seed, npre=npre + delay, npost=npost_max - delay,
-                         level=level, trend=[trend_control, trend_interv],
-                         phi=phi, sigma=sigma)
+    sim_data = ci_sim_ar(
+        seed=seed,
+        npre=npre + delay,
+        npost=npost_max - delay,
+        level=level,
+        trend=[trend_control, trend_interv],
+        phi=phi,
+        sigma=sigma,
+    )
 
-    result = trend_stats_forecast(sim_data['y_itv'], npre=npre, ntt=ntt,
-                                  phi=phi, crit_val=crit_val)
-    return result['cpt_est'], result['time_est'], delay, seed
+    result = trend_stats_forecast(sim_data["y_itv"], npre=npre, ntt=ntt, phi=phi, crit_val=crit_val)
+    return result["cpt_est"], result["time_est"], delay, seed
 
 
 # ============================================================================
 # Distribution Forecast workers
 # ============================================================================
+
 
 def _forecast_sim_worker_cdf(args):
     """
@@ -259,21 +298,40 @@ def _forecast_sim_worker_cdf(args):
         delay    : int          — intervention-onset delay applied in this simulation
         seed     : int          — simulation seed for reproducibility
     """
-    (sim_idx, trend_mu, trend_idx, n_trends, npre, ntt, npost_max,
-     mu, sigma, ns, delay_set, crit_val, ba) = args
-    warnings.filterwarnings('ignore')
+    (
+        sim_idx,
+        trend_mu,
+        trend_idx,
+        n_trends,
+        npre,
+        ntt,
+        npost_max,
+        mu,
+        sigma,
+        ns,
+        delay_set,
+        crit_val,
+        ba,
+    ) = args
+    warnings.filterwarnings("ignore")
 
     seed = sim_idx * n_trends + trend_idx
     rng = np.random.default_rng(seed)
     delay = int(rng.choice(delay_set))
 
-    sim = ci_sim_cdf(seed=seed, npre=npre + delay, npost=npost_max - delay,
-                     level=[mu, sigma], trend=[trend_mu, 0], ns=ns)
+    sim = ci_sim_cdf(
+        seed=seed,
+        npre=npre + delay,
+        npost=npost_max - delay,
+        level=[mu, sigma],
+        trend=[trend_mu, 0],
+        ns=ns,
+    )
 
     if ba:
-        dist_ts = wasserstein_distance_ba(sim['sample_itv'], npre)
+        dist_ts = wasserstein_distance_ba(sim["sample_itv"], npre)
     else:
-        dist_ts = wasserstein_distance_baci(sim['sample_ctr'], sim['sample_itv'])
+        dist_ts = wasserstein_distance_baci(sim["sample_ctr"], sim["sample_itv"])
 
     X = np.column_stack([np.ones(ntt), np.arange(1, ntt + 1)])
     ols = OLS(dist_ts[:npre], X[:npre]).fit()
@@ -286,7 +344,7 @@ def _forecast_sim_worker_cdf(args):
         nt = npre + time_est_int
         if nt >= 28:
             stats = trend_stats(y_ctr=None, y_itv=r[:nt], nt=nt)
-            cpt_est = stats['cpt']
+            cpt_est = stats["cpt"]
         else:
             cpt_est = npre
     else:
@@ -298,6 +356,7 @@ def _forecast_sim_worker_cdf(args):
 # ============================================================================
 # Result aggregation
 # ============================================================================
+
 
 def _collect_results(raw, npre):
     """
@@ -323,44 +382,55 @@ def _collect_results(raw, npre):
         mean_error     : float or nan   — mean |cpt_est - true_cpt| among detections
         seeds          : list[int]      — random seeds for reproducibility
     """
-    cpt_est_vec  = np.array([r[0] for r in raw], dtype=float)
+    cpt_est_vec = np.array([r[0] for r in raw], dtype=float)
     time_est_vec = np.array([r[1] for r in raw], dtype=float)
-    delays       = [r[2] for r in raw]
-    seeds        = [r[3] for r in raw]
+    delays = [r[2] for r in raw]
+    seeds = [r[3] for r in raw]
 
     detected = np.isfinite(time_est_vec)
     detection_rate = float(detected.mean())
 
     true_cpts = np.array([npre + d for d in delays], dtype=float)
-    errors    = np.abs(cpt_est_vec[detected] - true_cpts[detected])
-    mean_error = float(errors.mean())        if detected.any() else np.nan
-    mean_time  = float(time_est_vec[detected].mean()) if detected.any() else np.nan
+    errors = np.abs(cpt_est_vec[detected] - true_cpts[detected])
+    mean_error = float(errors.mean()) if detected.any() else np.nan
+    mean_time = float(time_est_vec[detected].mean()) if detected.any() else np.nan
 
     return {
-        'cpt_est_vec':    cpt_est_vec,
-        'time_est_vec':   time_est_vec,
-        'delays':         delays,
-        'detected':       detected,
-        'detection_rate': detection_rate,
-        'mean_time':      mean_time,
-        'mean_error':     mean_error,
-        'seeds':          seeds,
+        "cpt_est_vec": cpt_est_vec,
+        "time_est_vec": time_est_vec,
+        "delays": delays,
+        "detected": detected,
+        "detection_rate": detection_rate,
+        "mean_time": mean_time,
+        "mean_error": mean_error,
+        "seeds": seeds,
     }
 
 
 def _fmt_forecast_progress(result):
     """Return progress suffix showing detection rate and mean error."""
-    return (f"detect={result['detection_rate']:.2%}  "
-            f"err={result['mean_error']:.1f}mo")
+    return f"detect={result['detection_rate']:.2%}  err={result['mean_error']:.1f}mo"
 
 
 # ============================================================================
 # Trend Forecast orchestrators
 # ============================================================================
 
-def run_simulation_iid(simN, trend_increase, crit_val, npre, ntt, npost_max,
-                       level, trend_control, sigma, delay_set,
-                       existing_results=None, on_trend_done=None):
+
+def run_simulation_iid(
+    simN,
+    trend_increase,
+    crit_val,
+    npre,
+    ntt,
+    npost_max,
+    level,
+    trend_control,
+    sigma,
+    delay_set,
+    existing_results=None,
+    on_trend_done=None,
+):
     """
     Run i.i.d. BA Forecast simulations for all trend increments.
 
@@ -396,16 +466,33 @@ def run_simulation_iid(simN, trend_increase, crit_val, npre, ntt, npost_max,
     dict
         Mapping trend_inc → result dict (see _collect_results for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         trend_interv = trend_control + trend_val
         return [
-            (sim_idx, trend_interv, trend_idx, n_trends, npre, ntt, npost_max,
-             level, trend_control, sigma, delay_set, crit_val)
+            (
+                sim_idx,
+                trend_interv,
+                trend_idx,
+                n_trends,
+                npre,
+                ntt,
+                npost_max,
+                level,
+                trend_control,
+                sigma,
+                delay_set,
+                crit_val,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _forecast_sim_worker_iid, make_args, trend_increase, 'trend_inc', simN,
+        _forecast_sim_worker_iid,
+        make_args,
+        trend_increase,
+        "trend_inc",
+        simN,
         aggregate_fn=lambda raw: _collect_results(raw, npre),
         fmt_progress=_fmt_forecast_progress,
         existing_results=existing_results,
@@ -413,9 +500,21 @@ def run_simulation_iid(simN, trend_increase, crit_val, npre, ntt, npost_max,
     )
 
 
-def run_simulation_ar(simN, trend_increase, crit_val, npre, ntt, npost_max,
-                      level, trend_control, sigma, phi, delay_set,
-                      existing_results=None, on_trend_done=None):
+def run_simulation_ar(
+    simN,
+    trend_increase,
+    crit_val,
+    npre,
+    ntt,
+    npost_max,
+    level,
+    trend_control,
+    sigma,
+    phi,
+    delay_set,
+    existing_results=None,
+    on_trend_done=None,
+):
     """
     Run AR(1) BA Forecast simulations for all trend increments.
 
@@ -453,16 +552,34 @@ def run_simulation_ar(simN, trend_increase, crit_val, npre, ntt, npost_max,
     dict
         Mapping trend_inc → result dict (see _collect_results for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         trend_interv = trend_control + trend_val
         return [
-            (sim_idx, trend_interv, trend_idx, n_trends, npre, ntt, npost_max,
-             level, trend_control, sigma, phi, delay_set, crit_val)
+            (
+                sim_idx,
+                trend_interv,
+                trend_idx,
+                n_trends,
+                npre,
+                ntt,
+                npost_max,
+                level,
+                trend_control,
+                sigma,
+                phi,
+                delay_set,
+                crit_val,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _forecast_sim_worker_ar, make_args, trend_increase, 'trend_inc', simN,
+        _forecast_sim_worker_ar,
+        make_args,
+        trend_increase,
+        "trend_inc",
+        simN,
         aggregate_fn=lambda raw: _collect_results(raw, npre),
         fmt_progress=_fmt_forecast_progress,
         existing_results=existing_results,
@@ -474,10 +591,21 @@ def run_simulation_ar(simN, trend_increase, crit_val, npre, ntt, npost_max,
 # Distribution Forecast orchestrators
 # ============================================================================
 
-def run_simulation_cdf_baci(simN: int, trend_increase_mu, crit_val: float,
-                            npre: int, ntt: int, npost_max: int,
-                            mu: float, sigma: float, ns: int, delay_set,
-                            existing_results=None, on_trend_done=None) -> dict:
+
+def run_simulation_cdf_baci(
+    simN: int,
+    trend_increase_mu,
+    crit_val: float,
+    npre: int,
+    ntt: int,
+    npost_max: int,
+    mu: float,
+    sigma: float,
+    ns: int,
+    delay_set,
+    existing_results=None,
+    on_trend_done=None,
+) -> dict:
     """
     Run BACI distribution Forecast simulations for all mean-shift effect sizes.
 
@@ -517,15 +645,33 @@ def run_simulation_cdf_baci(simN: int, trend_increase_mu, crit_val: float,
     dict
         Mapping trend_mu → result dict (see _collect_results for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         return [
-            (sim_idx, trend_val, trend_idx, n_trends, npre, ntt, npost_max,
-             mu, sigma, ns, delay_set, crit_val, False)
+            (
+                sim_idx,
+                trend_val,
+                trend_idx,
+                n_trends,
+                npre,
+                ntt,
+                npost_max,
+                mu,
+                sigma,
+                ns,
+                delay_set,
+                crit_val,
+                False,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _forecast_sim_worker_cdf, make_args, trend_increase_mu, 'trend_mu', simN,
+        _forecast_sim_worker_cdf,
+        make_args,
+        trend_increase_mu,
+        "trend_mu",
+        simN,
         aggregate_fn=lambda raw: _collect_results(raw, npre),
         fmt_progress=_fmt_forecast_progress,
         existing_results=existing_results,
@@ -533,10 +679,20 @@ def run_simulation_cdf_baci(simN: int, trend_increase_mu, crit_val: float,
     )
 
 
-def run_simulation_cdf_ba(simN: int, trend_increase_mu, crit_val: float,
-                          npre: int, ntt: int, npost_max: int,
-                          mu: float, sigma: float, ns: int, delay_set,
-                          existing_results=None, on_trend_done=None) -> dict:
+def run_simulation_cdf_ba(
+    simN: int,
+    trend_increase_mu,
+    crit_val: float,
+    npre: int,
+    ntt: int,
+    npost_max: int,
+    mu: float,
+    sigma: float,
+    ns: int,
+    delay_set,
+    existing_results=None,
+    on_trend_done=None,
+) -> dict:
     """
     Run BA distribution Forecast simulations for all mean-shift effect sizes.
 
@@ -576,15 +732,33 @@ def run_simulation_cdf_ba(simN: int, trend_increase_mu, crit_val: float,
     dict
         Mapping trend_mu → result dict (see _collect_results for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         return [
-            (sim_idx, trend_val, trend_idx, n_trends, npre, ntt, npost_max,
-             mu, sigma, ns, delay_set, crit_val, True)
+            (
+                sim_idx,
+                trend_val,
+                trend_idx,
+                n_trends,
+                npre,
+                ntt,
+                npost_max,
+                mu,
+                sigma,
+                ns,
+                delay_set,
+                crit_val,
+                True,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _forecast_sim_worker_cdf, make_args, trend_increase_mu, 'trend_mu', simN,
+        _forecast_sim_worker_cdf,
+        make_args,
+        trend_increase_mu,
+        "trend_mu",
+        simN,
         aggregate_fn=lambda raw: _collect_results(raw, npre),
         fmt_progress=_fmt_forecast_progress,
         existing_results=existing_results,

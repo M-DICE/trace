@@ -12,6 +12,7 @@ def _find_project_root():
         p = p.parent
     raise RuntimeError("Could not find project root (pyproject.toml not found)")
 
+
 _ROOT = _find_project_root()
 
 
@@ -39,7 +40,7 @@ def save_simulation_results(folder: str, data: dict):
     """Save data dict to results/<folder>/sim_results.pkl."""
     path = _ROOT / "results" / folder / "sim_results.pkl"
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'wb') as f:
+    with open(path, "wb") as f:
         pickle.dump(data, f)
     print(f"✓ Simulation results saved: {path}")
 
@@ -49,7 +50,7 @@ def load_simulation_results(folder: str):
     path = _ROOT / "results" / folder / "sim_results.pkl"
     if not path.exists():
         return None
-    with open(path, 'rb') as f:
+    with open(path, "rb") as f:
         data = pickle.load(f)
     print(f"✓ Simulation results loaded: {path}")
     return data

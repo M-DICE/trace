@@ -45,11 +45,14 @@ def ci_sim(seed=10, npre=24, npost=24, level=10, trend=None, sigma=0.05):
     # Generate intervention time series (trend changes at tau = npre)
     y_interv = np.zeros(nt)
     y_interv[:npre] = level + trend_control * t[:npre] + np.random.normal(0, sigma, npre)
-    y_interv[npre:] = (level + trend_control * npre +
-                       trend_interv * np.arange(1, npost + 1) +
-                       np.random.normal(0, sigma, npost))
+    y_interv[npre:] = (
+        level
+        + trend_control * npre
+        + trend_interv * np.arange(1, npost + 1)
+        + np.random.normal(0, sigma, npost)
+    )
 
-    return {'y_ctr': y_control, 'y_itv': y_interv}
+    return {"y_ctr": y_control, "y_itv": y_interv}
 
 
 def ci_sim_ar(seed=10, npre=24, npost=24, level=10, trend=None, phi=0.5, sigma=0.05):
@@ -108,9 +111,9 @@ def ci_sim_ar(seed=10, npre=24, npost=24, level=10, trend=None, phi=0.5, sigma=0
     # Intervention series: pre-period follows trend_control, post-period switches to trend_interv
     # Each segment gets its own independently seeded AR(1) noise (matching R's two arima.sim calls)
     y_pre = level + trend_control * t[:npre] + ar1_noise(npre)
-    y_post = (level + trend_control * npre +
-              trend_interv * np.arange(1, npost + 1) +
-              ar1_noise(npost))
+    y_post = (
+        level + trend_control * npre + trend_interv * np.arange(1, npost + 1) + ar1_noise(npost)
+    )
     y_interv = np.concatenate([y_pre, y_post])
 
-    return {'y_ctr': y_control, 'y_itv': y_interv}
+    return {"y_ctr": y_control, "y_itv": y_interv}

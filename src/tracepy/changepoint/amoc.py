@@ -84,15 +84,17 @@ def lookup_crit_val(table, detector="PageCUSUM", gamma=0.0, alpha=0.05):
 _cfg = load_params()
 
 CRITICAL_VALUE_NPOST_SHORT = _cfg["stats"]["critical_value_npost_short"]
-CRITICAL_VALUE_NPOST_LONG  = _cfg["stats"]["critical_value_npost_long"]
+CRITICAL_VALUE_NPOST_LONG = _cfg["stats"]["critical_value_npost_long"]
 
 
 # ============================================================================
 # Null Distribution (Critical Values) — Trend Change
 # ============================================================================
 
-def _run_null_simulations(Nsim, npre, npost, level, trend_control, sigma, phi,
-                          use_ar, label, ba=False):
+
+def _run_null_simulations(
+    Nsim, npre, npost, level, trend_control, sigma, phi, use_ar, label, ba=False
+):
     """
     Run *Nsim* null simulations (no trend change) and return max test statistics.
 
@@ -129,8 +131,7 @@ def _run_null_simulations(Nsim, npre, npost, level, trend_control, sigma, phi,
         Maximum test statistic from each null simulation.
     """
     args_list = [
-        (i, npre, npost, level, trend_control, sigma, phi, use_ar, ba)
-        for i in range(1, Nsim + 1)
+        (i, npre, npost, level, trend_control, sigma, phi, use_ar, ba) for i in range(1, Nsim + 1)
     ]
     results = _run_parallel(_null_sim_worker, args_list, label=label)
     return np.array(results)
@@ -176,29 +177,56 @@ def calculate_critical_values(Nsim, npre, level, trend_control, sigma, phi, alph
     """
     critical_values = {}
 
-    for npost, tag in [(CRITICAL_VALUE_NPOST_SHORT, str(CRITICAL_VALUE_NPOST_SHORT)),
-                       (CRITICAL_VALUE_NPOST_LONG,  str(CRITICAL_VALUE_NPOST_LONG))]:
+    for npost, tag in [
+        (CRITICAL_VALUE_NPOST_SHORT, str(CRITICAL_VALUE_NPOST_SHORT)),
+        (CRITICAL_VALUE_NPOST_LONG, str(CRITICAL_VALUE_NPOST_LONG)),
+    ]:
         print(f"  npost = {npost} months:")
 
-        null_iid = _run_null_simulations(Nsim, npre, npost, level, trend_control,
-                                         sigma, phi, use_ar=False,
-                                         label=f"i.i.d. BACI, {npost}mo")
+        null_iid = _run_null_simulations(
+            Nsim,
+            npre,
+            npost,
+            level,
+            trend_control,
+            sigma,
+            phi,
+            use_ar=False,
+            label=f"i.i.d. BACI, {npost}mo",
+        )
         cv_iid = np.percentile(null_iid, alpha * 100)
-        critical_values[f'iid_{tag}'] = {'critical_value': cv_iid, 'null_dist': null_iid}
+        critical_values[f"iid_{tag}"] = {"critical_value": cv_iid, "null_dist": null_iid}
         print(f"    i.i.d. BACI cv = {cv_iid:.4f}")
 
-        null_iid_ba = _run_null_simulations(Nsim, npre, npost, level, trend_control,
-                                            sigma, phi, use_ar=False, ba=True,
-                                            label=f"i.i.d. BA, {npost}mo")
+        null_iid_ba = _run_null_simulations(
+            Nsim,
+            npre,
+            npost,
+            level,
+            trend_control,
+            sigma,
+            phi,
+            use_ar=False,
+            ba=True,
+            label=f"i.i.d. BA, {npost}mo",
+        )
         cv_iid_ba = np.percentile(null_iid_ba, alpha * 100)
-        critical_values[f'iid_ba_{tag}'] = {'critical_value': cv_iid_ba, 'null_dist': null_iid_ba}
+        critical_values[f"iid_ba_{tag}"] = {"critical_value": cv_iid_ba, "null_dist": null_iid_ba}
         print(f"    i.i.d. BA   cv = {cv_iid_ba:.4f}")
 
-        null_ar = _run_null_simulations(Nsim, npre, npost, level, trend_control,
-                                        sigma, phi, use_ar=True,
-                                        label=f"AR(1), {npost}mo")
+        null_ar = _run_null_simulations(
+            Nsim,
+            npre,
+            npost,
+            level,
+            trend_control,
+            sigma,
+            phi,
+            use_ar=True,
+            label=f"AR(1), {npost}mo",
+        )
         cv_ar = np.percentile(null_ar, alpha * 100)
-        critical_values[f'ar1_{tag}'] = {'critical_value': cv_ar, 'null_dist': null_ar}
+        critical_values[f"ar1_{tag}"] = {"critical_value": cv_ar, "null_dist": null_ar}
         print(f"    AR(1)       cv = {cv_ar:.4f}")
 
     return critical_values
@@ -207,6 +235,7 @@ def calculate_critical_values(Nsim, npre, level, trend_control, sigma, phi, alph
 # ============================================================================
 # Main Simulation (Alternative Hypothesis) — Trend Change
 # ============================================================================
+
 
 def _amoc_aggregate(raw, critical_value, npre):
     """
@@ -228,38 +257,51 @@ def _amoc_aggregate(raw, critical_value, npre):
         Keys: ``tmax_matrix``, ``cpt_matrix``, ``detected_matrix``, ``delays``,
         ``detection_rates``, ``mean_errors``, ``seeds``.
     """
-    delays       = [r[0] for r in raw]
-    tmax_matrix  = np.array([r[1] for r in raw])
-    cpt_matrix   = np.array([r[2] for r in raw])
-    seeds        = [r[3] for r in raw]
+    delays = [r[0] for r in raw]
+    tmax_matrix = np.array([r[1] for r in raw])
+    cpt_matrix = np.array([r[2] for r in raw])
+    seeds = [r[3] for r in raw]
 
     detected_matrix = tmax_matrix > critical_value
     detection_rates = detected_matrix.mean(axis=0)
 
-    true_cpts    = np.array([npre + d for d in delays])
+    true_cpts = np.array([npre + d for d in delays])
     error_matrix = np.abs(cpt_matrix - true_cpts[:, np.newaxis])
-    mean_errors  = error_matrix.mean(axis=0)
+    mean_errors = error_matrix.mean(axis=0)
 
     return {
-        'tmax_matrix':     tmax_matrix,
-        'cpt_matrix':      cpt_matrix,
-        'detected_matrix': detected_matrix,
-        'delays':          delays,
-        'detection_rates': detection_rates,
-        'mean_errors':     mean_errors,
-        'seeds':           seeds,
+        "tmax_matrix": tmax_matrix,
+        "cpt_matrix": cpt_matrix,
+        "detected_matrix": detected_matrix,
+        "delays": delays,
+        "detection_rates": detection_rates,
+        "mean_errors": mean_errors,
+        "seeds": seeds,
     }
 
 
 def _fmt_amoc_progress(result):
     """Return progress suffix showing detection rate and mean error at the last npost."""
-    return (f"detect={float(result['detection_rates'][-1]):.2%}  "
-            f"err={float(result['mean_errors'][-1]):.1f}mo")
+    return (
+        f"detect={float(result['detection_rates'][-1]):.2%}  "
+        f"err={float(result['mean_errors'][-1]):.1f}mo"
+    )
 
 
-def run_main_simulation(simN, trend_increase, critical_value, npre, npost_max,
-                        npost_vec, level, trend_control, sigma, delay_set,
-                        existing_results=None, on_trend_done=None):
+def run_main_simulation(
+    simN,
+    trend_increase,
+    critical_value,
+    npre,
+    npost_max,
+    npost_vec,
+    level,
+    trend_control,
+    sigma,
+    delay_set,
+    existing_results=None,
+    on_trend_done=None,
+):
     """
     Run i.i.d. BACI main simulations (with trend change) for all trend increments.
 
@@ -299,16 +341,33 @@ def run_main_simulation(simN, trend_increase, critical_value, npre, npost_max,
     dict
         Mapping trend_inc → result dict (see _amoc_aggregate for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         trend_interv = trend_control + trend_val
         return [
-            (sim_idx, trend_interv, trend_idx, n_trends, npre, npost_max,
-             npost_vec, level, trend_control, sigma, delay_set, False)
+            (
+                sim_idx,
+                trend_interv,
+                trend_idx,
+                n_trends,
+                npre,
+                npost_max,
+                npost_vec,
+                level,
+                trend_control,
+                sigma,
+                delay_set,
+                False,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _main_sim_worker, make_args, trend_increase, 'trend_inc', simN,
+        _main_sim_worker,
+        make_args,
+        trend_increase,
+        "trend_inc",
+        simN,
         aggregate_fn=lambda raw: _amoc_aggregate(raw, critical_value, npre),
         fmt_progress=_fmt_amoc_progress,
         existing_results=existing_results,
@@ -316,9 +375,20 @@ def run_main_simulation(simN, trend_increase, critical_value, npre, npost_max,
     )
 
 
-def run_main_simulation_iid_ba(simN, trend_increase, critical_value, npre, npost_max,
-                               npost_vec, level, trend_control, sigma, delay_set,
-                               existing_results=None, on_trend_done=None):
+def run_main_simulation_iid_ba(
+    simN,
+    trend_increase,
+    critical_value,
+    npre,
+    npost_max,
+    npost_vec,
+    level,
+    trend_control,
+    sigma,
+    delay_set,
+    existing_results=None,
+    on_trend_done=None,
+):
     """
     Run i.i.d. BA main simulations (with trend change) for all trend increments.
 
@@ -359,16 +429,33 @@ def run_main_simulation_iid_ba(simN, trend_increase, critical_value, npre, npost
     dict
         Mapping trend_inc → result dict (see _amoc_aggregate for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         trend_interv = trend_control + trend_val
         return [
-            (sim_idx, trend_interv, trend_idx, n_trends, npre, npost_max,
-             npost_vec, level, trend_control, sigma, delay_set, True)
+            (
+                sim_idx,
+                trend_interv,
+                trend_idx,
+                n_trends,
+                npre,
+                npost_max,
+                npost_vec,
+                level,
+                trend_control,
+                sigma,
+                delay_set,
+                True,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _main_sim_worker, make_args, trend_increase, 'trend_inc', simN,
+        _main_sim_worker,
+        make_args,
+        trend_increase,
+        "trend_inc",
+        simN,
         aggregate_fn=lambda raw: _amoc_aggregate(raw, critical_value, npre),
         fmt_progress=_fmt_amoc_progress,
         existing_results=existing_results,
@@ -376,9 +463,21 @@ def run_main_simulation_iid_ba(simN, trend_increase, critical_value, npre, npost
     )
 
 
-def run_main_simulation_ar(simN, trend_increase, critical_value, npre, npost_max,
-                           npost_vec, level, trend_control, sigma, phi, delay_set,
-                           existing_results=None, on_trend_done=None):
+def run_main_simulation_ar(
+    simN,
+    trend_increase,
+    critical_value,
+    npre,
+    npost_max,
+    npost_vec,
+    level,
+    trend_control,
+    sigma,
+    phi,
+    delay_set,
+    existing_results=None,
+    on_trend_done=None,
+):
     """
     Run AR(1) BA main simulations (with trend change) for all trend increments.
 
@@ -422,16 +521,33 @@ def run_main_simulation_ar(simN, trend_increase, critical_value, npre, npost_max
     dict
         Mapping trend_inc → result dict (see _amoc_aggregate for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         trend_interv = trend_control + trend_val
         return [
-            (sim_idx, trend_interv, trend_idx, n_trends, npre, npost_max,
-             npost_vec, level, trend_control, sigma, phi, delay_set)
+            (
+                sim_idx,
+                trend_interv,
+                trend_idx,
+                n_trends,
+                npre,
+                npost_max,
+                npost_vec,
+                level,
+                trend_control,
+                sigma,
+                phi,
+                delay_set,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _main_sim_worker_ar, make_args, trend_increase, 'trend_inc', simN,
+        _main_sim_worker_ar,
+        make_args,
+        trend_increase,
+        "trend_inc",
+        simN,
         aggregate_fn=lambda raw: _amoc_aggregate(raw, critical_value, npre),
         fmt_progress=_fmt_amoc_progress,
         existing_results=existing_results,
@@ -443,9 +559,9 @@ def run_main_simulation_ar(simN, trend_increase, critical_value, npre, npost_max
 # Distribution Change AMOC
 # ============================================================================
 
-CRITICAL_VALUE_NPOST_SHORT_CDF  = _cfg["distribution"]["critical_value_npost_short"]
+CRITICAL_VALUE_NPOST_SHORT_CDF = _cfg["distribution"]["critical_value_npost_short"]
 CRITICAL_VALUE_NPOST_MEDIUM_CDF = _cfg["distribution"]["critical_value_npost_medium"]
-CRITICAL_VALUE_NPOST_LONG_CDF   = _cfg["distribution"]["critical_value_npost_long"]
+CRITICAL_VALUE_NPOST_LONG_CDF = _cfg["distribution"]["critical_value_npost_long"]
 
 
 def calculate_critical_values_cdf(Nsim, npre, mu, sigma, ns, dist_measure, bw, nd, alpha=0.95):
@@ -483,28 +599,45 @@ def calculate_critical_values_cdf(Nsim, npre, mu, sigma, ns, dist_measure, bw, n
     """
     critical_values = {}
 
-    for npost, label in [(CRITICAL_VALUE_NPOST_SHORT_CDF,  "24"),
-                         (CRITICAL_VALUE_NPOST_MEDIUM_CDF, "72"),
-                         (CRITICAL_VALUE_NPOST_LONG_CDF,   "120")]:
+    for npost, label in [
+        (CRITICAL_VALUE_NPOST_SHORT_CDF, "24"),
+        (CRITICAL_VALUE_NPOST_MEDIUM_CDF, "72"),
+        (CRITICAL_VALUE_NPOST_LONG_CDF, "120"),
+    ]:
         args_list = [
-            (i, npre, npost, mu, sigma, ns, dist_measure, bw, nd)
-            for i in range(1, Nsim + 1)
+            (i, npre, npost, mu, sigma, ns, dist_measure, bw, nd) for i in range(1, Nsim + 1)
         ]
-        results = _run_parallel(_null_sim_worker_cdf, args_list,
-                                label=f"npost={npost}mo, {Nsim} sims")
+        results = _run_parallel(
+            _null_sim_worker_cdf, args_list, label=f"npost={npost}mo, {Nsim} sims"
+        )
         cv = np.percentile(results, alpha * 100)
-        critical_values[f'npost_{label}'] = {
-            'critical_value': cv,
-            'null_dist': np.array(results),
+        critical_values[f"npost_{label}"] = {
+            "critical_value": cv,
+            "null_dist": np.array(results),
         }
         print(f"    cv = {cv:.4f}")
 
     return critical_values
 
 
-def run_main_simulation_mu(simN, trend_increase_mu, critical_value, npre, npost_max, npost_vec,
-                           mu, sigma, ns, dist_measure, bw, nd, delay_set, ba=False,
-                           existing_results=None, on_trend_done=None):
+def run_main_simulation_mu(
+    simN,
+    trend_increase_mu,
+    critical_value,
+    npre,
+    npost_max,
+    npost_vec,
+    mu,
+    sigma,
+    ns,
+    dist_measure,
+    bw,
+    nd,
+    delay_set,
+    ba=False,
+    existing_results=None,
+    on_trend_done=None,
+):
     """
     Run CDF AMOC simulations for a mean (mu) shift at each effect size.
 
@@ -550,16 +683,36 @@ def run_main_simulation_mu(simN, trend_increase_mu, critical_value, npre, npost_
     dict
         Mapping trend_mu → result dict (see _amoc_aggregate for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         return [
-            (sim_idx, trend_val, 0.0, ba, trend_idx, n_trends,
-             npre, npost_max, npost_vec, mu, sigma, ns,
-             dist_measure, bw, nd, delay_set)
+            (
+                sim_idx,
+                trend_val,
+                0.0,
+                ba,
+                trend_idx,
+                n_trends,
+                npre,
+                npost_max,
+                npost_vec,
+                mu,
+                sigma,
+                ns,
+                dist_measure,
+                bw,
+                nd,
+                delay_set,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _main_sim_worker_cdf, make_args, trend_increase_mu, 'trend_mu', simN,
+        _main_sim_worker_cdf,
+        make_args,
+        trend_increase_mu,
+        "trend_mu",
+        simN,
         aggregate_fn=lambda raw: _amoc_aggregate(raw, critical_value, npre),
         fmt_progress=None,
         existing_results=existing_results,
@@ -567,9 +720,23 @@ def run_main_simulation_mu(simN, trend_increase_mu, critical_value, npre, npost_
     )
 
 
-def run_main_simulation_sigma(simN, trend_increase_sigma, critical_value, npre, npost_max,
-                              npost_vec, mu, sigma, ns, dist_measure, bw, nd, delay_set,
-                              existing_results=None, on_trend_done=None):
+def run_main_simulation_sigma(
+    simN,
+    trend_increase_sigma,
+    critical_value,
+    npre,
+    npost_max,
+    npost_vec,
+    mu,
+    sigma,
+    ns,
+    dist_measure,
+    bw,
+    nd,
+    delay_set,
+    existing_results=None,
+    on_trend_done=None,
+):
     """
     Run CDF AMOC simulations for a spread (sigma) shift at each effect size.
 
@@ -611,16 +778,36 @@ def run_main_simulation_sigma(simN, trend_increase_sigma, critical_value, npre, 
     dict
         Mapping trend_sigma → result dict (see _amoc_aggregate for keys).
     """
+
     def make_args(trend_val, trend_idx, n_trends):
         return [
-            (sim_idx, 0.0, trend_val, False, trend_idx, n_trends,
-             npre, npost_max, npost_vec, mu, sigma, ns,
-             dist_measure, bw, nd, delay_set)
+            (
+                sim_idx,
+                0.0,
+                trend_val,
+                False,
+                trend_idx,
+                n_trends,
+                npre,
+                npost_max,
+                npost_vec,
+                mu,
+                sigma,
+                ns,
+                dist_measure,
+                bw,
+                nd,
+                delay_set,
+            )
             for sim_idx in range(1, simN + 1)
         ]
 
     return _simulation_loop(
-        _main_sim_worker_cdf, make_args, trend_increase_sigma, 'trend_sigma', simN,
+        _main_sim_worker_cdf,
+        make_args,
+        trend_increase_sigma,
+        "trend_sigma",
+        simN,
         aggregate_fn=lambda raw: _amoc_aggregate(raw, critical_value, npre),
         fmt_progress=None,
         existing_results=existing_results,

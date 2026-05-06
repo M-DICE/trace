@@ -29,16 +29,21 @@ def main() -> None:
         choices=["trend-amoc", "trend-forecast", "distribution-amoc", "distribution-forecast"],
         help="Which simulation to run",
     )
-    parser.add_argument("--quick", action="store_true",
-                        help="Run with Nsim=10, simN=10 for fast smoke-testing")
-    parser.add_argument("--plots-only", "-p", action="store_true",
-                        help="Skip simulation phases and generate plots from saved results")
+    parser.add_argument(
+        "--quick", action="store_true", help="Run with Nsim=10, simN=10 for fast smoke-testing"
+    )
+    parser.add_argument(
+        "--plots-only",
+        "-p",
+        action="store_true",
+        help="Skip simulation phases and generate plots from saved results",
+    )
     args = parser.parse_args()
 
     dispatch = {
-        "trend-amoc":            trend_amoc.run,
-        "distribution-amoc":     distribution_amoc.run,
-        "trend-forecast":        trend_forecast.run,
+        "trend-amoc": trend_amoc.run,
+        "distribution-amoc": distribution_amoc.run,
+        "trend-forecast": trend_forecast.run,
         "distribution-forecast": distribution_forecast.run,
     }
     dispatch[args.simulation](quick=args.quick, plots_only=args.plots_only)

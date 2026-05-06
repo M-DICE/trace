@@ -49,6 +49,7 @@ from tracepy.stats.metrics import (
 # Low-level parallel dispatch
 # ============================================================================
 
+
 def _run_parallel(worker_fn, args_list, label=None):
     """
     Dispatch *worker_fn* over *args_list* using all available CPUs.
@@ -82,6 +83,7 @@ def _run_parallel(worker_fn, args_list, label=None):
 # ============================================================================
 # Shared Monte Carlo loop
 # ============================================================================
+
 
 def _simulation_loop(
     worker_fn,
@@ -148,8 +150,11 @@ def _simulation_loop(
             continue
 
         t0 = time.perf_counter()
-        print(f"  [{trend_idx}/{n_trends}] {label_key}={trend_val:.4f}  ({simN} sims) ...",
-              end="", flush=True)
+        print(
+            f"  [{trend_idx}/{n_trends}] {label_key}={trend_val:.4f}  ({simN} sims) ...",
+            end="",
+            flush=True,
+        )
 
         args_list = make_args(trend_val, trend_idx, n_trends)
 
@@ -170,6 +175,7 @@ def _simulation_loop(
 # ============================================================================
 # Trend AMOC workers
 # ============================================================================
+
 
 def _null_sim_worker(args):
     """
@@ -198,23 +204,41 @@ def _null_sim_worker(args):
         Maximum CUSUM test statistic Tmax over the simulated null series.
     """
     i, npre, npost, level, trend_control, sigma, phi, use_ar, ba = args
-    warnings.filterwarnings('ignore')
+    warnings.filterwarnings("ignore")
 
     if use_ar:
-        sim_data = ci_sim_ar(seed=i, npre=npre, npost=npost, level=level,
-                             trend=[trend_control, trend_control], phi=phi, sigma=sigma)
-        stats = trend_stats_ar(y_itv=sim_data['y_itv'], nt=npre + npost)
+        sim_data = ci_sim_ar(
+            seed=i,
+            npre=npre,
+            npost=npost,
+            level=level,
+            trend=[trend_control, trend_control],
+            phi=phi,
+            sigma=sigma,
+        )
+        stats = trend_stats_ar(y_itv=sim_data["y_itv"], nt=npre + npost)
     elif ba:
-        sim_data = ci_sim(seed=i, npre=npre, npost=npost, level=level,
-                          trend=[trend_control, trend_control], sigma=sigma)
-        stats = trend_stats(y_itv=sim_data['y_itv'], nt=npre + npost)
+        sim_data = ci_sim(
+            seed=i,
+            npre=npre,
+            npost=npost,
+            level=level,
+            trend=[trend_control, trend_control],
+            sigma=sigma,
+        )
+        stats = trend_stats(y_itv=sim_data["y_itv"], nt=npre + npost)
     else:
-        sim_data = ci_sim(seed=i, npre=npre, npost=npost, level=level,
-                          trend=[trend_control, trend_control], sigma=sigma)
-        stats = trend_stats(y_ctr=sim_data['y_ctr'], y_itv=sim_data['y_itv'],
-                            nt=npre + npost)
+        sim_data = ci_sim(
+            seed=i,
+            npre=npre,
+            npost=npost,
+            level=level,
+            trend=[trend_control, trend_control],
+            sigma=sigma,
+        )
+        stats = trend_stats(y_ctr=sim_data["y_ctr"], y_itv=sim_data["y_itv"], nt=npre + npost)
 
-    return stats['Tmax']
+    return stats["Tmax"]
 
 
 def _main_sim_worker(args):
@@ -251,35 +275,53 @@ def _main_sim_worker(args):
         cpt_vec  : ndarray(n_npost,) — detected changepoint at each npost length
         seed     : int               — simulation seed for on-demand regeneration
     """
-    (sim_idx, trend_interv, trend_idx, n_trends, npre, npost_max, npost_vec,
-     level, trend_control, sigma, delay_set, ba) = args
-    warnings.filterwarnings('ignore')
+    (
+        sim_idx,
+        trend_interv,
+        trend_idx,
+        n_trends,
+        npre,
+        npost_max,
+        npost_vec,
+        level,
+        trend_control,
+        sigma,
+        delay_set,
+        ba,
+    ) = args
+    warnings.filterwarnings("ignore")
 
     seed = sim_idx * n_trends + trend_idx
     rng = np.random.default_rng(seed)
     delay = int(rng.choice(delay_set))
-    npre_delay  = npre + delay
+    npre_delay = npre + delay
     npost_delay = npost_max - delay
 
-    sim_data = ci_sim(seed=seed, npre=npre_delay, npost=npost_delay, level=level,
-                      trend=[trend_control, trend_interv], sigma=sigma)
+    sim_data = ci_sim(
+        seed=seed,
+        npre=npre_delay,
+        npost=npost_delay,
+        level=level,
+        trend=[trend_control, trend_interv],
+        sigma=sigma,
+    )
 
-    n_npost  = len(npost_vec)
+    n_npost = len(npost_vec)
     tmax_vec = np.zeros(n_npost)
-    cpt_vec  = np.zeros(n_npost, dtype=int)
+    cpt_vec = np.zeros(n_npost, dtype=int)
 
     for j, npost in enumerate(npost_vec):
         nt = npre + npost  # truncation length (uses original npre, not npre_delay)
         if ba:
-            stats = trend_stats(y_itv=sim_data['y_itv'][:nt], nt=nt)
+            stats = trend_stats(y_itv=sim_data["y_itv"][:nt], nt=nt)
         else:
             stats = trend_stats(
-                y_ctr=sim_data['y_ctr'][:nt],
-                y_itv=sim_data['y_itv'][:nt],
+                y_ctr=sim_data["y_ctr"][:nt],
+                y_itv=sim_data["y_itv"][:nt],
                 nt=nt,
             )
-        tmax_vec[j] = stats['Tmax']
-        cpt_vec[j]  = stats['cpt']
+        tmax_vec[j] = stats["Tmax"]
+        cpt_vec[j] = stats["cpt"]
 
     return delay, tmax_vec, cpt_vec, seed
 
@@ -309,28 +351,47 @@ def _main_sim_worker_ar(args):
     tuple
         (delay, tmax_vec, cpt_vec, seed) — same shape as _main_sim_worker.
     """
-    (sim_idx, trend_interv, trend_idx, n_trends, npre, npost_max, npost_vec,
-     level, trend_control, sigma, phi, delay_set) = args
-    warnings.filterwarnings('ignore')
+    (
+        sim_idx,
+        trend_interv,
+        trend_idx,
+        n_trends,
+        npre,
+        npost_max,
+        npost_vec,
+        level,
+        trend_control,
+        sigma,
+        phi,
+        delay_set,
+    ) = args
+    warnings.filterwarnings("ignore")
 
     seed = sim_idx * n_trends + trend_idx
     rng = np.random.default_rng(seed)
     delay = int(rng.choice(delay_set))
-    npre_delay  = npre + delay
+    npre_delay = npre + delay
     npost_delay = npost_max - delay
 
-    sim_data = ci_sim_ar(seed=seed, npre=npre_delay, npost=npost_delay, level=level,
-                         trend=[trend_control, trend_interv], phi=phi, sigma=sigma)
+    sim_data = ci_sim_ar(
+        seed=seed,
+        npre=npre_delay,
+        npost=npost_delay,
+        level=level,
+        trend=[trend_control, trend_interv],
+        phi=phi,
+        sigma=sigma,
+    )
 
-    n_npost  = len(npost_vec)
+    n_npost = len(npost_vec)
     tmax_vec = np.zeros(n_npost)
-    cpt_vec  = np.zeros(n_npost, dtype=int)
+    cpt_vec = np.zeros(n_npost, dtype=int)
 
     for j, npost in enumerate(npost_vec):
         nt = npre + npost
-        stats = trend_stats_ar(y_itv=sim_data['y_itv'][:nt], nt=nt)
-        tmax_vec[j] = stats['Tmax']
-        cpt_vec[j]  = stats['cpt']
+        stats = trend_stats_ar(y_itv=sim_data["y_itv"][:nt], nt=nt)
+        tmax_vec[j] = stats["Tmax"]
+        cpt_vec[j] = stats["cpt"]
 
     return delay, tmax_vec, cpt_vec, seed
 
@@ -338,6 +399,7 @@ def _main_sim_worker_ar(args):
 # ============================================================================
 # CDF AMOC workers
 # ============================================================================
+
 
 def _null_sim_worker_cdf(args):
     """
@@ -363,17 +425,16 @@ def _null_sim_worker_cdf(args):
         Maximum CUSUM test statistic Tmax over the simulated null series.
     """
     i, npre, npost, mu, sigma, ns, dist_measure, bw, nd = args
-    warnings.filterwarnings('ignore')
+    warnings.filterwarnings("ignore")
 
-    sim = ci_sim_cdf(seed=i, npre=npre, npost=npost,
-                     level=[mu, sigma], trend=[0, 0], ns=ns)
+    sim = ci_sim_cdf(seed=i, npre=npre, npost=npost, level=[mu, sigma], trend=[0, 0], ns=ns)
     if dist_measure == "wasserstein":
-        dist_ts = wasserstein_distance_baci(sim['sample_ctr'], sim['sample_itv'])
+        dist_ts = wasserstein_distance_baci(sim["sample_ctr"], sim["sample_itv"])
     else:
-        dist_ts = auc_diff_ts(sim['sample_ctr'], sim['sample_itv'], bw=bw, nd=nd)
+        dist_ts = auc_diff_ts(sim["sample_ctr"], sim["sample_itv"], bw=bw, nd=nd)
 
     stats = trend_stats_cdf(dist_ts, nt=npre + npost)
-    return stats['Tmax']
+    return stats["Tmax"]
 
 
 def _main_sim_worker_cdf(args):
@@ -421,37 +482,60 @@ def _main_sim_worker_cdf(args):
         cpt_vec  : ndarray(n_npost,) — detected changepoint at each npost length
         seed     : int               — simulation seed for on-demand regeneration
     """
-    (sim_idx, trend_mu, trend_sigma, ba, trend_idx, n_trends,
-     npre, npost_max, npost_vec, mu, sigma, ns,
-     dist_measure, bw, nd, delay_set) = args
-    warnings.filterwarnings('ignore')
+    (
+        sim_idx,
+        trend_mu,
+        trend_sigma,
+        ba,
+        trend_idx,
+        n_trends,
+        npre,
+        npost_max,
+        npost_vec,
+        mu,
+        sigma,
+        ns,
+        dist_measure,
+        bw,
+        nd,
+        delay_set,
+    ) = args
+    warnings.filterwarnings("ignore")
 
     seed = sim_idx * n_trends + trend_idx
     rng = np.random.default_rng(seed)
     delay = int(rng.choice(delay_set))
-    npre_delay  = npre + delay
+    npre_delay = npre + delay
     npost_delay = npost_max - delay
 
-    sim = ci_sim_cdf(seed=seed, npre=npre_delay, npost=npost_delay,
-                     level=[mu, sigma], trend=[trend_mu, trend_sigma], ns=ns)
+    sim = ci_sim_cdf(
+        seed=seed,
+        npre=npre_delay,
+        npost=npost_delay,
+        level=[mu, sigma],
+        trend=[trend_mu, trend_sigma],
+        ns=ns,
+    )
 
-    n_npost  = len(npost_vec)
+    n_npost = len(npost_vec)
     tmax_vec = np.zeros(n_npost)
-    cpt_vec  = np.zeros(n_npost, dtype=int)
+    cpt_vec = np.zeros(n_npost, dtype=int)
 
     for j, npost in enumerate(npost_vec):
         nt = npre + npost
         if ba:
-            dist_ts = wasserstein_distance_ba(sim['sample_itv'][:, :nt], npre)
+            dist_ts = wasserstein_distance_ba(sim["sample_itv"][:, :nt], npre)
         elif dist_measure == "wasserstein":
-            dist_ts = wasserstein_distance_baci(sim['sample_ctr'][:, :nt],
-                                                sim['sample_itv'][:, :nt])
+            dist_ts = wasserstein_distance_baci(
+                sim["sample_ctr"][:, :nt], sim["sample_itv"][:, :nt]
+            )
         else:
-            dist_ts = auc_diff_ts(sim['sample_ctr'][:, :nt],
-                                  sim['sample_itv'][:, :nt], bw=bw, nd=nd)
+            dist_ts = auc_diff_ts(
+                sim["sample_ctr"][:, :nt], sim["sample_itv"][:, :nt], bw=bw, nd=nd
+            )
 
         stats = trend_stats_cdf(dist_ts, nt=nt)
-        tmax_vec[j] = stats['Tmax']
-        cpt_vec[j]  = stats['cpt']
+        tmax_vec[j] = stats["Tmax"]
+        cpt_vec[j] = stats["cpt"]
 
     return delay, tmax_vec, cpt_vec, seed

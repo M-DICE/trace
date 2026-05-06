@@ -25,28 +25,42 @@ with col1:
     Detect whether a rewilding intervention caused a **change in the trend** (slope) of an
     ecological time series, using the **At Most One Change (AMOC)** offline changepoint method.
     """)
-    st.page_link("pages/01_Trend_Change_AMOC.py", label="Trend Change (AMOC)", icon=":material/open_in_new:")
+    st.page_link(
+        "pages/01_Trend_Change_AMOC.py", label="Trend Change (AMOC)", icon=":material/open_in_new:"
+    )
 
     st.markdown("""
     ### Distribution Change Detection (AMOC)
     Detect whether an intervention caused a **shift in the distribution** (mean or variance)
     of an ecological indicator, using distance-based AMOC detection.
     """)
-    st.page_link("pages/02_Distribution_Change_AMOC.py", label="Distribution Change (AMOC)", icon=":material/open_in_new:")
+    st.page_link(
+        "pages/02_Distribution_Change_AMOC.py",
+        label="Distribution Change (AMOC)",
+        icon=":material/open_in_new:",
+    )
 
     st.markdown("""
     ### Trend Change Detection (Forecast)
     Detect whether an intervention caused a **change in trend** by comparing observed data
     against a **pre-intervention forecast**, using Page-CUSUM analysis.
     """)
-    st.page_link("pages/03_Trend_Change_Forecast.py", label="Trend Change (Forecast)", icon=":material/open_in_new:")
+    st.page_link(
+        "pages/03_Trend_Change_Forecast.py",
+        label="Trend Change (Forecast)",
+        icon=":material/open_in_new:",
+    )
 
     st.markdown("""
     ### Distribution Change Detection (Forecast)
     Detect whether an intervention caused a **shift in the distribution** (mean or variance)
     of an ecological indicator, using forecast-based Page-CUSUM detection.
     """)
-    st.page_link("pages/04_Distribution_Change_Forecast.py", label="Distribution Change (Forecast)", icon=":material/open_in_new:")
+    st.page_link(
+        "pages/04_Distribution_Change_Forecast.py",
+        label="Distribution Change (Forecast)",
+        icon=":material/open_in_new:",
+    )
 
 with col2:
     st.markdown("""

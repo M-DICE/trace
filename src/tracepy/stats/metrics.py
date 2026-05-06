@@ -164,15 +164,17 @@ def trend_stats(y_ctr=None, y_itv=None, nt=None):
 
     for m, cp in enumerate(seg_len):
         # Split data at potential changepoint
-        seg1 = np.arange(1, cp + 1)   # 1-indexed to match R's 1:seglen[m]
+        seg1 = np.arange(1, cp + 1)  # 1-indexed to match R's 1:seglen[m]
         seg2 = np.arange(cp, nt)
 
         # Design matrix for trend model
-        X = np.column_stack([
-            np.ones(nt),
-            np.concatenate([seg1, np.full(len(seg2), seg1[-1])]),
-            np.concatenate([np.zeros(len(seg1)), np.arange(1, len(seg2) + 1)])
-        ])
+        X = np.column_stack(
+            [
+                np.ones(nt),
+                np.concatenate([seg1, np.full(len(seg2), seg1[-1])]),
+                np.concatenate([np.zeros(len(seg1)), np.arange(1, len(seg2) + 1)]),
+            ]
+        )
 
         # Fit OLS regression
         model = OLS(y_dif, X)
@@ -187,7 +189,7 @@ def trend_stats(y_ctr=None, y_itv=None, nt=None):
     Tmax = np.max(np.abs(stats_vec))
     cpt = np.argmax(np.abs(stats_vec)) + mint
 
-    return {'Tmax': Tmax, 'cpt': cpt}
+    return {"Tmax": Tmax, "cpt": cpt}
 
 
 def trend_stats_ar(y_ctr=None, y_itv=None, nt=None):
@@ -224,15 +226,17 @@ def trend_stats_ar(y_ctr=None, y_itv=None, nt=None):
     stats_vec = np.zeros(len(seg_len))
 
     for m, cp in enumerate(seg_len):
-        seg1 = np.arange(1, cp + 1)   # 1-indexed to match R's 1:seglen[m]
+        seg1 = np.arange(1, cp + 1)  # 1-indexed to match R's 1:seglen[m]
         seg2 = np.arange(cp, nt)
 
         # Same design matrix as trend_stats
-        X = np.column_stack([
-            np.ones(nt),
-            np.concatenate([seg1, np.full(len(seg2), seg1[-1])]),
-            np.concatenate([np.zeros(len(seg1)), np.arange(1, len(seg2) + 1)])
-        ])
+        X = np.column_stack(
+            [
+                np.ones(nt),
+                np.concatenate([seg1, np.full(len(seg2), seg1[-1])]),
+                np.concatenate([np.zeros(len(seg1)), np.arange(1, len(seg2) + 1)]),
+            ]
+        )
 
         try:
             # ARIMA(1,0,0) with external regressors, no intercept (include_mean matches include.mean=FALSE in R)
@@ -245,21 +249,21 @@ def trend_stats_ar(y_ctr=None, y_itv=None, nt=None):
             # faster in the inner loop (~nt ARIMA fits per trend_stats_ar call), at
             # the cost of minor numerical differences in parameter estimates vs R.
             # Coefficients: [ar1, beta0, beta1, beta2] → indices [0, 1, 2, 3]
-            model = ARIMA(y_dif, exog=X, order=(1, 0, 0), trend='n')
-            fit = model.fit(method='innovations_mle', disp=False)
+            model = ARIMA(y_dif, exog=X, order=(1, 0, 0), trend="n")
+            fit = model.fit(method="innovations_mle", disp=False)
 
             # Test statistic: (beta1 - beta2) / se(beta1 - beta2)
             # In R: vec = c(0, 0, -1, 1); coef indices 3 and 4 (1-based) = beta1, beta2
             # In Python: exog params are at indices 1, 2, 3 (after AR param at index 0)
-            params = fit.params          # [ar1, beta0, beta1, beta2]
-            cov = fit.cov_params()       # 4×4 covariance matrix
+            params = fit.params  # [ar1, beta0, beta1, beta2]
+            cov = fit.cov_params()  # 4×4 covariance matrix
 
             # Guard: all diagonal entries must be positive before trusting ARIMA estimates.
             # Matches R's: if (all(diag(armafit$var.coef) > 0))
             if not np.all(np.diag(cov) > 0):
                 raise ValueError("non-positive diagonal in ARIMA covariance")
 
-            vec = np.array([0, 0, -1, 1])   # contrast: beta2 - beta1
+            vec = np.array([0, 0, -1, 1])  # contrast: beta2 - beta1
             var_diff = vec @ cov @ vec
             stats_vec[m] = (params[2] - params[3]) / np.sqrt(var_diff)
 
@@ -275,7 +279,7 @@ def trend_stats_ar(y_ctr=None, y_itv=None, nt=None):
     Tmax = np.max(np.abs(stats_vec))
     cpt = np.argmax(np.abs(stats_vec)) + mint
 
-    return {'Tmax': Tmax, 'cpt': cpt}
+    return {"Tmax": Tmax, "cpt": cpt}
 
 
 def trend_stats_cdf(y_dist, nt):
