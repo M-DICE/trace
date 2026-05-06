@@ -287,11 +287,6 @@ def trend_stats_cdf(y_dist, nt):
     trend.stats.cdf(). The distance series replaces the difference series used
     in the scalar time series case.
 
-    Note: R's trend.stats.cdf contains a scoping bug — it references free
-    variables y.ctr and y.itv instead of its parameter y, inadvertently
-    inheriting values from the enclosing environment. This wrapper correctly
-    passes y_dist as the response.
-
     Equivalent to R's trend.stats.cdf().
 
     Parameters

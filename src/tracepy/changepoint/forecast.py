@@ -30,7 +30,7 @@ def _fmt_elapsed(seconds: float) -> str:
 
 def page_cusum(errors, m, crit_val, gamma=0.0):
     """
-    Weighted two-sided Page-CUSUM matching R's cptSeqCUSUM (Forecast_functions.R).
+    Weighted two-sided Page-CUSUM detector.
 
     Accumulates raw centered errors against a time-varying threshold
     T(k) = w(k) * crit_val * sigma, where w(k) = sqrt(m) * (1 + k/m) * (k/(k+m))^gamma.
@@ -59,8 +59,6 @@ def page_cusum(errors, m, crit_val, gamma=0.0):
 def trend_stats_forecast(y_itv, npre, ntt, phi=None, crit_val=2.1705321342):
     """
     Two-stage forecast-based changepoint detection (BA design).
-
-    Equivalent to the inner loop of R's Rewild_trend_change_Forecast.R.
 
     Stage 1 — fit a linear model (OLS or ARIMA(1,0,0)) on the pre-period,
     produce multi-step-ahead forecasts, build the residual series, and run
@@ -110,7 +108,6 @@ def trend_stats_forecast(y_itv, npre, ntt, phi=None, crit_val=2.1705321342):
                 model = ARIMA(y[:npre], exog=X[:npre], order=(1, 0, 0), trend='n')
                 fit = model.fit(method='innovations_mle', disp=False)
             in_residuals = np.asarray(fit.resid, dtype=float)
-            # predicted - actual matches R's arima.predict$pred - y.ts
             forecast_vals = fit.get_forecast(steps=ntt - npre, exog=X[npre:]).predicted_mean
             out_errors = np.asarray(forecast_vals, dtype=float) - y[npre:]
         except Exception:
@@ -120,7 +117,6 @@ def trend_stats_forecast(y_itv, npre, ntt, phi=None, crit_val=2.1705321342):
         # OLS fallback (also used when phi is None)
         ols = OLS(y[:npre], X[:npre]).fit()
         in_residuals = np.asarray(ols.resid, dtype=float)
-        # predicted - actual matches R's lm.predict - y.ts
         out_errors = X[npre:] @ ols.params - y[npre:]
 
     r = np.concatenate([in_residuals, out_errors])
@@ -141,7 +137,7 @@ def trend_stats_forecast(y_itv, npre, ntt, phi=None, crit_val=2.1705321342):
 
 
 # ============================================================================
-# Phase 2: Main Simulation (Alternative Hypothesis) — Forecast
+# Main Simulation (Alternative Hypothesis) — Forecast
 # ============================================================================
 
 def _forecast_sim_worker_iid(args):

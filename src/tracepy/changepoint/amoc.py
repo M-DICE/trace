@@ -47,15 +47,11 @@ def lookup_crit_val(table, detector="PageCUSUM", gamma=0.0, alpha=0.05):
 
 
 # ============================================================================
-# Module-level constants (from rewild_trend_change_amoc.py)
+# Module-level constants
 # ============================================================================
 
 _cfg = load_params()
 
-# R uses npost.vec[c(3, 7)] (1-based indices).
-# npost.vec = seq(24, 120, by=12) so:
-#   npost.vec[3] = 24 + (3-1)*12 = 48 months  (≈ 4 years post-intervention)
-#   npost.vec[7] = 24 + (7-1)*12 = 96 months  (≈ 8 years post-intervention)
 CRITICAL_VALUE_NPOST_SHORT = _cfg["stats"]["critical_value_npost_short"]
 CRITICAL_VALUE_NPOST_LONG  = _cfg["stats"]["critical_value_npost_long"]
 
@@ -68,7 +64,7 @@ def _fmt_elapsed(seconds: float) -> str:
 
 
 # ============================================================================
-# Phase 1: Calculate Critical Values (Null Distribution) — Trend Change
+# Calculate Critical Values (Null Distribution) — Trend Change
 # ============================================================================
 
 def _null_sim_worker(args):
@@ -176,8 +172,6 @@ def _main_sim_worker(args):
     sim_data = ci_sim(seed=seed, npre=npre_delay, npost=npost_delay, level=level,
                       trend=[trend_control, trend_interv], sigma=sigma)
 
-    # Growing window: truncate to npre + npost for each npost in npost_vec,
-    # matching R's: trend.stats(y.ctr=sim.ts$y.ctr[1:nt], ..., nt=npre+npost)
     n_npost = len(npost_vec)
     tmax_vec = np.zeros(n_npost)
     cpt_vec  = np.zeros(n_npost, dtype=int)
@@ -338,7 +332,7 @@ def calculate_critical_values(Nsim, npre, level, trend_control, sigma, phi, alph
 
 
 # ============================================================================
-# Phase 2: Main Simulation (Alternative Hypothesis) — Trend Change
+# Main Simulation (Alternative Hypothesis) — Trend Change
 # ============================================================================
 
 def run_main_simulation(simN, trend_increase, critical_value, npre, npost_max,
@@ -534,11 +528,9 @@ def run_main_simulation_ar(simN, trend_increase, critical_value, npre, npost_max
 
 
 # ============================================================================
-# Distribution Change AMOC (from rewild_distribution_change_amoc.py)
+# Distribution Change AMOC
 # ============================================================================
 
-# Critical value npost lengths (R uses [48, 84] — npost.vec[c(3, 7)])
-# DEVIATION: Python uses [24, 72, 120] to cover full range at step=3
 CRITICAL_VALUE_NPOST_SHORT_CDF  = _cfg["distribution"]["critical_value_npost_short"]
 CRITICAL_VALUE_NPOST_MEDIUM_CDF = _cfg["distribution"]["critical_value_npost_medium"]
 CRITICAL_VALUE_NPOST_LONG_CDF   = _cfg["distribution"]["critical_value_npost_long"]
@@ -601,12 +593,7 @@ def _main_sim_worker_cdf_mu_ba(args):
     cpt_vec  = np.zeros(len(npost_vec), dtype=int)
     for j, npost in enumerate(npost_vec):
         nt = npre + npost
-        # BA uses nominal npre (24) for baseline
-        if dist_measure == "wasserstein":
-            dist_ts = wasserstein_distance_ba(sim['sample_itv'][:, :nt], npre)
-        else:
-            # Fallback to BA Wasserstein
-            dist_ts = wasserstein_distance_ba(sim['sample_itv'][:, :nt], npre)
+        dist_ts = wasserstein_distance_ba(sim['sample_itv'][:, :nt], npre)
         stats = trend_stats_cdf(dist_ts, nt=nt)
         tmax_vec[j] = stats['Tmax']
         cpt_vec[j]  = stats['cpt']
