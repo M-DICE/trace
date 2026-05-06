@@ -109,7 +109,7 @@ def _detection_rates(results, trends, npost_vec):
 # ══════════════════════════════════════════════════════════════════════════════
 # PAGE HEADER
 # ══════════════════════════════════════════════════════════════════════════════
-st.title("🔮 Distribution Change Detection (Forecast)")
+st.title("🌦️ Distribution Change Detection (Forecast)")
 
 st.markdown("""
 Rewilding interventions can affect not just the average abundance of a species, but also its
