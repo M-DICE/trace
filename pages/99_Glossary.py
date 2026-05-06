@@ -52,7 +52,7 @@ GLOSSARY = [
         "term": "i.i.d. (Independent and Identically Distributed) Noise",
         "what": "Random variation in measurements where each observation is independent of the previous one, drawn from the same distribution.",
         "why": "The simplest noise assumption. If you use methods designed for i.i.d. but real data has autocorrelation, your statistical tests become unreliable.",
-        "plain_english": "Think of measuring a stream's nitrogen level each month. With i.i.d. noise, a high reading in January doesn't tell you anything about February's reading. That's the i.i.d. assumption.",
+        "plain_english": "Think of counting deer at a grazing site each month. With i.i.d. noise, a higher-than-usual count in January tells you nothing about February's count and each observation is a fresh draw from the same distribution. That's the i.i.d. assumption.",
         "resources": [
             "[Wikipedia: Independent and Identically Distributed Random Variables](https://en.wikipedia.org/wiki/Independent_and_identically_distributed_random_variables)",
         ],
@@ -61,7 +61,7 @@ GLOSSARY = [
     {
         "term": "AR(1) (Autoregressive Model of Order 1)",
         "what": "A statistical model where each observation depends on the previous observation plus random noise. Captures temporal autocorrelation (memory) in data.",
-        "why": "Ecological data often have \"sticky\" behavior — if a population is high this month, it tends to stay high next month. Ignoring this correlation inflates false positive rates and reduces the sensitivity of statistical tests.",
+        "why": "Ecological data often have \"sticky\" behavior: if a population is high this month, it tends to stay high next month. Ignoring this correlation inflates false positive rates and reduces the sensitivity of statistical tests.",
         "plain_english": "Bird population size follows an AR(1) if: \"Next month's population ≈ 0.7 × (this month's) + random noise.\" The 0.7 is the \"memory\" or autocorrelation coefficient (φ, \"phi\"). Higher φ means stronger memory; φ = 0 means no memory (same as i.i.d. noise).",
         "resources": [
             "[Wikipedia: Autoregressive Model](https://en.wikipedia.org/wiki/Autoregressive_model)",
@@ -91,9 +91,9 @@ GLOSSARY = [
     },
     {
         "term": "BACI (Before-After Control-Intervention)",
-        "what": "A study design with two parallel time series — one control (no intervention) and one intervention — observed both before and after a change point.",
+        "what": "A study design with two parallel time series: one control (no intervention) and one intervention, observed both before and after a change point.",
         "why": "The control series absorbs shared environmental variation (e.g., drought affecting both sites). Subtracting control from intervention isolates the intervention's true effect.",
-        "plain_english": "Monitor two streams — one untouched (control), one restored (intervention). Any difference between them is more likely the restoration's doing, because both streams experience the same weather, seasonal cycles, and other background changes.",
+        "plain_english": "Monitor two streams: one untouched (control), one restored (intervention). Any difference between them is more likely the restoration's doing, because both streams experience the same weather, seasonal cycles, and other background changes.",
         "resources": [
             "[Campbell & Cook (1979) \"Quasi-Experimentation\"](https://www.degruyter.com/document/doi/10.4159/9780674037076/html)",
         ],
@@ -103,14 +103,14 @@ GLOSSARY = [
         "term": "BA (Before-After)",
         "what": "A simpler design using only the intervention time series, with separate statistical models for before and after the changepoint.",
         "why": "Used when there is no suitable control site, or when autocorrelation is strong enough that the control series adds more noise than it removes. It compares the trend *before* the change to the trend *after*.",
-        "plain_english": "Watch one site before the intervention starts, then after. Did the slope — or the distribution — change? That's your answer. The downside is that you cannot distinguish the intervention's effect from background environmental trends.",
+        "plain_english": "Watch one site before the intervention starts, then after. Did the slope or the distribution change? That's your answer. The downside is that you cannot distinguish the intervention's effect from background environmental trends.",
         "resources": [],
         "relevant_for": ["01", "02", "03", "04"],
     },
     {
         "term": "Wasserstein Distance",
         "what": "A measure of how different two probability distributions are, calculated as the minimum \"work\" needed to transform one distribution into the other. Also called the Earth Mover's Distance (EMD).",
-        "why": "When a rewilding intervention changes the *shape* of a population's distribution — not just its average — standard mean-based tests miss it. Wasserstein distance captures changes in mean, variance, skewness, and any other aspect of the distribution simultaneously.",
+        "why": "When a rewilding intervention changes the *shape* of a population's distribution, not just its average standard mean-based tests, miss it. Wasserstein distance captures changes in mean, variance, skewness, and any other aspect of the distribution simultaneously.",
         "plain_english": "Imagine two piles of earth (the two distributions). Wasserstein distance is the amount of earth you'd have to shovel, multiplied by the distance you'd move each shovelful, to turn one pile into the other. If the piles look alike, the distance is small; if they look very different, the distance is large.",
         "resources": [
             "[Wikipedia: Wasserstein Distance](https://en.wikipedia.org/wiki/Wasserstein_metric)",
@@ -145,7 +145,7 @@ GLOSSARY = [
         "term": "Forecast-based Detection (Page-CUSUM)",
         "what": "A sequential changepoint detection method that monitors cumulative deviations from a forecast model in real time, raising an alarm the first time the data diverges significantly from its predicted path.",
         "why": "AMOC looks at the whole time series after the fact and asks \"where did it change?\" Page-CUSUM watches the series unfold month by month and asks \"has it broken yet?\" This makes it suitable for prospective monitoring, not just retrospective analysis.",
-        "plain_english": "Imagine a GPS giving you turn-by-turn directions. AMOC is like reviewing the whole journey on a map at the end to find where you went wrong. Page-CUSUM is like the GPS alarming the moment you take a wrong turn. The earlier the alarm, the shorter your detection delay.",
+        "plain_english": "You monitor bird counts at a restored wetland each month. AMOC waits until the study ends and then looks back across the whole series to find where the trend broke. Page-CUSUM watches each month's count as it arrives and if the moment cumulative deviations from the forecast grow large enough, it raises an alarm. The earlier that alarm sounds, the less time passes before you know the ecosystem has shifted.",
         "resources": [
             "[Page (1954) \"Continuous Inspection Schemes\"](https://www.jstor.org/stable/2333009)",
         ],
@@ -155,7 +155,7 @@ GLOSSARY = [
         "term": "Critical Value",
         "what": "A pre-computed threshold for the test statistic. If `T_max` (AMOC) or the cumulative sum (Page-CUSUM) exceeds this value, the method declares a change detected.",
         "why": "The app reports \"Change Detected\" or \"Not Detected\" based on whether the test statistic crosses this boundary. The threshold is calibrated to a target false-positive rate.",
-        "plain_english": "Think of it as a smoke alarm's sensitivity setting. Too sensitive and it triggers every time you cook; not sensitive enough and it stays silent during a real fire. The critical value sets that sensitivity for the statistical test.",
+        "plain_english": "Camera traps at a rewilding site occasionally misfire on swaying branches. Set the threshold too low and the system declares a wolf sighting every time the wind picks up; set it too high and it misses a real sighting. The critical value sets that sensitivity for the statistical test.",
         "resources": [],
         "relevant_for": ["01", "02", "03", "04"],
     },
