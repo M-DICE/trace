@@ -41,6 +41,13 @@ with col1:
     """)
     st.page_link("pages/03_Trend_Change_Forecast.py", label="Trend Change (Forecast)", icon=":material/open_in_new:")
 
+    st.markdown("""
+    ### Distribution Change Detection (Forecast)
+    Detect whether an intervention caused a **shift in the distribution** (mean or variance)
+    of an ecological indicator, using forecast-based Page-CUSUM detection.
+    """)
+    st.page_link("pages/04_Distribution_Change_Forecast.py", label="Distribution Change (Forecast)", icon=":material/open_in_new:")
+
 with col2:
     st.markdown("""
     ### Coming next
