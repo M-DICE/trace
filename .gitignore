@@ -20,3 +20,7 @@ CLAUDE.md
 # Python
 __pycache__
 .venv
+
+# Tools
+.ruff_cache
+.pytest_cache

@@ -112,6 +112,30 @@ uv run trace-sim distribution-forecast --quick
 
 ---
 
+## Linting
+
+The project uses [ruff](https://docs.astral.sh/ruff/) for linting and import optimisation.
+
+### Check for issues
+
+```bash
+uv run ruff check .
+```
+
+### Fix auto-fixable issues (including import sorting)
+
+```bash
+uv run ruff check --fix .
+```
+
+### Check only imports
+
+```bash
+uv run ruff check --select I .
+```
+
+---
+
 ## R data export scripts
 
 Some Python modules load pre-computed data that originates in the R codebase.

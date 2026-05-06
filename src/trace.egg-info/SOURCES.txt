@@ -7,10 +7,15 @@ src/trace.egg-info/entry_points.txt
 src/trace.egg-info/requires.txt
 src/trace.egg-info/top_level.txt
 src/tracepy/__init__.py
-src/tracepy/cli.py
 src/tracepy/changepoint/__init__.py
 src/tracepy/changepoint/amoc.py
 src/tracepy/changepoint/forecast.py
+src/tracepy/cli/__init__.py
+src/tracepy/cli/_utils.py
+src/tracepy/cli/distribution_amoc.py
+src/tracepy/cli/distribution_forecast.py
+src/tracepy/cli/trend_amoc.py
+src/tracepy/cli/trend_forecast.py
 src/tracepy/params/__init__.py
 src/tracepy/params/manager.py
 src/tracepy/plotting/__init__.py
@@ -23,5 +28,4 @@ src/tracepy/stats/__init__.py
 src/tracepy/stats/metrics.py
 src/tracepy/store/__init__.py
 src/tracepy/store/persistence.py
-tests/test_legacy_regression.py
 tests/test_tracepy_regression.py
