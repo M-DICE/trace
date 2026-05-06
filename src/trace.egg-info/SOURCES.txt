@@ -23,7 +23,9 @@ src/tracepy/plotting/reports.py
 src/tracepy/plotting/styles.py
 src/tracepy/simulation/__init__.py
 src/tracepy/simulation/distribution.py
+src/tracepy/simulation/runners.py
 src/tracepy/simulation/trend.py
+src/tracepy/simulation/utils.py
 src/tracepy/stats/__init__.py
 src/tracepy/stats/metrics.py
 src/tracepy/store/__init__.py
