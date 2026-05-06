@@ -778,13 +778,24 @@ if results_available:
                 x=NPOST_VEC,
                 y=unique_delays,
                 z=z,
+                contours=dict(coloring="fill", start=0.795, end=1.005, size=0.21),
+                colorscale=[[0, "white"], [1, "white"]],
+                opacity=0.15,
+                showscale=False,
+                hoverinfo="skip",
+                line=dict(width=0),
+            ))
+            fig_heat2.add_trace(go.Contour(
+                x=NPOST_VEC,
+                y=unique_delays,
+                z=z,
                 contours=dict(
                     coloring="none",
                     showlabels=True,
                     start=0.80, end=0.95, size=0.15,
-                    labelfont=dict(size=11, color="white"),
+                    labelfont=dict(size=11, color="#1a1a1a"),
                 ),
-                line=dict(color="white", dash="dash"),
+                line=dict(color="#1a1a1a", width=2.5, dash="dash"),
                 showscale=False,
                 hoverinfo="skip",
             ))
@@ -802,7 +813,7 @@ if results_available:
             st.plotly_chart(fig_heat2, width="stretch")
             st.caption(
                 "**How to read this:** find your expected delay on the y-axis, then read "
-                "across to where the colour reaches 80% (first white contour line) — "
+                "across to where the colour reaches 80% (first contour line) — "
                 "that x-value is the minimum monitoring window needed."
             )
 
@@ -1044,6 +1055,18 @@ if results_available:
                     "FDR: %{z:.1%}"
                     "<extra></extra>"
                 ),
+            ))
+            fig.add_trace(go.Contour(
+                x=NPOST_VEC,
+                y=[f"{p}%" for p in EFFECT_SIZES_PCT],
+                z=matrix,
+                contours=dict(
+                    coloring="none", showlabels=True,
+                    start=0.10, end=0.20, size=0.10,
+                    labelfont=dict(size=11, color="#1a1a1a"),
+                ),
+                line=dict(color="#1a1a1a", width=2.5, dash="dash"),
+                showscale=False, hoverinfo="skip",
             ))
             fig.update_layout(
                 title=title,
@@ -1460,11 +1483,11 @@ if run_btn:
     trend_interv = TREND_CONTROL + trend_delta
 
     if results_available:
-        _cv_ciba = cv["iid_48"]["critical_value"]
+        _cv_baci = cv["iid_48"]["critical_value"]
         _cv_ar   = cv["ar1_48"]["critical_value"]
         _cv_ba   = cv.get("iid_ba_48", cv["iid_48"])["critical_value"]
     else:
-        _cv_ciba = _cv_ar = _cv_ba = 2.5
+        _cv_baci = _cv_ar = _cv_ba = 2.5
 
     effective_npost = npost_sim - delay_sim
     if effective_npost < 2:
@@ -1478,7 +1501,7 @@ if run_btn:
     nt_total  = npre_sim + npost_sim
 
     _mini_models = {
-        "i.i.d. BACI": {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ciba},
+        "i.i.d. BACI": {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_baci},
         "AR(1)":        {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ar},
         "i.i.d. BA":    {"all_data": [], "all_stats": [], "detected_flags": [], "detected_cpts": [], "crit_val": _cv_ba},
     }
@@ -1489,7 +1512,7 @@ if run_btn:
         # i.i.d. data — shared between BACI (uses control+intervention) and BA (intervention only)
         sim_iid    = ci_sim(seed=int(base_seed) + i, npre=true_cpt, npost=effective_npost,
                             level=LEVEL, trend=(TREND_CONTROL, trend_interv), sigma=SIGMA)
-        stats_ciba = trend_stats(y_ctr=sim_iid["y_ctr"], y_itv=sim_iid["y_itv"], nt=nt_total)
+        stats_baci = trend_stats(y_ctr=sim_iid["y_ctr"], y_itv=sim_iid["y_itv"], nt=nt_total)
         stats_ba   = trend_stats(y_itv=sim_iid["y_itv"], nt=nt_total)
 
         # AR(1) data — independent realisation
@@ -1498,7 +1521,7 @@ if run_btn:
         stats_ar = trend_stats_ar(y_itv=sim_ar["y_itv"], nt=nt_total)
 
         for label, sim_data, stats in [
-            ("i.i.d. BACI", sim_iid, stats_ciba),
+            ("i.i.d. BACI", sim_iid, stats_baci),
             ("AR(1)",        sim_ar,  stats_ar),
             ("i.i.d. BA",   sim_iid, stats_ba),
         ]:
