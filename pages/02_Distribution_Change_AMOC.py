@@ -352,12 +352,20 @@ if results_available:
             ))
             fig_heat.add_trace(go.Contour(
                 x=NPOST_VEC, y=unique_delays, z=z,
+                contours=dict(coloring="fill", start=0.795, end=1.005, size=0.21),
+                colorscale=[[0, "white"], [1, "white"]],
+                opacity=0.15,
+                showscale=False, hoverinfo="skip",
+                line=dict(width=0),
+            ))
+            fig_heat.add_trace(go.Contour(
+                x=NPOST_VEC, y=unique_delays, z=z,
                 contours=dict(
                     coloring="none", showlabels=True,
                     start=0.80, end=0.95, size=0.15,
-                    labelfont=dict(size=11, color="white"),
+                    labelfont=dict(size=11, color="#1a1a1a"),
                 ),
-                line=dict(color="white", dash="dash"),
+                line=dict(color="#1a1a1a", width=2.5, dash="dash"),
                 showscale=False, hoverinfo="skip",
             ))
             fig_heat.update_layout(
@@ -373,7 +381,7 @@ if results_available:
             st.plotly_chart(fig_heat, width="stretch")
             st.caption(
                 "**How to read this:** find your expected delay on the y-axis, then read "
-                "across to where the colour reaches 80% (first white contour line) — "
+                "across to where the colour reaches 80% (first contour line) — "
                 "that x-value is the minimum monitoring window needed."
             )
 
@@ -536,6 +544,18 @@ if results_available:
                 zmin=0, zmax=1,
                 colorbar=dict(title="FDR", tickformat=".0%"),
                 hovertemplate="npost: %{x} mo<br>Effect: %{y}<br>FDR: %{z:.1%}<extra></extra>",
+            ))
+            fig.add_trace(go.Contour(
+                x=NPOST_VEC,
+                y=[f"{p}%" for p in pct_list],
+                z=matrix,
+                contours=dict(
+                    coloring="none", showlabels=True,
+                    start=0.10, end=0.20, size=0.10,
+                    labelfont=dict(size=11, color="#1a1a1a"),
+                ),
+                line=dict(color="#1a1a1a", width=2.5, dash="dash"),
+                showscale=False, hoverinfo="skip",
             ))
             fig.update_layout(
                 title=title,
