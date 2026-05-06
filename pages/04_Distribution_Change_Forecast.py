@@ -115,19 +115,10 @@ st.markdown("""
 Rewilding interventions can affect not just the average abundance of a species, but also its
 **variability** or the entire **shape of its distribution**.
 
-This page analyses changes in distributions using **Wasserstein Distance** (Forecast / Page-CUSUM).
+This page analyses changes in distributions using **Wasserstein Distance**.
 Unlike AMOC which tests the full series retrospectively, Forecast processes observations one at
-a time and raises an alarm as soon as evidence accumulates — making it well-suited to real-time
+a time and raises an alarm as soon as evidence accumulates. This makes it well-suited to real-time
 monitoring of distributional shifts.
-
-Two design scenarios are compared:
-
-- **BACI** (Before–After Control–Impact): compares the intervention site against a paired control.
-- **BA** (Before–After): uses only the intervention site, comparing the pre- and post-periods.
-
-> **Scope note:** this page covers **mean-shift effects only** (linear trend in μ). Variance-shift
-> analysis (changes in σ) under Forecast is not yet implemented here. See page 02 (Distribution AMOC)
-> for Wasserstein-based detection of variance changes.
 """)
 
 
