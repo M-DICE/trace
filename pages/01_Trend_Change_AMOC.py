@@ -6,15 +6,16 @@ Interactive analysis page for rewild_trend_change_amoc results.
 import pickle
 from datetime import datetime
 from pathlib import Path
+
 import numpy as np
-import streamlit as st
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
 from plotly.subplots import make_subplots
+from scipy.stats import linregress
 
 from tracepy.simulation.trend import ci_sim, ci_sim_ar
 from tracepy.stats.metrics import trend_stats, trend_stats_ar
-from scipy.stats import linregress
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -1585,7 +1586,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     det_rates_str = ", ".join(
         f"**{k}: {mr['models'][k]['det_rate']:.1%}**" for k in _model_labels
     )
-    st.success(f"Simulation complete!")
+    st.success("Simulation complete!")
 
     # ── Summary metrics — one column per model ─────────────────────────────────
     sm_cols = st.columns(len(_model_labels))
@@ -1663,7 +1664,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     st.subheader(
         f"Run #{run_num} of {n_sim_mr} · base seed {mr['base_seed']} · run seed {show_seed}"
     )
-    st.markdown(f"""
+    st.markdown("""
         - **Colour code:** `grey = control site`; `green = intervention site`.
         - **Dashed fitted lines** show trends before and after τ on the intervention series.
         - **Bottom panel:** difference (intervention − control) isolates the signal.

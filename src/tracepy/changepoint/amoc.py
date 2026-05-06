@@ -12,19 +12,19 @@ tracepy.simulation.runners; this module is responsible only for orchestration
 """
 
 import json
-import numpy as np
 from pathlib import Path
 
+import numpy as np
+
 from tracepy.params.manager import load_params
-from tracepy.simulation.utils import _fmt_elapsed
 from tracepy.simulation.runners import (
-    _run_parallel,
-    _simulation_loop,
-    _null_sim_worker,
     _main_sim_worker,
     _main_sim_worker_ar,
-    _null_sim_worker_cdf,
     _main_sim_worker_cdf,
+    _null_sim_worker,
+    _null_sim_worker_cdf,
+    _run_parallel,
+    _simulation_loop,
 )
 
 

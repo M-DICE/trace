@@ -1,17 +1,20 @@
 import time
 import warnings
+
 import numpy as np
 
 from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
-from tracepy.changepoint.forecast import run_simulation_iid, run_simulation_ar
+from tracepy.changepoint.forecast import run_simulation_ar, run_simulation_iid
+from tracepy.cli._utils import fmt_elapsed
+from tracepy.params.manager import load_params
+from tracepy.plotting.reports import plot_simulation_results, plot_time_series
 from tracepy.simulation.trend import ci_sim
 from tracepy.store.persistence import (
-    setup_plots_directory, setup_results_directory,
-    save_simulation_results, load_simulation_results,
+    load_simulation_results,
+    save_simulation_results,
+    setup_plots_directory,
+    setup_results_directory,
 )
-from tracepy.plotting.reports import plot_time_series, plot_simulation_results
-from tracepy.params.manager import load_params
-from tracepy.cli._utils import fmt_elapsed
 
 warnings.filterwarnings('ignore')
 

@@ -1,18 +1,23 @@
 import time
 import warnings
+
 import numpy as np
 
 from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
-from tracepy.changepoint.forecast import run_simulation_cdf_baci, run_simulation_cdf_ba
-from tracepy.store.persistence import (
-    setup_plots_directory, setup_results_directory,
-    save_simulation_results, load_simulation_results,
-)
-from tracepy.plotting.reports import (
-    plot_power_curves, plot_detection_heatmap, plot_forecast_detection_summary,
-)
-from tracepy.params.manager import load_params
+from tracepy.changepoint.forecast import run_simulation_cdf_ba, run_simulation_cdf_baci
 from tracepy.cli._utils import fmt_elapsed
+from tracepy.params.manager import load_params
+from tracepy.plotting.reports import (
+    plot_detection_heatmap,
+    plot_forecast_detection_summary,
+    plot_power_curves,
+)
+from tracepy.store.persistence import (
+    load_simulation_results,
+    save_simulation_results,
+    setup_plots_directory,
+    setup_results_directory,
+)
 
 warnings.filterwarnings('ignore')
 

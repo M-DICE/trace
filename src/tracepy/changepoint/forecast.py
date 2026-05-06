@@ -12,19 +12,16 @@ Monte Carlo loop (_simulation_loop) and timing helper (_fmt_elapsed) are also
 imported from the simulation package.
 """
 
-import os
 import warnings
+
 import numpy as np
-from concurrent.futures import ProcessPoolExecutor
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.arima.model import ARIMA
 
-from tracepy.simulation.trend import ci_sim, ci_sim_ar
 from tracepy.simulation.distribution import ci_sim_cdf
-from tracepy.stats.metrics import trend_stats, wasserstein_distance_baci, wasserstein_distance_ba
-from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
-from tracepy.simulation.utils import _fmt_elapsed
 from tracepy.simulation.runners import _simulation_loop
+from tracepy.simulation.trend import ci_sim, ci_sim_ar
+from tracepy.stats.metrics import trend_stats, wasserstein_distance_ba, wasserstein_distance_baci
 
 
 def page_cusum(errors, m, crit_val, gamma=0.0):

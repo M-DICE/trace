@@ -7,19 +7,20 @@ import pickle
 import warnings
 from datetime import datetime
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-import streamlit as st
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
 from plotly.subplots import make_subplots
-from statsmodels.regression.linear_model import OLS
 from scipy.stats import gaussian_kde
+from statsmodels.regression.linear_model import OLS
 
-from tracepy.simulation.distribution import ci_sim_cdf
 from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
 from tracepy.changepoint.forecast import page_cusum
-from tracepy.stats.metrics import wasserstein_distance_baci, wasserstein_distance_ba
+from tracepy.simulation.distribution import ci_sim_cdf
+from tracepy.stats.metrics import wasserstein_distance_ba, wasserstein_distance_baci
 
 warnings.filterwarnings("ignore")
 

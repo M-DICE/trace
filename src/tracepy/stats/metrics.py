@@ -3,8 +3,8 @@ Statistical metrics for trend-change detection and distribution comparison.
 """
 
 import numpy as np
-import scipy.stats
 import scipy.integrate
+import scipy.stats
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.arima.model import ARIMA
 

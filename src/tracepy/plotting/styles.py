@@ -1,7 +1,7 @@
 """Colour/style constants and shared helpers for TRACE plots."""
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 # ---------------------------------------------------------------------------
 # Shared colour / style constants

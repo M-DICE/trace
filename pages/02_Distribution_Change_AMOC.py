@@ -6,18 +6,19 @@ Interactive analysis page for rewild_distribution_change_amoc results.
 import pickle
 from datetime import datetime
 from pathlib import Path
+
 import numpy as np
-import streamlit as st
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
 from plotly.subplots import make_subplots
+from scipy.stats import gaussian_kde
 
 from tracepy.simulation.distribution import ci_sim_cdf
 from tracepy.stats.metrics import (
-    wasserstein_distance_baci, wasserstein_distance_ba,
-    auc_diff_ts, trend_stats_cdf,
+    trend_stats_cdf,
+    wasserstein_distance_baci,
 )
-from scipy.stats import gaussian_kde
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(

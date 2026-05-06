@@ -1,6 +1,7 @@
 """Load and merge YAML configuration parameters."""
 
 from pathlib import Path
+
 import yaml
 
 _PROJECT_ROOT = Path(__file__)

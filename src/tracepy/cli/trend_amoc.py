@@ -1,31 +1,41 @@
 import time
 import warnings
+
 import numpy as np
 
 from tracepy.changepoint.amoc import (
+    CRITICAL_VALUE_NPOST_LONG,
+    CRITICAL_VALUE_NPOST_SHORT,
     calculate_critical_values,
     run_main_simulation,
     run_main_simulation_ar,
     run_main_simulation_iid_ba,
-    CRITICAL_VALUE_NPOST_SHORT,
-    CRITICAL_VALUE_NPOST_LONG,
+)
+from tracepy.cli._utils import fmt_elapsed
+from tracepy.params.manager import load_params
+from tracepy.plotting.reports import (
+    detection_summary_table,
+    plot_changepoint_bias,
+    plot_detection_by_delay,
+    plot_detection_heatmap,
+    plot_fdr_heatmap,
+    plot_mean_error_curves,
+    plot_null_distributions,
+    plot_power_curves,
+    plot_power_curves_comparison,
+    plot_simulation_results,
+    plot_time_series,
+    plot_time_to_detection,
+    plot_tmax_signal_vs_noise,
 )
 from tracepy.simulation.trend import ci_sim
 from tracepy.stats.metrics import trend_stats
 from tracepy.store.persistence import (
-    setup_plots_directory, setup_results_directory,
-    save_simulation_results, load_simulation_results,
+    load_simulation_results,
+    save_simulation_results,
+    setup_plots_directory,
+    setup_results_directory,
 )
-from tracepy.plotting.reports import (
-    plot_time_series, plot_simulation_results, plot_power_curves,
-    plot_power_curves_comparison, plot_time_to_detection,
-    plot_detection_heatmap, plot_mean_error_curves,
-    plot_null_distributions, plot_tmax_signal_vs_noise,
-    plot_detection_by_delay, plot_changepoint_bias,
-    plot_fdr_heatmap, detection_summary_table,
-)
-from tracepy.params.manager import load_params
-from tracepy.cli._utils import fmt_elapsed
 
 warnings.filterwarnings('ignore')
 

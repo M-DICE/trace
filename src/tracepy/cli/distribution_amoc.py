@@ -1,28 +1,37 @@
 import time
 import warnings
+
 import numpy as np
 
 from tracepy.changepoint.amoc import (
+    CRITICAL_VALUE_NPOST_LONG_CDF,
+    CRITICAL_VALUE_NPOST_SHORT_CDF,
     calculate_critical_values_cdf,
     run_main_simulation_mu,
     run_main_simulation_sigma,
-    CRITICAL_VALUE_NPOST_SHORT_CDF,
-    CRITICAL_VALUE_NPOST_LONG_CDF,
+)
+from tracepy.cli._utils import fmt_elapsed
+from tracepy.params.manager import load_params
+from tracepy.plotting.reports import (
+    detection_summary_table,
+    plot_detection_heatmap,
+    plot_distance_time_series,
+    plot_distribution_difference,
+    plot_fdr_heatmap,
+    plot_mean_error_curves,
+    plot_null_distributions,
+    plot_power_curves,
+    plot_power_curves_mu_sigma,
+    plot_simulation_results,
 )
 from tracepy.simulation.distribution import ci_sim_cdf
-from tracepy.stats.metrics import wasserstein_distance_baci, auc_diff_ts
+from tracepy.stats.metrics import auc_diff_ts, wasserstein_distance_baci
 from tracepy.store.persistence import (
-    setup_plots_directory, setup_results_directory,
-    save_simulation_results, load_simulation_results,
+    load_simulation_results,
+    save_simulation_results,
+    setup_plots_directory,
+    setup_results_directory,
 )
-from tracepy.plotting.reports import (
-    plot_simulation_results, plot_power_curves, plot_detection_heatmap,
-    plot_mean_error_curves, plot_null_distributions, plot_distance_time_series,
-    plot_distribution_difference, plot_power_curves_mu_sigma,
-    plot_fdr_heatmap, detection_summary_table,
-)
-from tracepy.params.manager import load_params
-from tracepy.cli._utils import fmt_elapsed
 
 warnings.filterwarnings('ignore')
 

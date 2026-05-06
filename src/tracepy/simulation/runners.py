@@ -29,21 +29,21 @@ _main_sim_worker_cdf : one alternative simulation for distribution shifts;
 import os
 import time
 import warnings
-import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 
-from tracepy.simulation.trend import ci_sim, ci_sim_ar
+import numpy as np
+
 from tracepy.simulation.distribution import ci_sim_cdf
+from tracepy.simulation.trend import ci_sim, ci_sim_ar
+from tracepy.simulation.utils import _fmt_elapsed
 from tracepy.stats.metrics import (
+    auc_diff_ts,
     trend_stats,
     trend_stats_ar,
     trend_stats_cdf,
-    wasserstein_distance_baci,
     wasserstein_distance_ba,
-    auc_diff_ts,
+    wasserstein_distance_baci,
 )
-from tracepy.simulation.utils import _fmt_elapsed
-
 
 # ============================================================================
 # Low-level parallel dispatch

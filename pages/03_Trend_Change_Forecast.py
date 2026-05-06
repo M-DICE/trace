@@ -7,17 +7,18 @@ import pickle
 import warnings
 from datetime import datetime
 from pathlib import Path
+
 import numpy as np
-import streamlit as st
-import plotly.graph_objects as go
 import plotly.express as px
+import plotly.graph_objects as go
+import streamlit as st
 from plotly.subplots import make_subplots
 from statsmodels.regression.linear_model import OLS
 from statsmodels.tsa.arima.model import ARIMA
 
-from tracepy.simulation.trend import ci_sim, ci_sim_ar
 from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
 from tracepy.changepoint.forecast import trend_stats_forecast
+from tracepy.simulation.trend import ci_sim, ci_sim_ar
 
 _CRIT_VAL_TABLE = load_crit_val_table()
 CRIT_VAL = lookup_crit_val(_CRIT_VAL_TABLE)
