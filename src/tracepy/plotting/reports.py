@@ -434,9 +434,15 @@ def plot_detection_heatmap(detection_results_iid, detection_results_ar,
                        extent=[npost_vec[0], npost_vec[-1],
                                 -0.5, len(trend_increase) - 0.5],
                        vmin=0, vmax=1, cmap='viridis')
-        ax.contour(npost_vec, np.arange(len(trend_increase)), matrix,
-                   levels=[0.80, 0.95], colors=['white', 'white'],
-                   linewidths=1.5, linestyles=['--', ':'])
+        ax.contourf(npost_vec, np.arange(len(trend_increase)), matrix,
+                    levels=[0.80, 1.01], colors=['white'], alpha=0.12)
+        cs = ax.contour(npost_vec, np.arange(len(trend_increase)), matrix,
+                        levels=[0.80, 0.95], colors=['#1a1a1a', '#1a1a1a'],
+                        linewidths=2.5, linestyles=['-', '--'])
+        labels = ax.clabel(cs, fmt={0.80: '80%', 0.95: '95%'},
+                           fontsize=9, inline=True, inline_spacing=8)
+        for lbl in labels:
+            lbl.set_bbox(dict(boxstyle='round,pad=0.2', fc='white', ec='none', alpha=0.7))
         ax.set_xlabel('Post-intervention length (months)', fontsize=11)
         ax.set_title(title, fontsize=12, fontweight='bold')
         ax.set_yticks(np.arange(len(trend_increase)))
@@ -445,7 +451,7 @@ def plot_detection_heatmap(detection_results_iid, detection_results_ar,
     axes[0].set_ylabel('Trend increment', fontsize=11)
     fig.colorbar(im, ax=axes[1], label='Detection rate')
     fig.suptitle('Detection Rate Heatmap: Trend × Post-Intervention Length\n'
-                 '(white dashed = 80% power, white dotted = 95% power)',
+                 '(shaded ≥ 80% power; solid = 80%, dashed = 95%)',
                  fontsize=13, fontweight='bold')
     plt.tight_layout()
     if savefile:
@@ -739,6 +745,14 @@ def plot_fdr_heatmap(detection_results_iid, detection_results_ar,
                        extent=[npost_vec[0], npost_vec[-1],
                                -0.5, len(trend_increase) - 0.5],
                        vmin=0, vmax=1, cmap='YlOrRd')
+        fdr_levels = [0.05, 0.10, 0.20]
+        cs = ax.contour(npost_vec, np.arange(len(trend_increase)), matrix,
+                        levels=fdr_levels, colors=['#1a1a1a', '#1a1a1a', '#1a1a1a'],
+                        linewidths=2.5, linestyles=['-', '--', ':'])
+        labels = ax.clabel(cs, fmt={0.05: '5%', 0.10: '10%', 0.20: '20%'},
+                           fontsize=9, inline=True, inline_spacing=8)
+        for lbl in labels:
+            lbl.set_bbox(dict(boxstyle='round,pad=0.2', fc='white', ec='none', alpha=0.7))
         ax.set_xlabel('Post-intervention length (months)', fontsize=11)
         ax.set_title(title, fontsize=12, fontweight='bold')
         ax.set_yticks(np.arange(len(trend_increase)))
@@ -747,7 +761,7 @@ def plot_fdr_heatmap(detection_results_iid, detection_results_ar,
     axes[0].set_ylabel('Trend increment', fontsize=11)
     fig.colorbar(im, ax=axes[1], label='False Discovery Rate')
     fig.suptitle('False Discovery Rate Heatmap: Trend × Post-Intervention Length\n'
-                 '(FDR = fraction of detections with τ̂ before τ_true)',
+                 '(FDR = fraction of detections with τ̂ before τ_true; solid = 5%, dashed = 10%, dotted = 20%)',
                  fontsize=13, fontweight='bold')
     plt.tight_layout()
     if savefile:
@@ -787,6 +801,65 @@ def detection_summary_table(detection_results, trend_increase, npre):
             'no_detection': n_runs - n_detected,
         })
     return pd.DataFrame(rows)
+
+
+def plot_forecast_detection_summary(detection_results: dict, trend_increase,
+                                    npre: int, title: str = "",
+                                    savefile: str = None):
+    """
+    Compute and print a summary table for distribution forecast detection results.
+
+    Columns: trend_mu, TPR, median_delay, mean_delay, std_delay, no_detection.
+    Matches R's summary matrix format from Simulation_figures_and_tables.R.
+
+    TPR = fraction of sims where |cpt_est - true_cpt| <= 12 (treated as correct).
+    Delay = time_est + npre - true_cpt (positive = detected late).
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    import pandas as pd
+
+    rows = []
+    for trend_mu in trend_increase:
+        entry = detection_results[trend_mu]
+        cpt_est_vec  = np.array(entry['cpt_est_vec'], dtype=float)
+        time_est_vec = np.array(entry['time_est_vec'], dtype=float)
+        delays       = np.array(entry['delays'])
+        true_cpts    = npre + delays
+
+        finite_mask = np.isfinite(time_est_vec)
+        no_detection = int(np.sum(~finite_mask))
+
+        tpr_mask = np.abs(cpt_est_vec - true_cpts) <= 12
+        tpr_mask[~finite_mask] = False
+        tpr = float(tpr_mask.mean())
+
+        delay_vec = time_est_vec[finite_mask] + npre - true_cpts[finite_mask]
+        median_delay = float(np.median(delay_vec)) if len(delay_vec) > 0 else float('nan')
+        mean_delay   = float(np.mean(delay_vec))   if len(delay_vec) > 0 else float('nan')
+        std_delay    = float(np.std(delay_vec))    if len(delay_vec) > 0 else float('nan')
+
+        rows.append({
+            'trend_mu':     round(trend_mu, 4),
+            'TPR':          round(tpr, 2),
+            'median_delay': round(median_delay, 2),
+            'mean_delay':   round(mean_delay, 2),
+            'std_delay':    round(std_delay, 2),
+            'no_detection': no_detection,
+        })
+
+    df = pd.DataFrame(rows)
+    if title:
+        print(f"\n{title}")
+    print(df.to_string(index=False))
+
+    if savefile:
+        df.to_csv(savefile, index=False)
+        print(f"Table saved: {savefile}")
+
+    return df
 
 
 def compare_methods(results_dict, figsize=(12, 5), savefile=None):
