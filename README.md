@@ -62,6 +62,7 @@ The app loads results from `results/`. Run the simulations before launching the 
 ```bash
 uv run trace-sim trend-amoc
 uv run trace-sim distribution-amoc
+uv run trace-sim distribution-forecast
 ```
 
 ## Python simulations (command-line)
@@ -70,7 +71,7 @@ uv run trace-sim distribution-amoc
 uv run trace-sim <simulation> [--quick] [--plots-only]
 ```
 
-Simulations: `trend-amoc`, `trend-forecast`, `distribution-amoc`
+Simulations: `trend-amoc`, `trend-forecast`, `distribution-amoc`, `distribution-forecast`
 
 ### Trend change AMOC
 
@@ -99,6 +100,14 @@ uv run trace-sim trend-forecast --quick
 uv run trace-sim distribution-amoc
 uv run trace-sim distribution-amoc --plots-only
 uv run trace-sim distribution-amoc --quick
+```
+
+### Distribution change Forecast
+
+```bash
+uv run trace-sim distribution-forecast
+uv run trace-sim distribution-forecast --plots-only
+uv run trace-sim distribution-forecast --quick
 ```
 
 ---
