@@ -34,6 +34,12 @@ The interactive app lets you explore pre-computed simulation results and run sma
 
 ### Prerequisites
 
+**R (>= 4.x)** must be installed on your system. The BOCPD method calls into R via rpy2, so a working R installation is required even when running Python simulations.
+
+- macOS: `brew install r`
+- Linux: see [CRAN instructions](https://cran.r-project.org/)
+- Windows: see [CRAN instructions](https://cran.r-project.org/)
+
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (fast Python package manager):
 
 ```bash
