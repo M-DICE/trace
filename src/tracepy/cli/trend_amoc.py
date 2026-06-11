@@ -11,7 +11,13 @@ from tracepy.changepoint.amoc import (
     run_main_simulation_ar,
     run_main_simulation_iid_ba,
 )
-from tracepy.cli._utils import fmt_elapsed
+from tracepy.cli._utils import (
+    fmt_elapsed,
+    print_complete,
+    print_run_header,
+    print_stage,
+    print_summary_header,
+)
 from tracepy.params.manager import load_params
 from tracepy.plotting.reports import (
     detection_summary_table,
@@ -69,19 +75,21 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     plots_dir = setup_plots_directory(FOLDER)
     setup_results_directory(FOLDER)
 
-    print("Trend Change AMOC Detection")
-    print("=" * 70)
-    print(f"Pre-intervention period:          {npre} months")
-    print(f"Post-intervention range:          {npost_vec[0]} to {npost_max} months")
-    print(f"Number of trend increments:       {len(trend_increase)}")
-    print(f"Noise level (sigma):              {sigma}")
-    print(f"AR(1) coefficient (phi):          {phi}")
-    print(f"Delay range:                      {delay_set[0]}–{delay_set[-1]} months")
-    print(
-        f"Critical value npost lengths:     "
-        f"{CRITICAL_VALUE_NPOST_SHORT} and {CRITICAL_VALUE_NPOST_LONG} months"
+    print_run_header(
+        "Trend Change AMOC Detection",
+        [
+            ("Pre-intervention period", f"{npre} months"),
+            ("Post-intervention range", f"{npost_vec[0]} to {npost_max} months"),
+            ("Number of trend increments", len(trend_increase)),
+            ("Noise level (sigma)", sigma),
+            ("AR(1) coefficient (phi)", phi),
+            ("Delay range", f"{delay_set[0]}–{delay_set[-1]} months"),
+            (
+                "Critical value npost lengths",
+                f"{CRITICAL_VALUE_NPOST_SHORT} and {CRITICAL_VALUE_NPOST_LONG} months",
+            ),
+        ],
     )
-    print()
 
     loaded = {} if no_cache else (load_simulation_results(FOLDER) or {})
 
@@ -134,13 +142,11 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
         print()
 
         if critical_values is not None:
-            print("PHASE 1: Critical Values (loaded from cache, skipping)")
+            print_stage("Critical values — null distribution (cached)")
             for key, cv_data in critical_values.items():
                 print(f"  [{key}] cv = {cv_data['critical_value']:.4f}")
         else:
-            print("=" * 70)
-            print("PHASE 1: Calculating Critical Values (Null Distribution)")
-            print("=" * 70)
+            print_stage("Critical values — null distribution")
             t0 = time.perf_counter()
             critical_values = calculate_critical_values(
                 Nsim=Nsim,
@@ -151,7 +157,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
                 phi=phi,
                 alpha=alpha,
             )
-            print(f"  Phase 1 total: {fmt_elapsed(time.perf_counter() - t0)}")
+            print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
             _save()
         print()
 
@@ -159,9 +165,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
         cv_ar = critical_values[f"ar1_{CRITICAL_VALUE_NPOST_SHORT}"]["critical_value"]
         cv_iid_ba = critical_values[f"iid_ba_{CRITICAL_VALUE_NPOST_SHORT}"]["critical_value"]
 
-        print("=" * 70)
-        print(f"PHASE 2: i.i.d. BACI  ({len(detection_results)}/{len(trend_increase)} cached)")
-        print("=" * 70)
+        print_stage("Detection — i.i.d. BACI", len(detection_results), len(trend_increase))
         t0 = time.perf_counter()
 
         def on_done_iid(r):
@@ -184,12 +188,10 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_iid,
         )
         _save()
-        print(f"  Phase 2 total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
         print()
 
-        print("=" * 70)
-        print(f"PHASE 3: AR(1)  ({len(detection_results_ar)}/{len(trend_increase)} cached)")
-        print("=" * 70)
+        print_stage("Detection — AR(1) BA", len(detection_results_ar), len(trend_increase))
         t0 = time.perf_counter()
 
         def on_done_ar(r):
@@ -213,12 +215,10 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_ar,
         )
         _save()
-        print(f"  Phase 3 total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
         print()
 
-        print("=" * 70)
-        print(f"PHASE 4: i.i.d. BA  ({len(detection_results_iid_ba)}/{len(trend_increase)} cached)")
-        print("=" * 70)
+        print_stage("Detection — i.i.d. BA", len(detection_results_iid_ba), len(trend_increase))
         t0 = time.perf_counter()
 
         def on_done_ba(r):
@@ -241,10 +241,10 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_ba,
         )
         _save()
-        print(f"  Phase 4 total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
         print()
 
-        print(f"All phases complete in {fmt_elapsed(time.perf_counter() - t_total)}")
+        print(f"Total runtime: {fmt_elapsed(time.perf_counter() - t_total)}")
         print()
 
     if plots_only:
@@ -297,16 +297,15 @@ def _print_summary(
         + (f"  {'ba detect':>10}  {'ba error':>9}" if has_ba else "")
     )
     sep = "-" * len(col)
-    print("=" * len(col))
-    print(f"RESULTS SUMMARY — at npost_max ({npost_max} months)")
     cv_iid = critical_values[f"iid_{CRITICAL_VALUE_NPOST_SHORT}"]["critical_value"]
     cv_ar1 = critical_values[f"ar1_{CRITICAL_VALUE_NPOST_SHORT}"]["critical_value"]
-    print(f"  i.i.d. BACI cv: {cv_iid:.4f}")
-    print(f"  AR(1)  BA   cv: {cv_ar1:.4f}")
+    sublines = [f"  i.i.d. BACI cv: {cv_iid:.4f}", f"  AR(1)  BA   cv: {cv_ar1:.4f}"]
     if has_ba:
         cv_ba = critical_values[f"iid_ba_{CRITICAL_VALUE_NPOST_SHORT}"]["critical_value"]
-        print(f"  i.i.d. BA   cv: {cv_ba:.4f}")
-    print("=" * len(col))
+        sublines.append(f"  i.i.d. BA   cv: {cv_ba:.4f}")
+    print_summary_header(
+        f"Results summary — npost_max ({npost_max} months)", len(col), tuple(sublines)
+    )
     print(col)
     print(sep)
     for trend_inc in trend_increase:
@@ -425,7 +424,4 @@ def _generate_plots(
     print(df_iid.to_string(index=False))
     print("\nAR(1) summary:")
     print(df_ar.to_string(index=False))
-    print("=" * 70)
-    print(f"All plots saved to: {plots_dir}/")
-    print("ANALYSIS COMPLETE")
-    print("=" * 70)
+    print_complete(plots_dir)

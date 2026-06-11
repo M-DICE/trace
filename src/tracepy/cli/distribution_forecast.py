@@ -5,7 +5,13 @@ import numpy as np
 
 from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
 from tracepy.changepoint.forecast import run_simulation_cdf_ba, run_simulation_cdf_baci
-from tracepy.cli._utils import fmt_elapsed
+from tracepy.cli._utils import (
+    fmt_elapsed,
+    print_complete,
+    print_run_header,
+    print_stage,
+    print_summary_header,
+)
 from tracepy.params.manager import load_params
 from tracepy.plotting.reports import (
     plot_detection_heatmap,
@@ -48,17 +54,19 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     plots_dir = setup_plots_directory(FOLDER)
     setup_results_directory(FOLDER)
 
-    print("Distribution Change Forecast Detection (Page-CUSUM)")
-    print("=" * 70)
-    print(f"Pre-intervention period:  {npre} months")
-    print(f"Post-intervention max:    {npost_max} months")
-    print(f"Total series length:      {ntt} months")
-    print(f"Distribution mean (mu):   {mu}")
-    print(f"Distribution std (sigma): {sigma}")
-    print(f"Samples per time point:   {ns}")
-    print(f"Delay range:              {delay_set[0]}–{delay_set[-1]} months")
-    print(f"Critical value:           {crit_val:.7f}")
-    print()
+    print_run_header(
+        "Distribution Change Forecast Detection (Page-CUSUM)",
+        [
+            ("Pre-intervention period", f"{npre} months"),
+            ("Post-intervention max", f"{npost_max} months"),
+            ("Total series length", f"{ntt} months"),
+            ("Distribution mean (mu)", mu),
+            ("Distribution std (sigma)", sigma),
+            ("Samples per time point", ns),
+            ("Delay range", f"{delay_set[0]}–{delay_set[-1]} months"),
+            ("Critical value", f"{crit_val:.7f}"),
+        ],
+    )
 
     loaded = {} if no_cache else (load_simulation_results(FOLDER) or {})
 
@@ -81,9 +89,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     if not plots_only:
         t_total = time.perf_counter()
 
-        print("=" * 70)
-        print(f"PHASE 1: BACI  ({len(detection_results_baci)}/{len(trend_increase_mu)} cached)")
-        print("=" * 70)
+        print_stage("Detection — BACI", len(detection_results_baci), len(trend_increase_mu))
         t0 = time.perf_counter()
 
         def on_done_baci(r):
@@ -106,12 +112,10 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_baci,
         )
         _save()
-        print(f"  Phase 1 total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
         print()
 
-        print("=" * 70)
-        print(f"PHASE 2: BA  ({len(detection_results_ba)}/{len(trend_increase_mu)} cached)")
-        print("=" * 70)
+        print_stage("Detection — BA", len(detection_results_ba), len(trend_increase_mu))
         t0 = time.perf_counter()
 
         def on_done_ba(r):
@@ -134,10 +138,10 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_ba,
         )
         _save()
-        print(f"  Phase 2 total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
         print()
 
-        print(f"All phases complete in {fmt_elapsed(time.perf_counter() - t_total)}")
+        print(f"Total runtime: {fmt_elapsed(time.perf_counter() - t_total)}")
         print()
 
     _print_summary(detection_results_baci, detection_results_ba, trend_increase_mu)
@@ -149,8 +153,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
 def _print_summary(detection_results_baci, detection_results_ba, trend_increase_mu):
     col = f"{'Trend Mu':>10} | {'BACI Detect':>12} | {'BA Detect':>10}"
     sep = "-" * len(col)
-    print("\nRESULTS SUMMARY (at npost_max)")
-    print(sep)
+    print_summary_header("Results summary — npost_max", len(col))
     print(col)
     print(sep)
     for t in trend_increase_mu:
@@ -218,6 +221,4 @@ def _generate_plots(
         savefile=f"{plots_dir}/summary_table_ba.csv",
     )
 
-    print(f"All plots saved to: {plots_dir}/")
-    print("ANALYSIS COMPLETE")
-    print("=" * 70)
+    print_complete(plots_dir)

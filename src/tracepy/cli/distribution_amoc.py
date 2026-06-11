@@ -10,7 +10,13 @@ from tracepy.changepoint.amoc import (
     run_main_simulation_mu,
     run_main_simulation_sigma,
 )
-from tracepy.cli._utils import fmt_elapsed
+from tracepy.cli._utils import (
+    fmt_elapsed,
+    print_complete,
+    print_run_header,
+    print_stage,
+    print_summary_header,
+)
 from tracepy.params.manager import load_params
 from tracepy.plotting.reports import (
     detection_summary_table,
@@ -65,16 +71,18 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     plots_dir = setup_plots_directory(FOLDER)
     setup_results_directory(FOLDER)
 
-    print("Distribution Change AMOC Detection")
-    print("=" * 70)
-    print(f"Pre-intervention period:  {npre} months")
-    print(f"npost_vec:                {npost_vec[0]} to {npost_max} (step={dist['npost_step']})")
-    print(f"Distribution mean (mu):   {mu}")
-    print(f"Distribution std (sigma): {sigma}")
-    print(f"Distance measure:         {dist_measure}")
-    print(f"Samples per time point:   {ns}")
-    print(f"Delay range:              {delay_set[0]}–{delay_set[-1]} months")
-    print()
+    print_run_header(
+        "Distribution Change AMOC Detection",
+        [
+            ("Pre-intervention period", f"{npre} months"),
+            ("npost_vec", f"{npost_vec[0]} to {npost_max} (step={dist['npost_step']})"),
+            ("Distribution mean (mu)", mu),
+            ("Distribution std (sigma)", sigma),
+            ("Distance measure", dist_measure),
+            ("Samples per time point", ns),
+            ("Delay range", f"{delay_set[0]}–{delay_set[-1]} months"),
+        ],
+    )
 
     loaded = {} if no_cache else (load_simulation_results(FOLDER) or {})
 
@@ -102,11 +110,9 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
         t_total = time.perf_counter()
 
         if critical_values is not None:
-            print("PHASE 1: Critical Values (loaded from cache, skipping)")
+            print_stage("Critical values — null distribution (cached)")
         else:
-            print("=" * 70)
-            print("PHASE 1: Critical Values (Null Distribution)")
-            print("=" * 70)
+            print_stage("Critical values — null distribution")
             t0 = time.perf_counter()
             critical_values = calculate_critical_values_cdf(
                 Nsim,
@@ -119,17 +125,14 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
                 nd,
                 alpha,
             )
-            print(f"  Phase 1 total: {fmt_elapsed(time.perf_counter() - t0)}")
+            print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
             _save()
 
         cv = critical_values[f"npost_{CRITICAL_VALUE_NPOST_SHORT_CDF}"]["critical_value"]
 
-        print("=" * 70)
-        print(
-            f"PHASE 2A: Mean Change BACI  "
-            f"({len(detection_results_mu)}/{len(trend_increase_mu)} cached)"
+        print_stage(
+            "Detection — mean change BACI", len(detection_results_mu), len(trend_increase_mu)
         )
-        print("=" * 70)
         t0 = time.perf_counter()
 
         def on_done_mu(r):
@@ -155,14 +158,12 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_mu,
         )
         _save()
-        print(f"  Phase 2A total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
+        print()
 
-        print("=" * 70)
-        print(
-            f"PHASE 2A': Mean Change BA  "
-            f"({len(detection_results_mu_ba)}/{len(trend_increase_mu)} cached)"
+        print_stage(
+            "Detection — mean change BA", len(detection_results_mu_ba), len(trend_increase_mu)
         )
-        print("=" * 70)
         t0 = time.perf_counter()
 
         def on_done_mu_ba(r):
@@ -189,14 +190,12 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_mu_ba,
         )
         _save()
-        print(f"  Phase 2A' total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
+        print()
 
-        print("=" * 70)
-        print(
-            f"PHASE 2B: Variance Change  "
-            f"({len(detection_results_sigma)}/{len(trend_increase_sigma)} cached)"
+        print_stage(
+            "Detection — variance change", len(detection_results_sigma), len(trend_increase_sigma)
         )
-        print("=" * 70)
         t0 = time.perf_counter()
 
         def on_done_sigma(r):
@@ -222,9 +221,11 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_sigma,
         )
         _save()
-        print(f"  Phase 2B total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
+        print()
 
-        print(f"\nAll phases complete in {fmt_elapsed(time.perf_counter() - t_total)}")
+        print(f"Total runtime: {fmt_elapsed(time.perf_counter() - t_total)}")
+        print()
 
     _print_summary(
         detection_results_mu, detection_results_sigma, trend_increase_mu, trend_increase_sigma
@@ -252,13 +253,20 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
 def _print_summary(
     detection_results_mu, detection_results_sigma, trend_increase_mu, trend_increase_sigma
 ):
-    print("\nRESULTS SUMMARY (at npost_max)")
-    print(f"{'Trend Mu':>10} | {'Detect Rate':>12}")
+    col = f"{'Trend':>10} | {'detect rate':>12}"
+    sep = "-" * len(col)
+    print_summary_header("Results summary — npost_max", len(col))
+    print(f"Mean change (mu):\n{col}")
+    print(sep)
     for t in trend_increase_mu:
         print(f"{t:10.4f} | {detection_results_mu[t]['detection_rates'][-1]:12.2%}")
-    print(f"\n{'Trend Sigma':>10} | {'Detect Rate':>12}")
+    print(sep)
+    print(f"\nVariance change (sigma):\n{col}")
+    print(sep)
     for t in trend_increase_sigma:
         print(f"{t:10.4f} | {detection_results_sigma[t]['detection_rates'][-1]:12.2%}")
+    print(sep)
+    print()
 
 
 def _generate_plots(
@@ -279,7 +287,7 @@ def _generate_plots(
     bw,
     nd,
 ):
-    print("\nGenerating plots...")
+    print("Generating plots...")
     example_mu = trend_increase_mu[5]
     res = detection_results_mu[example_mu]
     sim_data = ci_sim_cdf(
@@ -398,6 +406,4 @@ def _generate_plots(
     print(df_mu.to_string(index=False))
     print("\nVariance-change (Sigma) summary:")
     print(df_sigma.to_string(index=False))
-    print(f"All plots saved to: {plots_dir}/")
-    print("ANALYSIS COMPLETE")
-    print("=" * 70)
+    print_complete(plots_dir)

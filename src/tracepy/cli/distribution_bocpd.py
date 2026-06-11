@@ -26,7 +26,13 @@ import warnings
 import numpy as np
 
 from tracepy.changepoint.bocpd import run_bocpd
-from tracepy.cli._utils import fmt_elapsed
+from tracepy.cli._utils import (
+    fmt_elapsed,
+    print_complete,
+    print_run_header,
+    print_stage,
+    print_summary_header,
+)
 from tracepy.params.manager import load_params
 from tracepy.plotting.reports import (
     plot_detection_error_distribution,
@@ -79,19 +85,21 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     plots_dir = setup_plots_directory(FOLDER)
     setup_results_directory(FOLDER)
 
-    print("Distribution Change BOCPD Detection")
-    print("=" * 70)
-    print(f"Pre-intervention period:          {npre} months")
-    print(f"Post-intervention length:         {npost_max} months")
-    print(f"Number of trend increments:       {len(trend_increase_mu)}")
-    print(f"Distribution mean (mu):           {mu}")
-    print(f"Distribution std (sigma):         {sigma}")
-    print(f"Samples per time point:           {ns}")
-    print(f"Delay range:                      {delay_set[0]}–{delay_set[-1]} months")
-    print(f"Min segment length (msl):         {bo['msl']}")
-    print(f"Run-length hazard (ptr):          {bo['ptr']}")
-    print(f"Replications per increment:       {simN}")
-    print()
+    print_run_header(
+        "Distribution Change BOCPD Detection",
+        [
+            ("Pre-intervention period", f"{npre} months"),
+            ("Post-intervention length", f"{npost_max} months"),
+            ("Number of trend increments", len(trend_increase_mu)),
+            ("Distribution mean (mu)", mu),
+            ("Distribution std (sigma)", sigma),
+            ("Samples per time point", ns),
+            ("Delay range", f"{delay_set[0]}–{delay_set[-1]} months"),
+            ("Min segment length (msl)", bo["msl"]),
+            ("Run-length hazard (ptr)", bo["ptr"]),
+            ("Replications per increment", simN),
+        ],
+    )
 
     loaded = {} if no_cache else (load_simulation_results(FOLDER) or {})
     detection_results = loaded.get("detection_results", {})
@@ -101,11 +109,9 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
         raise SystemExit(1)
 
     if not plots_only:
-        print("=" * 70)
-        print(
-            f"Running BOCPD simulations  ({len(detection_results)}/{len(trend_increase_mu)} cached)"
+        print_stage(
+            "Detection — BOCPD simulations", len(detection_results), len(trend_increase_mu)
         )
-        print("=" * 70)
         t_total = time.perf_counter()
 
         for m, trend_inc in enumerate(trend_increase_mu, start=1):
@@ -144,7 +150,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             )
 
         print()
-        print(f"All simulations complete in {fmt_elapsed(time.perf_counter() - t_total)}")
+        print(f"Total runtime: {fmt_elapsed(time.perf_counter() - t_total)}")
         print()
 
     _print_summary(detection_results, trend_increase_mu)
@@ -233,9 +239,7 @@ def _run_increment(
 def _print_summary(detection_results, trend_increase_mu):
     col = f"{'Trend':>8}  {'detect rate':>12}  {'mean err':>10}  {'mean t_detect':>14}"
     sep = "-" * len(col)
-    print("=" * len(col))
-    print("RESULTS SUMMARY — BOCPD distribution-change detection")
-    print("=" * len(col))
+    print_summary_header("Results summary — BOCPD distribution-change detection", len(col))
     print(col)
     print(sep)
     for trend_inc in trend_increase_mu:
@@ -299,7 +303,4 @@ def _generate_plots(
         savefile=f"{plots_dir}/example_distance_time_series.png",
     )
 
-    print("=" * 70)
-    print(f"All plots saved to: {plots_dir}/")
-    print("ANALYSIS COMPLETE")
-    print("=" * 70)
+    print_complete(plots_dir)

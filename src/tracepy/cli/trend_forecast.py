@@ -5,7 +5,13 @@ import numpy as np
 
 from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
 from tracepy.changepoint.forecast import run_simulation_ar, run_simulation_iid
-from tracepy.cli._utils import fmt_elapsed
+from tracepy.cli._utils import (
+    fmt_elapsed,
+    print_complete,
+    print_run_header,
+    print_stage,
+    print_summary_header,
+)
 from tracepy.params.manager import load_params
 from tracepy.plotting.reports import plot_simulation_results, plot_time_series
 from tracepy.simulation.trend import ci_sim
@@ -47,17 +53,19 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     plots_dir = setup_plots_directory(FOLDER)
     setup_results_directory(FOLDER)
 
-    print("Trend Change Forecast Detection (Page-CUSUM)")
-    print("=" * 70)
-    print(f"Pre-intervention period: {npre} months")
-    print(f"Post-intervention max:   {npost_max} months")
-    print(f"Total series length:     {ntt} months")
-    print(f"Trend increments:        {len(trend_increase)}")
-    print(f"Noise level (sigma):     {sigma}")
-    print(f"AR(1) coefficient (phi): {phi}")
-    print(f"Delay range:             {delay_set[0]}–{delay_set[-1]} months")
-    print(f"Critical value:          {crit_val:.7f}")
-    print()
+    print_run_header(
+        "Trend Change Forecast Detection (Page-CUSUM)",
+        [
+            ("Pre-intervention period", f"{npre} months"),
+            ("Post-intervention max", f"{npost_max} months"),
+            ("Total series length", f"{ntt} months"),
+            ("Trend increments", len(trend_increase)),
+            ("Noise level (sigma)", sigma),
+            ("AR(1) coefficient (phi)", phi),
+            ("Delay range", f"{delay_set[0]}–{delay_set[-1]} months"),
+            ("Critical value", f"{crit_val:.7f}"),
+        ],
+    )
 
     loaded = {} if no_cache else (load_simulation_results(FOLDER) or {})
 
@@ -81,9 +89,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     if not plots_only:
         t_total = time.perf_counter()
 
-        print("=" * 70)
-        print(f"PHASE 2: i.i.d. BA  ({len(detection_results_iid)}/{len(trend_increase)} cached)")
-        print("=" * 70)
+        print_stage("Detection — i.i.d. BA", len(detection_results_iid), len(trend_increase))
         t0 = time.perf_counter()
 
         def on_done_iid(r):
@@ -106,12 +112,10 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_iid,
         )
         _save()
-        print(f"  Phase 2 total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
         print()
 
-        print("=" * 70)
-        print(f"PHASE 3: AR(1) BA  ({len(detection_results_ar)}/{len(trend_increase)} cached)")
-        print("=" * 70)
+        print_stage("Detection — AR(1) BA", len(detection_results_ar), len(trend_increase))
         t0 = time.perf_counter()
 
         def on_done_ar(r):
@@ -135,10 +139,10 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
             on_trend_done=on_done_ar,
         )
         _save()
-        print(f"  Phase 3 total: {fmt_elapsed(time.perf_counter() - t0)}")
+        print(f"  done in {fmt_elapsed(time.perf_counter() - t0)}")
         print()
 
-        print(f"All phases complete in {fmt_elapsed(time.perf_counter() - t_total)}")
+        print(f"Total runtime: {fmt_elapsed(time.perf_counter() - t_total)}")
         print()
 
     _print_summary(detection_results_iid, detection_results_ar, trend_increase, crit_val)
@@ -161,10 +165,7 @@ def _print_summary(detection_results_iid, detection_results_ar, trend_increase, 
         f"{'ar1 detect':>11}  {'ar1 time':>9}  {'ar1 error':>10}"
     )
     sep = "-" * len(col)
-    print("=" * len(col))
-    print("RESULTS SUMMARY")
-    print(f"  crit_val: {crit_val:.7f}")
-    print("=" * len(col))
+    print_summary_header("Results summary", len(col), (f"  crit_val: {crit_val:.7f}",))
     print(col)
     print(sep)
     for trend_inc in trend_increase:
@@ -214,6 +215,4 @@ def _generate_plots(
         trend_increase,
         savefile=f"{plots_dir}/sensitivity_analysis.png",
     )
-    print(f"All plots saved to: {plots_dir}/")
-    print("ANALYSIS COMPLETE")
-    print("=" * 70)
+    print_complete(plots_dir)
