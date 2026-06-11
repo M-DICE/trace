@@ -302,7 +302,8 @@ def plot_detection_error_distribution(detection_errors, figsize=(10, 5), savefil
     ax.set_xlabel("Detection Error (months)", fontsize=11)
     ax.set_ylabel("Frequency", fontsize=11)
     ax.set_title(
-        f"Distribution of Changepoint Detection Errors\n(Mean={mean_error:.2f}, SD={std_error:.2f})",
+        f"Distribution of Changepoint Detection Errors\n"
+        f"(Mean={mean_error:.2f}, SD={std_error:.2f})",
         fontsize=12,
         fontweight="bold",
     )
@@ -647,7 +648,7 @@ def plot_null_distributions(
     Histograms of Tmax under the null hypothesis.
     Supports both trend-change (4 combinations) and distribution-change patterns.
     """
-    s, l = npost_short, npost_long
+    s, l = npost_short, npost_long  # noqa: E741
 
     # Try trend-change keys
     standard_keys = [f"iid_{s}", f"iid_{l}", f"ar1_{s}", f"ar1_{l}"]
@@ -985,7 +986,8 @@ def plot_fdr_heatmap(
     fig.colorbar(im, ax=axes[1], label="False Discovery Rate")
     fig.suptitle(
         "False Discovery Rate Heatmap: Trend × Post-Intervention Length\n"
-        "(FDR = fraction of detections with τ̂ before τ_true; solid = 5%, dashed = 10%, dotted = 20%)",
+        "(FDR = fraction of detections with τ̂ before τ_true; "
+        "solid = 5%, dashed = 10%, dotted = 20%)",
         fontsize=13,
         fontweight="bold",
     )

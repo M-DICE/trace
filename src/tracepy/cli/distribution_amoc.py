@@ -126,7 +126,8 @@ def run(quick: bool, plots_only: bool) -> None:
 
         print("=" * 70)
         print(
-            f"PHASE 2A: Mean Change BACI  ({len(detection_results_mu)}/{len(trend_increase_mu)} cached)"
+            f"PHASE 2A: Mean Change BACI  "
+            f"({len(detection_results_mu)}/{len(trend_increase_mu)} cached)"
         )
         print("=" * 70)
         t0 = time.perf_counter()
@@ -158,7 +159,8 @@ def run(quick: bool, plots_only: bool) -> None:
 
         print("=" * 70)
         print(
-            f"PHASE 2A': Mean Change BA  ({len(detection_results_mu_ba)}/{len(trend_increase_mu)} cached)"
+            f"PHASE 2A': Mean Change BA  "
+            f"({len(detection_results_mu_ba)}/{len(trend_increase_mu)} cached)"
         )
         print("=" * 70)
         t0 = time.perf_counter()
@@ -191,7 +193,8 @@ def run(quick: bool, plots_only: bool) -> None:
 
         print("=" * 70)
         print(
-            f"PHASE 2B: Variance Change  ({len(detection_results_sigma)}/{len(trend_increase_sigma)} cached)"
+            f"PHASE 2B: Variance Change  "
+            f"({len(detection_results_sigma)}/{len(trend_increase_sigma)} cached)"
         )
         print("=" * 70)
         t0 = time.perf_counter()

@@ -148,7 +148,7 @@ def run_bocpd(
 ) -> dict[str, int | None]:
     """
     Run online BOCPD on a univariate series, stopping at the first detected
-    changepoint. 
+    changepoint.
     This is ported from Rewild_trend_change_BOCPD.R.
 
     Parameters
@@ -199,9 +199,7 @@ def run_bocpd(
     integrate_fun5 = _R("integrate.fun5")
 
     # Param / prior R structures
-    a_prior = FloatVector(
-        [prior_alpha[0], prior_alpha[1], 0.5 / prior_sigma2, 0.5 / prior_sigma2]
-    )
+    a_prior = FloatVector([prior_alpha[0], prior_alpha[1], 0.5 / prior_sigma2, 0.5 / prior_sigma2])
     sig_prior_vec = FloatVector(list(sig_prior))
     params_ini_list = _r_list(
         _r_list(alpha=FloatVector(list(prior_alpha)), sigma=float(prior_sigma2))
@@ -236,23 +234,17 @@ def run_bocpd(
     hmm = _set_sub(hmm, "forward", msl - 1, 1.0)
 
     # Init at cpt = msl-1
-    intPar_m = integrate_par(
-        hmm, msl - 1, 0, 1, params_ini_list, prior_list, intfun_list
-    )
+    intPar_m = integrate_par(hmm, msl - 1, 0, 1, params_ini_list, prior_list, intfun_list)
     hmm = _set_sub(hmm, "intPar", msl - 1, _r_list(_r_unlist(intPar_m)))
 
     # Initial iterations msl..2*msl-1
     for i in range(msl, 2 * msl):
-        intPar_m = integrate_par(
-            hmm, i, 0, 1, params_ini_list, prior_list, intfun_list
-        )
+        intPar_m = integrate_par(hmm, i, 0, 1, params_ini_list, prior_list, intfun_list)
         intPar = _r_unlist(intPar_m)
-        hmm = _set_sub(
-            hmm, "intPar", i, _r_list(_r_matrix(intPar, nrow=nmodel, ncol=1))
-        )
+        hmm = _set_sub(hmm, "intPar", i, _r_list(_r_matrix(intPar, nrow=nmodel, ncol=1)))
         hmm = _set_sub(hmm, "forward", i, 1.0)
         hmm = _set_sub(hmm, "ParsID", i, int(i))
-        
+
         intPar_arr = np.asarray(intPar)
         tmpCost_val = float(intPar_arr[0] + np.log(pm) + np.log(_runl_gx(i, ptr, msl)))
         hmm = _set_sub(hmm, "tmpCost", i, tmpCost_val)
@@ -273,16 +265,12 @@ def run_bocpd(
             ),
         )
 
-        Integrate = forward_cpt_int(
-            hmm, i, nmodel, params_ini_list, prior_list, intfun_list, msl
-        )
+        Integrate = forward_cpt_int(hmm, i, nmodel, params_ini_list, prior_list, intfun_list, msl)
         hmm = Integrate.rx2("hmm")
         hmm = _set_sub(hmm, "intPar", i, Integrate.rx2("intPar.list"))
         hmm = _set_sub(hmm, "intExtra", i, Integrate.rx2("intExtra.list"))
 
-        hmm = forward_cpt_calc_resample(
-            hmm, i, nmodel, maxp, np_, True, 5, ptr, msl
-        )
+        hmm = forward_cpt_calc_resample(hmm, i, nmodel, maxp, np_, True, 5, ptr, msl)
 
         cpt_map = map_cpt(hmm, 1, global_params, runl_fun, msl)
         cpt_breaks_len = len(cpt_map.rx2("breaks"))

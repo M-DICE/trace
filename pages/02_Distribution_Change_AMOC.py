@@ -86,7 +86,8 @@ st.markdown("""
 Rewilding interventions can affect not just the average abundance of a species, but also its
 **variability** or the entire **shape of its distribution**.
 
-This page analyses changes in distributions using distance measure **Wasserstein Distance** (BACI and BA).
+This page analyses changes in distributions using distance measure
+**Wasserstein Distance** (BACI and BA).
 
 We apply the AMOC (At Most One Change) method to the **time series of distances** to
 identify when the distributions start to diverge.
@@ -392,7 +393,8 @@ if results_available:
             st.caption(
                 f"Across delays 1–20 months, detection rate spans "
                 f"**{float(np.nanmin(rates)):.0%} – {float(np.nanmax(rates)):.0%}** "
-                f"(a drop of {drop:.0%}) for the {delay_effect_pct}% effect at npost = {delay_npost} mo."
+                f"(a drop of {drop:.0%}) for the {delay_effect_pct}% effect "
+                f"at npost = {delay_npost} mo."
             )
 
         else:
@@ -414,7 +416,9 @@ if results_available:
                     zmin=0,
                     zmax=1,
                     colorbar=dict(title="Detection rate", tickformat=".0%"),
-                    hovertemplate="npost: %{x} mo<br>Delay: %{y} mo<br>Detection: %{z:.1%}<extra></extra>",
+                    hovertemplate=(
+                        "npost: %{x} mo<br>Delay: %{y} mo<br>Detection: %{z:.1%}<extra></extra>"
+                    ),
                 )
             )
             fig_heat.add_trace(
@@ -550,7 +554,8 @@ if results_available:
             key="err_type",
             captions=[
                 "Localisation error when detecting a shift in the mean (μ) of the distribution.",
-                "Localisation error when detecting a shift in the variance (σ) of the distribution.",
+                "Localisation error when detecting a shift in the variance (σ) "
+                "of the distribution.",
             ],
         )
 
@@ -1064,7 +1069,8 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
             key="dist_p_n_sim",
             help=(
                 "Each simulation generates a fresh (control, intervention) pair with different "
-                "random noise. Detection rate = fraction of runs where T_max exceeds the critical value."
+                "random noise. Detection rate = fraction of runs where T_max exceeds "
+                "the critical value."
             ),
         )
         base_seed = st.number_input(
@@ -1073,7 +1079,10 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
             max_value=99999,
             step=1,
             key="dist_p_base_seed",
-            help="Simulation i uses seed = base_seed + i. Change to get a different draw of noise realisations.",
+            help=(
+                "Simulation i uses seed = base_seed + i. "
+                "Change to get a different draw of noise realisations."
+            ),
         )
 
     with col_b:
@@ -1269,7 +1278,8 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
     st.caption(
         f"Detected a change in {n_detected} of {n_sim_mr} runs ({det_rate:.0%})."
         if det_indices
-        else "No runs detected a change — try a larger mean/sigma increment or longer monitoring window."
+        else "No runs detected a change — try a larger mean/sigma increment "
+        "or longer monitoring window."
     )
 
     show_idx = st.session_state.get("dist_mini_nav_idx", 0)
@@ -1386,7 +1396,10 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
             )
 
     fig_s.update_layout(
-        title=f"Run #{run_num} · T_max={_tmax:.2f} ({'✓ detected' if was_detected else '✗ not detected'})",
+        title=(
+            f"Run #{run_num} · T_max={_tmax:.2f} "
+            f"({'✓ detected' if was_detected else '✗ not detected'})"
+        ),
         xaxis2_title="Month",
         yaxis_title="Wasserstein distance",
         yaxis2_title="Mean diff.",

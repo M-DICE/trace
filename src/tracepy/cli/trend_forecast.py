@@ -36,7 +36,6 @@ def run(quick: bool, plots_only: bool) -> None:
     sigma = sim["sigma"]
     phi = fcst["phi"]
     delay_set = np.arange(1, sim["delay_max"] + 1)
-    Nsim = 10 if quick else runs["Nsim"]
     simN = 10 if quick else runs["simN"]
 
     crit_val = lookup_crit_val(load_crit_val_table(), gamma=fcst["gamma"])

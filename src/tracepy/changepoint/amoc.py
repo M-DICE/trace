@@ -4,7 +4,8 @@ AMOC (At Most One Change) orchestration for trend and distribution changepoint d
 Contains:
 - Critical value table utilities (load_crit_val_table, lookup_crit_val)
 - Trend change AMOC orchestration (calculate_critical_values, run_main_simulation*)
-- Distribution change AMOC orchestration (calculate_critical_values_cdf, run_main_simulation_mu/sigma)
+- Distribution change AMOC orchestration
+  (calculate_critical_values_cdf, run_main_simulation_mu/sigma)
 
 Simulation workers and the shared Monte Carlo loop live in
 tracepy.simulation.runners; this module is responsible only for orchestration
