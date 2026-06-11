@@ -38,7 +38,7 @@ warnings.filterwarnings("ignore")
 FOLDER = "distribution_amoc"
 
 
-def run(quick: bool, plots_only: bool) -> None:
+def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     cfg = load_params()
     sim = cfg["simulation"]
     runs = cfg["runs"]
@@ -76,7 +76,7 @@ def run(quick: bool, plots_only: bool) -> None:
     print(f"Delay range:              {delay_set[0]}–{delay_set[-1]} months")
     print()
 
-    loaded = load_simulation_results(FOLDER) or {}
+    loaded = {} if no_cache else (load_simulation_results(FOLDER) or {})
 
     if plots_only and not loaded:
         print("ERROR: --plots-only requested but no saved results found.")

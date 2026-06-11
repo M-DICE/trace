@@ -37,3 +37,16 @@ forecast:
   phi: 0.8               # AR(1) coefficient (R Forecast uses 0.8, distinct from AMOC's 0.5)
   crit_val_default: 2.1705321342   # PageCUSUM default critical value (gamma=0, alpha=0.05)
   gamma: 0.0             # Page-CUSUM gamma parameter
+
+# BOCPD (Bayesian Online Changepoint Detection)
+bocpd:
+  prior_alpha_intercept: 0.0     # alpha.ini[1]: prior mean intercept
+  prior_alpha_slope: 0.05        # alpha.ini[2]: prior mean slope
+  prior_sigma2: 0.0025           # sigma.ini = 0.05^2
+  sig_prior_shape: 100.0         # sig.prior[1]: inverse-gamma shape (u0)
+  sig_prior_rate: 1.0            # sig.prior[2]: inverse-gamma rate (v0)
+  pm: 1.0                        # prior model probability
+  ptr: 0.02                      # geometric run-length hazard rate
+  maxp: 50                       # max candidate changepoints before resampling
+  np: 40                         # particles retained after resampling
+  msl: 10                        # minimum segment length

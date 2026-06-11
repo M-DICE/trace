@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore")
 FOLDER = "trend_forecast"
 
 
-def run(quick: bool, plots_only: bool) -> None:
+def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
     cfg = load_params()
     sim = cfg["simulation"]
     runs = cfg["runs"]
@@ -59,7 +59,7 @@ def run(quick: bool, plots_only: bool) -> None:
     print(f"Critical value:          {crit_val:.7f}")
     print()
 
-    loaded = load_simulation_results(FOLDER) or {}
+    loaded = {} if no_cache else (load_simulation_results(FOLDER) or {})
 
     if plots_only and not loaded:
         print("ERROR: --plots-only requested but no saved results found.")
