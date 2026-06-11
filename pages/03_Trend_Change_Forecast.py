@@ -237,7 +237,9 @@ if results_available:
                         name=label,
                         marker=dict(size=8),
                         line=dict(color=colour, width=2),
-                        hovertemplate=f"%{{x}} effect<br>Mean time: %{{y:.1f}} months<extra>{label}</extra>",
+                        hovertemplate=(
+                            f"%{{x}} effect<br>Mean time: %{{y:.1f}} months<extra>{label}</extra>"
+                        ),
                     )
                 )
             fig.update_layout(
@@ -479,7 +481,9 @@ if results_available:
                     zmin=0,
                     zmax=1,
                     colorbar=dict(title="Detection rate", tickformat=".0%"),
-                    hovertemplate="Effect: %{x}<br>Delay: %{y} mo<br>Detection: %{z:.1%}<extra></extra>",
+                    hovertemplate=(
+                        "Effect: %{x}<br>Delay: %{y} mo<br>Detection: %{z:.1%}<extra></extra>"
+                    ),
                 )
             )
             fig_hm.update_layout(
@@ -912,12 +916,14 @@ if results_available:
                 col=1,
             )
 
+    det_label = (
+        "✓ detected at month " + str(NPRE + int(ir_time_est)) if ir_detected else "✗ not detected"
+    )
     fig_run.update_layout(
         height=750,
         title=(
             f"Run {ir_run_i + 1} · {ir_noise} · {ir_eff_pct}% effect · "
-            f"delay={ir_delay} mo · "
-            f"{'✓ detected at month ' + str(NPRE + int(ir_time_est)) if ir_detected else '✗ not detected'}"
+            f"delay={ir_delay} mo · " + det_label
         ),
         xaxis3_title="Month",
         yaxis_title="Indicator",

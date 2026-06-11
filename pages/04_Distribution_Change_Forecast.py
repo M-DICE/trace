@@ -171,7 +171,8 @@ else:
 
     if not res_baci or not res_ba:
         st.warning(
-            "Saved results are incomplete (detection_results_baci or detection_results_ba missing). "
+            "Saved results are incomplete "
+            "(detection_results_baci or detection_results_ba missing). "
             "Re-run `uv run trace-sim distribution-forecast` to regenerate."
         )
         results_available = False
@@ -304,7 +305,9 @@ if results_available:
                     zmin=0,
                     zmax=1,
                     colorbar=dict(title="Detection rate", tickformat=".0%"),
-                    hovertemplate="npost: %{x} mo<br>Effect: %{y}<br>Detection: %{z:.1%}<extra></extra>",
+                    hovertemplate=(
+                        "npost: %{x} mo<br>Effect: %{y}<br>Detection: %{z:.1%}<extra></extra>"
+                    ),
                 )
             )
             fig.add_trace(
@@ -611,7 +614,9 @@ if results_available:
                     zmin=0,
                     zmax=1,
                     colorbar=dict(title="Detection rate", tickformat=".0%"),
-                    hovertemplate="Effect: %{x}<br>Delay: %{y} mo<br>Detection: %{z:.1%}<extra></extra>",
+                    hovertemplate=(
+                        "Effect: %{x}<br>Delay: %{y} mo<br>Detection: %{z:.1%}<extra></extra>"
+                    ),
                 )
             )
             fig_hm_dl.update_layout(

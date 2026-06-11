@@ -239,7 +239,8 @@ def trend_stats_ar(y_ctr=None, y_itv=None, nt=None):
         )
 
         try:
-            # ARIMA(1,0,0) with external regressors, no intercept (include_mean matches include.mean=FALSE in R)
+            # ARIMA(1,0,0) with external regressors, no intercept
+            # (include_mean matches include.mean=FALSE in R)
             # In R: arima(y.dif, xreg=Xmat, order=c(1,0,0), include.mean=FALSE)
             # R defaults to method="CSS-ML": initialises with Conditional Sum of Squares,
             # then refines to full MLE. Python's innovations_mle is NOT equivalent:

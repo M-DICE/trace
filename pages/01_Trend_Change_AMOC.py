@@ -426,7 +426,8 @@ if results_available:
             if nr:
                 pct_str = ", ".join(f"{p}%" for p in nr)
                 msgs.append(
-                    f"**i.i.d. BACI:** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr."
+                    f"**i.i.d. BACI:** effect size(s) {pct_str} "
+                    f"never reach {power_thresh:.0%} within 10 yr."
                 )
             else:
                 msgs.append(
@@ -437,7 +438,8 @@ if results_available:
             if nr:
                 pct_str = ", ".join(f"{p}%" for p in nr)
                 msgs.append(
-                    f"**AR(1):** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr."
+                    f"**AR(1):** effect size(s) {pct_str} "
+                    f"never reach {power_thresh:.0%} within 10 yr."
                 )
             else:
                 msgs.append(f"**AR(1):** all effect sizes reach {power_thresh:.0%} within 10 yr.")
@@ -446,7 +448,8 @@ if results_available:
             if nr:
                 pct_str = ", ".join(f"{p}%" for p in nr)
                 msgs.append(
-                    f"**i.i.d. BA:** effect size(s) {pct_str} never reach {power_thresh:.0%} within 10 yr."
+                    f"**i.i.d. BA:** effect size(s) {pct_str} "
+                    f"never reach {power_thresh:.0%} within 10 yr."
                 )
             else:
                 msgs.append(
@@ -805,7 +808,8 @@ if results_available:
                     f"(a drop of {drop:.0%} from best to worst delay) "
                     f"for the {delay_effect_pct}% effect at npost = {npost_line} mo. "
                     f"Each delay bin contains approximately "
-                    f"{int((np.array(_noise_res[delay_trend]['delays']) == 1).sum()):,} simulations."
+                    f"{int((np.array(_noise_res[delay_trend]['delays']) == 1).sum()):,}"
+                    " simulations."
                 )
 
         # ── Heatmap view ───────────────────────────────────────────────────────
@@ -1636,7 +1640,8 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
             key="mini_p_phi",
             help=(
                 "Autocorrelation strength for the AR(1) model only "
-                "(i.i.d. BACI and i.i.d. BA always use independent errors regardless of this setting). "
+                "(i.i.d. BACI and i.i.d. BA always use independent errors "
+                "regardless of this setting). "
                 "φ = 0.5 is a moderate default. 0 = no autocorrelation; 0.9 = strong memory."
             ),
         )
@@ -1672,7 +1677,8 @@ with st.expander("⚙️ Simulation parameters", expanded=True):
             step=1,
             key="mini_p_delay",
             help=(
-                "Months between the formal intervention date and when the ecological response begins."
+                "Months between the formal intervention date and when the "
+                "ecological response begins."
             ),
         )
 
@@ -1947,7 +1953,8 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     if delay_sim > 0:
         st.caption(
             f"Blue dotted = month {npre_sim} (formal intervention). "
-            f"Navy dashed = month {true_cpt} (ecological response begins, {delay_sim} month(s) later). "
+            f"Navy dashed = month {true_cpt} "
+            f"(ecological response begins, {delay_sim} month(s) later). "
             "Red solid = detected τ̂ (where present)."
         )
 

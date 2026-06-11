@@ -78,7 +78,8 @@ def run(quick: bool, plots_only: bool) -> None:
     print(f"AR(1) coefficient (phi):          {phi}")
     print(f"Delay range:                      {delay_set[0]}–{delay_set[-1]} months")
     print(
-        f"Critical value npost lengths:     {CRITICAL_VALUE_NPOST_SHORT} and {CRITICAL_VALUE_NPOST_LONG} months"
+        f"Critical value npost lengths:     "
+        f"{CRITICAL_VALUE_NPOST_SHORT} and {CRITICAL_VALUE_NPOST_LONG} months"
     )
     print()
 
@@ -298,26 +299,24 @@ def _print_summary(
     sep = "-" * len(col)
     print("=" * len(col))
     print(f"RESULTS SUMMARY — at npost_max ({npost_max} months)")
-    print(
-        f"  i.i.d. BACI cv: {critical_values[f'iid_{CRITICAL_VALUE_NPOST_SHORT}']['critical_value']:.4f}"
-    )
-    print(
-        f"  AR(1)  BA   cv: {critical_values[f'ar1_{CRITICAL_VALUE_NPOST_SHORT}']['critical_value']:.4f}"
-    )
+    cv_iid = critical_values[f"iid_{CRITICAL_VALUE_NPOST_SHORT}"]["critical_value"]
+    cv_ar1 = critical_values[f"ar1_{CRITICAL_VALUE_NPOST_SHORT}"]["critical_value"]
+    print(f"  i.i.d. BACI cv: {cv_iid:.4f}")
+    print(f"  AR(1)  BA   cv: {cv_ar1:.4f}")
     if has_ba:
-        print(
-            f"  i.i.d. BA   cv: {critical_values[f'iid_ba_{CRITICAL_VALUE_NPOST_SHORT}']['critical_value']:.4f}"
-        )
+        cv_ba = critical_values[f"iid_ba_{CRITICAL_VALUE_NPOST_SHORT}"]["critical_value"]
+        print(f"  i.i.d. BA   cv: {cv_ba:.4f}")
     print("=" * len(col))
     print(col)
     print(sep)
     for trend_inc in trend_increase:
         iid = detection_results[trend_inc]
         ar1 = detection_results_ar[trend_inc]
-        line = (
-            f"{trend_inc:>8.4f}  {iid['detection_rates'][-1]:>11.2%}  {iid['mean_errors'][-1]:>9.2f}m  "
-            f"{ar1['detection_rates'][-1]:>11.2%}  {ar1['mean_errors'][-1]:>9.2f}m"
-        )
+        iid_dr = f"{iid['detection_rates'][-1]:>11.2%}"
+        iid_me = f"{iid['mean_errors'][-1]:>9.2f}m"
+        ar1_dr = f"{ar1['detection_rates'][-1]:>11.2%}"
+        ar1_me = f"{ar1['mean_errors'][-1]:>9.2f}m"
+        line = f"{trend_inc:>8.4f}  {iid_dr}  {iid_me}  {ar1_dr}  {ar1_me}"
         if has_ba:
             ba = detection_results_iid_ba[trend_inc]
             line += f"  {ba['detection_rates'][-1]:>10.2%}  {ba['mean_errors'][-1]:>8.2f}m"
