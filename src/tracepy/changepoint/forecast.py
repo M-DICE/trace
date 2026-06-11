@@ -79,7 +79,8 @@ def trend_stats_forecast(y_itv, npre, ntt, phi=None, crit_val=2.1705321342):
 
     Stage 2 — if detection occurred, run AMOC trend_stats on the residuals
     truncated to length ``npre + time_est`` to locate *where* the changepoint
-    is (cpt_est).
+    is (cpt_est).  If that window is too short for trend_stats
+    (npre + time_est < 28), cpt_est falls back to npre.
 
     Sign convention matches R: in-sample residuals are (actual − fitted);
     out-of-sample errors are (predicted − actual).  The two-sided CUSUM
@@ -272,10 +273,8 @@ def _forecast_sim_worker_cdf(args):
     """
     Distribution forecast worker for BACI and BA designs.
 
-    Replaces the former ``_forecast_sim_worker_cdf_baci`` and
-    ``_forecast_sim_worker_cdf_ba``.  A single ``ba`` flag selects which
-    distance measure is applied; all other logic (OLS fit, Page-CUSUM,
-    AMOC trend_stats for changepoint location) is shared.
+    A single ``ba`` flag selects the distance measure; all other logic
+    (OLS fit, Page-CUSUM, AMOC trend_stats for changepoint location) is shared.
 
     Top-level for pickling by multiprocessing on macOS (spawn start method).
 

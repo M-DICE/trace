@@ -126,7 +126,8 @@ def logsumexp(x: np.ndarray) -> np.ndarray:
     Returns
     -------
     ndarray, shape (nrows,)
-        ``log(sum(exp(x), axis=1))`` computed in a numerically stable way.
+        ``log(sum(exp(x), axis=1))`` computed in a numerically stable way
+        (a scalar when the input has a single row).
     """
     x = np.atleast_2d(np.asarray(x, dtype=float))
     a = x.max(axis=1, keepdims=True)
