@@ -99,8 +99,8 @@ def _run_null_simulations(
     """
     Run *Nsim* null simulations (no trend change) and return max test statistics.
 
-    Delegates to _null_sim_worker via _run_parallel.  The label is printed as
-    ``  [label] N sims ... done in Xs`` on a single line.
+    Delegates to _null_sim_worker via _run_parallel; *label* is shown in the
+    progress line.
 
     Parameters
     ----------
@@ -141,7 +141,8 @@ def _run_null_simulations(
 def calculate_critical_values(Nsim, npre, level, trend_control, sigma, phi, alpha=0.95):
     """
     Compute critical values under the null hypothesis (no trend change) at two
-    post-intervention lengths and for two noise types, matching R's getCritical.
+    post-intervention lengths, for three design/noise combinations
+    (i.i.d. BACI, i.i.d. BA, AR(1)), matching R's getCritical.
 
     R's getCritical uses npost.vec[c(3, 7)] from seq(24, 120, by=12), which
     resolves to:
