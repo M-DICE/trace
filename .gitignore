@@ -24,3 +24,6 @@ __pycache__
 # Tools
 .ruff_cache
 .pytest_cache
+
+# IntelliJ
+.idea
