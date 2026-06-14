@@ -36,9 +36,14 @@ The interactive app lets you explore pre-computed simulation results and run sma
 
 **R (>= 4.x)** must be installed on your system. The BOCPD method calls into R via rpy2, so a working R installation is required even when running Python simulations.
 
-- macOS: `brew install r`
+- macOS: `brew install --cask r`
 - Linux: see [CRAN instructions](https://cran.r-project.org/)
 - Windows: see [CRAN instructions](https://cran.r-project.org/)
+
+> **Note:** `rpy2` must be compiled against the R version on your system. If you see a `libRblas.dylib` error at startup, reinstall rpy2 from source:
+> ```bash
+> uv pip install --force-reinstall --no-binary rpy2,rpy2-rinterface rpy2
+> ```
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (fast Python package manager):
 
@@ -67,8 +72,11 @@ The app loads results from `results/`. Run the simulations before launching the 
 
 ```bash
 uv run trace-sim trend-amoc
+uv run trace-sim trend-forecast
+uv run trace-sim trend-bocpd
 uv run trace-sim distribution-amoc
 uv run trace-sim distribution-forecast
+uv run trace-sim distribution-bocpd
 ```
 
 ## Python simulations (command-line)
@@ -77,7 +85,7 @@ uv run trace-sim distribution-forecast
 uv run trace-sim <simulation> [--quick] [--plots-only]
 ```
 
-Simulations: `trend-amoc`, `trend-forecast`, `distribution-amoc`, `distribution-forecast`
+Simulations: `trend-amoc`, `trend-forecast`, `trend-bocpd`, `distribution-amoc`, `distribution-forecast`, `distribution-bocpd`
 
 ### Trend change AMOC
 
@@ -114,6 +122,22 @@ uv run trace-sim distribution-amoc --quick
 uv run trace-sim distribution-forecast
 uv run trace-sim distribution-forecast --plots-only
 uv run trace-sim distribution-forecast --quick
+```
+
+### Trend change BOCPD
+
+```bash
+uv run trace-sim trend-bocpd
+uv run trace-sim trend-bocpd --plots-only
+uv run trace-sim trend-bocpd --quick
+```
+
+### Distribution change BOCPD
+
+```bash
+uv run trace-sim distribution-bocpd
+uv run trace-sim distribution-bocpd --plots-only
+uv run trace-sim distribution-bocpd --quick
 ```
 
 ---
