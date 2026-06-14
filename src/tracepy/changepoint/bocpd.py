@@ -180,6 +180,37 @@ def run_bocpd(
         * ``time_est`` — Step index when the changepoint was first declared,
           or ``None`` if no changepoint was detected.
     """
+    from rpy2.robjects import default_converter
+    from rpy2.robjects.conversion import localconverter
+
+    with localconverter(default_converter):
+        return _run_bocpd_impl(
+            x,
+            prior_alpha=prior_alpha,
+            prior_sigma2=prior_sigma2,
+            sig_prior=sig_prior,
+            pm=pm,
+            ptr=ptr,
+            maxp=maxp,
+            np_=np_,
+            msl=msl,
+            nmodel=nmodel,
+        )
+
+
+def _run_bocpd_impl(
+    x: np.ndarray,
+    *,
+    prior_alpha: tuple[float, float],
+    prior_sigma2: float,
+    sig_prior: tuple[float, float],
+    pm: float,
+    ptr: float,
+    maxp: int,
+    np_: int,
+    msl: int,
+    nmodel: int,
+) -> dict[str, int | None]:
     _ensure_sourced()
 
     x = np.asarray(x, dtype=float)
@@ -326,30 +357,33 @@ def run_bocpd_increment(
     msl: int,
 ) -> dict:
     """Run all *simN* BOCPD replications for one trend increment inside R."""
-    _ensure_sim_sourced()
+    from rpy2.robjects import default_converter
+    from rpy2.robjects.conversion import localconverter
 
-    result = _R("run_bocpd_increment")(
-        simN=int(simN),
-        n_trends=int(n_trends),
-        trend_idx=int(trend_idx),
-        npre=int(npre),
-        npost_max=int(npost_max),
-        level=float(level),
-        trend_control=float(trend_control),
-        trend_inc=float(trend_inc),
-        sigma=float(sigma),
-        delay_max=int(delay_max),
-        prior_alpha=FloatVector(list(prior_alpha)),
-        prior_sigma2=float(prior_sigma2),
-        sig_prior_shape=float(sig_prior[0]),
-        sig_prior_rate=float(sig_prior[1]),
-        pm=float(pm),
-        ptr=float(ptr),
-        maxp=int(maxp),
-        np=int(np_),
-        msl=int(msl),
-    )
-    return _r_result_to_dict(result)
+    with localconverter(default_converter):
+        _ensure_sim_sourced()
+        result = _R("run_bocpd_increment")(
+            simN=int(simN),
+            n_trends=int(n_trends),
+            trend_idx=int(trend_idx),
+            npre=int(npre),
+            npost_max=int(npost_max),
+            level=float(level),
+            trend_control=float(trend_control),
+            trend_inc=float(trend_inc),
+            sigma=float(sigma),
+            delay_max=int(delay_max),
+            prior_alpha=FloatVector(list(prior_alpha)),
+            prior_sigma2=float(prior_sigma2),
+            sig_prior_shape=float(sig_prior[0]),
+            sig_prior_rate=float(sig_prior[1]),
+            pm=float(pm),
+            ptr=float(ptr),
+            maxp=int(maxp),
+            np=int(np_),
+            msl=int(msl),
+        )
+        return _r_result_to_dict(result)
 
 
 def run_bocpd_distribution_increment(
@@ -374,27 +408,30 @@ def run_bocpd_distribution_increment(
     msl: int,
 ) -> dict:
     """Run all *simN* distribution-BOCPD replications for one mean-shift increment inside R."""
-    _ensure_sim_sourced()
+    from rpy2.robjects import default_converter
+    from rpy2.robjects.conversion import localconverter
 
-    result = _R("run_bocpd_distribution_increment")(
-        simN=int(simN),
-        n_trends=int(n_trends),
-        trend_idx=int(trend_idx),
-        npre=int(npre),
-        npost_max=int(npost_max),
-        mu=float(mu),
-        sigma_dist=float(sigma),
-        ns=int(ns),
-        trend_mu=float(trend_inc),
-        delay_max=int(delay_max),
-        prior_alpha=FloatVector(list(prior_alpha)),
-        prior_sigma2=float(prior_sigma2),
-        sig_prior_shape=float(sig_prior[0]),
-        sig_prior_rate=float(sig_prior[1]),
-        pm=float(pm),
-        ptr=float(ptr),
-        maxp=int(maxp),
-        np=int(np_),
-        msl=int(msl),
-    )
-    return _r_result_to_dict(result)
+    with localconverter(default_converter):
+        _ensure_sim_sourced()
+        result = _R("run_bocpd_distribution_increment")(
+            simN=int(simN),
+            n_trends=int(n_trends),
+            trend_idx=int(trend_idx),
+            npre=int(npre),
+            npost_max=int(npost_max),
+            mu=float(mu),
+            sigma_dist=float(sigma),
+            ns=int(ns),
+            trend_mu=float(trend_inc),
+            delay_max=int(delay_max),
+            prior_alpha=FloatVector(list(prior_alpha)),
+            prior_sigma2=float(prior_sigma2),
+            sig_prior_shape=float(sig_prior[0]),
+            sig_prior_rate=float(sig_prior[1]),
+            pm=float(pm),
+            ptr=float(ptr),
+            maxp=int(maxp),
+            np=int(np_),
+            msl=int(msl),
+        )
+        return _r_result_to_dict(result)
