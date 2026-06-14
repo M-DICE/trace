@@ -276,7 +276,7 @@ def run_bocpd(
         return {"cpt_est": None, "time_est": None}
 
     breaks = list(cpt_map.rx2("breaks"))
-    return {"cpt_est": int(breaks[1]), "time_est": int(i)}
+    return {"cpt_est": int(breaks[1]), "time_est": int(i) - 1}
 
 
 def _r_result_to_dict(result) -> dict:
