@@ -166,13 +166,7 @@ run_bocpd_distribution_increment <- function(
 ) {
   sig_prior <- c(sig_prior_shape, sig_prior_rate)
 
-  cpt_est_vec  <- rep(NA_integer_, simN)
-  time_est_vec <- rep(NA_integer_, simN)
-  delays       <- integer(simN)
-  errors       <- numeric(0)
-  det_times    <- numeric(0)
-
-  for (s in seq_len(simN)) {
+  run_one <- function(s) {
     seed_val <- s * n_trends + trend_idx
     set.seed(seed_val)
 
@@ -181,36 +175,51 @@ run_bocpd_distribution_increment <- function(
     npost_delay <- npost_max - delay
     nt          <- npre_delay + npost_delay
 
-    # Build per-time-point mu/sigma (control stays constant; intervention drifts)
-    mus    <- rep(mu, nt)
-    sigmas <- rep(sigma_dist, nt)
-    if (npost_delay > 0L) {
-      post_idx               <- seq_len(npost_delay)
-      mus[(npre_delay + 1L):nt]    <- mu         + trend_mu * post_idx
-    }
-
     # Control: constant N(mu, sigma_dist) at every time point
     sample_ctr <- matrix(rnorm(ns * nt, mu, sigma_dist), nrow = ns, ncol = nt)
 
-    # Intervention: pre-period same as control, post-period uses drifting mu
-    sample_itv <- matrix(0, nrow = ns, ncol = nt)
-    for (t in seq_len(nt)) {
-      sample_itv[, t] <- rnorm(ns, mus[t], sigmas[t])
+    # Intervention: one rnorm call + add drift to post-period columns (replaces for loop)
+    sample_itv <- matrix(rnorm(ns * nt, mu, sigma_dist), nrow = ns, ncol = nt)
+    if (npost_delay > 0L) {
+      drift_mu <- trend_mu * seq_len(npost_delay)
+      sample_itv[, (npre_delay + 1L):nt] <-
+        sample_itv[, (npre_delay + 1L):nt] + rep(drift_mu, each = ns)
     }
 
-    # Wasserstein distance time series (1-Wasserstein, equal-weight empirical)
-    x <- vapply(seq_len(nt), function(t) .ws1d(sample_ctr[, t], sample_itv[, t]),
-                numeric(1L))
+    # Wasserstein: sort columns once, then vectorised colMeans (replaces vapply loop)
+    sorted_ctr <- apply(sample_ctr, 2, sort)
+    sorted_itv <- apply(sample_itv, 2, sort)
+    x <- colMeans(abs(sorted_ctr - sorted_itv))
 
     res <- run_bocpd_r(x, prior_alpha, prior_sigma2, sig_prior, pm, ptr, maxp, np, msl)
+    list(cpt_est = res$cpt_est, time_est = res$time_est, delay = delay)
+  }
 
-    cpt_est_vec[s]  <- res$cpt_est
-    time_est_vec[s] <- res$time_est
+  n_cores <- min(simN, max(1L, parallel::detectCores(logical = FALSE)))
+  raw <- parallel::mclapply(seq_len(simN), run_one, mc.cores = n_cores)
+
+  cpt_est_vec  <- rep(NA_integer_, simN)
+  time_est_vec <- rep(NA_integer_, simN)
+  delays       <- integer(simN)
+  errors       <- numeric(0)
+  det_times    <- numeric(0)
+
+  for (s in seq_len(simN)) {
+    r <- raw[[s]]
+    if (inherits(r, "try-error") || is.null(r)) next
+
+    delay      <- r$delay
+    npre_delay <- npre + delay
+    cpt_val    <- r$cpt_est
+    ttd_val    <- r$time_est
+
+    cpt_est_vec[s]  <- if (!is.null(cpt_val) && !is.na(cpt_val)) cpt_val else NA_integer_
+    time_est_vec[s] <- if (!is.null(ttd_val) && !is.na(ttd_val)) ttd_val else NA_integer_
     delays[s]       <- delay
 
-    if (!is.na(res$cpt_est)) {
-      errors    <- c(errors,    res$cpt_est - npre_delay)
-      det_times <- c(det_times, res$time_est)
+    if (!is.na(cpt_est_vec[s])) {
+      errors    <- c(errors,    cpt_est_vec[s] - npre_delay)
+      det_times <- c(det_times, time_est_vec[s])
     }
   }
 
