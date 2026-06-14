@@ -1,5 +1,5 @@
 """
-SimRewilding — Glossary of Statistical Terms
+Glossary of Statistical Terms
 Educational reference page explaining key terms for non-statisticians.
 """
 
@@ -11,15 +11,17 @@ st.set_page_config(
     layout="wide",
 )
 
-# ── Page registry ───────────────────────────────────────────────────────────────
+# Page registry
 PAGES = {
     "01": ("pages/01_Trend_Change_AMOC.py", "Trend Change (AMOC)"),
     "02": ("pages/02_Distribution_Change_AMOC.py", "Distribution Change (AMOC)"),
     "03": ("pages/03_Trend_Change_Forecast.py", "Trend Change (Forecast)"),
     "04": ("pages/04_Distribution_Change_Forecast.py", "Distribution Change (Forecast)"),
+    "05": ("pages/05_Trend_Change_BOCPD.py", "Trend Change (BOCPD)"),
+    "06": ("pages/06_Distribution_Change_BOCPD.py", "Distribution Change (BOCPD)"),
 }
 
-# ── Glossary entries ────────────────────────────────────────────────────────────
+# Glossary entries
 GLOSSARY = [
     {
         "term": "Changepoint Detection",
@@ -38,7 +40,7 @@ GLOSSARY = [
                 '[Killick et al. (2012) "Optimal Detection of Changepoints"](https://arxiv.org/abs/1101.1438)'
             ),
         ],
-        "relevant_for": ["01", "02", "03", "04"],
+        "relevant_for": ["01", "02", "03", "04", "05", "06"],
     },
     {
         "term": "AMOC (At Most One Change)",
@@ -94,7 +96,7 @@ GLOSSARY = [
         "resources": [
             "[Wikipedia: Independent and Identically Distributed Random Variables](https://en.wikipedia.org/wiki/Independent_and_identically_distributed_random_variables)",
         ],
-        "relevant_for": ["01", "02", "03", "04"],
+        "relevant_for": ["01", "02", "03", "04", "05"],
     },
     {
         "term": "AR(1) (Autoregressive Model of Order 1)",
@@ -133,7 +135,7 @@ GLOSSARY = [
         "resources": [
             '[Cohen (1988) "Statistical Power Analysis for the Behavioral Sciences"](https://www.routledge.com/Statistical-Power-Analysis-for-the-Behavioral-Sciences/Cohen/p/book/9780805802832)',
         ],
-        "relevant_for": ["01", "02", "03", "04"],
+        "relevant_for": ["01", "02", "03", "04", "05", "06"],
     },
     {
         "term": "Effect Size",
@@ -154,7 +156,7 @@ GLOSSARY = [
         "resources": [
             "[Wikipedia: Cohen's Effect Size Conventions](https://en.wikipedia.org/wiki/Effect_size)",
         ],
-        "relevant_for": ["01", "02", "03", "04"],
+        "relevant_for": ["01", "02", "03", "04", "05", "06"],
     },
     {
         "term": "BACI (Before-After Control-Intervention)",
@@ -176,7 +178,7 @@ GLOSSARY = [
         "resources": [
             '[Campbell & Cook (1979) "Quasi-Experimentation"](https://www.degruyter.com/document/doi/10.4159/9780674037076/html)',
         ],
-        "relevant_for": ["01", "02", "03", "04"],
+        "relevant_for": ["01", "02", "03", "04", "05", "06"],
     },
     {
         "term": "BA (Before-After)",
@@ -218,8 +220,12 @@ GLOSSARY = [
         ),
         "resources": [
             "[Wikipedia: Wasserstein Distance](https://en.wikipedia.org/wiki/Wasserstein_metric)",
+            (
+                '[Schuhmacher et al. (2024) "transport: Computation of Optimal Transport Plans '
+                'and Wasserstein Distances" (R package)](https://cran.r-project.org/package=transport)'
+            ),
         ],
-        "relevant_for": ["02", "04"],
+        "relevant_for": ["02", "04", "06"],
     },
     {
         "term": "Monitoring Window (`npost`)",
@@ -247,7 +253,7 @@ GLOSSARY = [
         ),
         "plain_english": None,
         "resources": [],
-        "relevant_for": ["01", "02", "03", "04"],
+        "relevant_for": ["01", "02", "03", "04", "05", "06"],
     },
     {
         "term": "Intervention Delay",
@@ -265,7 +271,7 @@ GLOSSARY = [
             "until June. That 5-month delay reduces your detection power."
         ),
         "resources": [],
-        "relevant_for": ["01", "02", "03", "04"],
+        "relevant_for": ["01", "02", "03", "04", "05", "06"],
     },
     {
         "term": "Forecast-based Detection (Page-CUSUM)",
@@ -331,14 +337,14 @@ GLOSSARY = [
             "The distribution pages test for both."
         ),
         "resources": [],
-        "relevant_for": ["02", "04"],
+        "relevant_for": ["02", "04", "06"],
     },
     {
         "term": "Two-Stage Detection (Detection Time vs. Changepoint Estimate)",
         "what": (
-            "A two-step process used by the Forecast method. First, it records the month the "
-            "alarm is raised (detection time). Then, it goes back and estimates when the "
-            "underlying change actually began (changepoint estimate)."
+            "A two-step process used by the online methods (Forecast and BOCPD). First, it "
+            "records the month the alarm is raised (detection time). Then, it goes back and "
+            "estimates when the underlying change actually began (changepoint estimate)."
         ),
         "why": (
             "The alarm always rings *after* there is enough cumulative evidence, so it "
@@ -353,11 +359,113 @@ GLOSSARY = [
             "The gap between them is the detection delay."
         ),
         "resources": [],
-        "relevant_for": ["03", "04"],
+        "relevant_for": ["03", "04", "05", "06"],
+    },
+    {
+        "term": "BOCPD (Bayesian Online Changepoint Detection)",
+        "what": (
+            "An *online* changepoint detection method that processes a time series one "
+            "observation at a time, maintaining a posterior over the location of the most "
+            "recent changepoint and declaring a changepoint as soon as the maximum a "
+            "posteriori (MAP) estimate places a break within the series (τ>0)."
+        ),
+        "why": (
+            "Unlike AMOC (which waits for the whole series) BOCPD needs no pre-computed "
+            "critical value and can raise an alarm during monitoring. It runs in a single "
+            "pass over the difference series and stops the moment the first τ>0 break "
+            "enters the MAP path."
+        ),
+        "plain_english": (
+            "Imagine reading a stream gauge every month and, after each reading, updating "
+            'your best guess of "when did the river most recently change behaviour?" '
+            "While that guess sits at the very start of the record, nothing has changed; "
+            "the moment it jumps to a recent month, BOCPD declares a changepoint. It "
+            "decides on the fly rather than looking back at the end of the study."
+        ),
+        "resources": [
+            '[Fearnhead & Liu (2007) "On-line inference for multiple changepoint problems"](https://doi.org/10.1111/j.1467-9868.2007.00601.x)',
+        ],
+        "relevant_for": ["05", "06"],
+    },
+    {
+        "term": "Run Length",
+        "what": (
+            "The number of time steps since the most recent changepoint — equivalently, "
+            "t minus the location of that changepoint. BOCPD maintains a posterior over "
+            "the most recent changepoint location (and hence the run length) at every step."
+        ),
+        "why": (
+            "A changepoint is declared when the maximum a posteriori (MAP) estimate first "
+            "places a break inside the series (τ>0) rather than at its very start — i.e. "
+            "the MAP run length stops spanning the whole history and a fresh segment opens."
+        ),
+        "plain_english": (
+            'If the MAP run length is 30, the method believes "nothing has changed for 30 '
+            'months." When the MAP instead points to a recent break — a short run length — '
+            "the method declares that a change has happened; that is the alarm."
+        ),
+        "resources": [],
+        "relevant_for": ["05", "06"],
+    },
+    {
+        "term": "Particle Filter",
+        "what": (
+            "A computational technique that approximates a complicated probability "
+            'distribution with a set of weighted samples ("particles"). BOCPD uses one to '
+            "track the run-length posterior efficiently as new data arrives."
+        ),
+        "why": (
+            "Tracking every possible changepoint history exactly becomes too expensive as "
+            "the series grows. The particle filter keeps only a fixed number of the most "
+            "plausible hypotheses, resampling them so computation stays bounded."
+        ),
+        "plain_english": (
+            "Instead of considering every possible story of when the change happened, the "
+            'method keeps a manageable crowd of "candidate stories", giving each a weight '
+            "for how well it fits the data, and periodically drops the least likely ones."
+        ),
+        "resources": [
+            "[Wikipedia: Particle Filter](https://en.wikipedia.org/wiki/Particle_filter)",
+        ],
+        "relevant_for": ["05", "06"],
+    },
+    {
+        "term": "Minimum Segment Length (`msl`)",
+        "what": (
+            "The smallest number of consecutive observations BOCPD requires between two "
+            "changepoints."
+        ),
+        "why": (
+            "Without a minimum, the detector could place changepoints almost every step "
+            "and chase noise. Enforcing a minimum segment length stabilises the estimates "
+            "and prevents spurious, rapid-fire detections."
+        ),
+        "plain_english": (
+            'It tells the method: "don\'t declare two changes closer together than `msl` months."'
+        ),
+        "resources": [],
+        "relevant_for": ["05", "06"],
+    },
+    {
+        "term": "Run-Length Hazard Rate (`ptr`)",
+        "what": (
+            "The prior probability, at each step, that the current segment ends and a new "
+            "changepoint begins."
+        ),
+        "why": (
+            "It encodes how often we expect changes *before* seeing the data. A higher "
+            "hazard makes BOCPD quicker to declare changes (more sensitive, more false "
+            "alarms); a lower hazard makes it more conservative."
+        ),
+        "plain_english": (
+            'It is the method\'s built-in expectation of "how often do things change?" '
+        ),
+        "resources": [],
+        "relevant_for": ["05", "06"],
     },
 ]
 
-# ── Render ──────────────────────────────────────────────────────────────────────
+# Render
 st.title("📚 Glossary of Terms")
 st.caption("A non-technical guide to statistical concepts in rewilding analysis")
 
