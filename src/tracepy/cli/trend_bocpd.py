@@ -9,9 +9,9 @@ random onset *delay*, forms the difference series ``x = y_itv - y_ctr``, and
 runs online BOCPD over it, stopping at the first declared changepoint.
 
 Unlike the AMOC/Forecast pipelines, BOCPD is an online detector and needs no
-null-distribution critical value, so there is a single simulation phase.  The
-detector is driven through ``rpy2`` and is not picklable across processes, so
-the Monte Carlo loop runs serially (matching the R reference).
+null-distribution critical value, so there is a single simulation phase.  Each
+increment is dispatched as a single R call (via ``run_bocpd_increment``) so
+that the per-step Python↔R bridge overhead is eliminated.
 """
 
 import time
@@ -19,7 +19,7 @@ import warnings
 
 import numpy as np
 
-from tracepy.changepoint.bocpd import run_bocpd
+from tracepy.changepoint.bocpd import run_bocpd_increment
 from tracepy.cli._utils import (
     fmt_elapsed,
     print_complete,
@@ -102,9 +102,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
         raise SystemExit(1)
 
     if not plots_only:
-        print_stage(
-            "Detection — BOCPD simulations", len(detection_results), len(trend_increase)
-        )
+        print_stage("Detection — BOCPD simulations", len(detection_results), len(trend_increase))
         t_total = time.perf_counter()
 
         for m, trend_inc in enumerate(trend_increase, start=1):
@@ -120,7 +118,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
                 end="",
                 flush=True,
             )
-            result = _run_increment(
+            result = run_bocpd_increment(
                 trend_inc=trend_inc,
                 trend_idx=m,
                 n_trends=len(trend_increase),
@@ -130,8 +128,15 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
                 level=level,
                 trend_control=trend_control,
                 sigma=sigma,
-                delay_set=delay_set,
-                bocpd_kwargs=bocpd_kwargs,
+                delay_max=int(delay_set[-1]),
+                prior_alpha=bocpd_kwargs["prior_alpha"],
+                prior_sigma2=bocpd_kwargs["prior_sigma2"],
+                sig_prior=bocpd_kwargs["sig_prior"],
+                pm=bocpd_kwargs["pm"],
+                ptr=bocpd_kwargs["ptr"],
+                maxp=bocpd_kwargs["maxp"],
+                np_=bocpd_kwargs["np_"],
+                msl=bocpd_kwargs["msl"],
             )
             detection_results[trend_inc] = result
             save_simulation_results(FOLDER, {"detection_results": detection_results})
@@ -157,73 +162,6 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
         trend_control,
         sigma,
     )
-
-
-def _run_increment(
-    *,
-    trend_inc,
-    trend_idx,
-    n_trends,
-    simN,
-    npre,
-    npost_max,
-    level,
-    trend_control,
-    sigma,
-    delay_set,
-    bocpd_kwargs,
-):
-    """Run *simN* BOCPD replications for one trend increment (serial).
-
-    Mirrors the inner ``sapply`` of the R reference: each replication draws a
-    random delay, simulates a control/intervention pair, and runs BOCPD on the
-    difference series ``y_itv - y_ctr``, stopping at the first changepoint.
-
-    The true changepoint in the difference series sits at ``npre + delay``
-    (1-indexed), so the location error is ``cpt_est - (npre + delay)``.
-    """
-    cpt_est = []
-    time_est = []
-    delays = []
-    errors = []
-
-    for s in range(1, simN + 1):
-        seed = s * n_trends + trend_idx
-        rng = np.random.default_rng(seed)
-        delay = int(rng.choice(delay_set))
-        npre_delay = npre + delay
-        npost_delay = npost_max - delay
-
-        sim_ts = ci_sim(
-            seed=seed,
-            npre=npre_delay,
-            npost=npost_delay,
-            level=level,
-            trend=[trend_control, trend_control + trend_inc],
-            sigma=sigma,
-        )
-        x = sim_ts["y_itv"] - sim_ts["y_ctr"]
-
-        res = run_bocpd(x, **bocpd_kwargs)
-        cpt = res["cpt_est"]
-
-        cpt_est.append(cpt)
-        time_est.append(res["time_est"])
-        delays.append(delay)
-        if cpt is not None:
-            errors.append(cpt - npre_delay)
-
-    n_detected = len(errors)
-    detected_times = [t for t in time_est if t is not None]
-    return {
-        "cpt_est": cpt_est,
-        "time_est": time_est,
-        "delay": delays,
-        "errors": errors,
-        "detection_rate": n_detected / simN if simN else 0.0,
-        "mean_error": float(np.mean(errors)) if errors else float("nan"),
-        "mean_time_to_detect": float(np.mean(detected_times)) if detected_times else float("nan"),
-    }
 
 
 def _print_summary(detection_results, trend_increase):

@@ -13,6 +13,7 @@ import numpy as np
 
 try:
     import rpy2.robjects as ro
+    from rpy2.rinterface_lib.sexp import NAIntegerType as _NAIntegerType
     from rpy2.robjects.vectors import FloatVector
 
     _HAS_RPY2 = True
@@ -21,8 +22,10 @@ except ImportError as _e:
     _HAS_RPY2 = False
     _RPY2_ERR = str(_e)
     FloatVector = None  # type: ignore[misc,assignment]
+    _NAIntegerType = None  # type: ignore[misc,assignment]
 
 _R_SOURCED = False
+_SIM_R_SOURCED = False
 
 
 def _require_rpy2() -> None:
@@ -44,6 +47,10 @@ def _find_r_source() -> Path:
     raise FileNotFoundError("Cannot locate SimRewilding/BOCPD_functions.R")
 
 
+def _find_sim_r_source() -> Path:
+    return Path(__file__).resolve().parent / "bocpd_sim.R"
+
+
 def _ensure_sourced() -> None:
     global _R_SOURCED
     if not _R_SOURCED:
@@ -51,6 +58,15 @@ def _ensure_sourced() -> None:
         r_path = str(_find_r_source()).replace("\\", "/")
         ro.r["source"](r_path)
         _R_SOURCED = True
+
+
+def _ensure_sim_sourced() -> None:
+    global _SIM_R_SOURCED
+    if not _SIM_R_SOURCED:
+        _ensure_sourced()
+        sim_path = str(_find_sim_r_source()).replace("\\", "/")
+        ro.r["source"](sim_path)
+        _SIM_R_SOURCED = True
 
 
 # ============================================================================
@@ -111,27 +127,6 @@ def _runl_gx(t: int, ptr: float, msl: int) -> float:
 # ============================================================================
 # BOCPD Functions used for simulations
 # ============================================================================
-
-
-def logsumexp(x: np.ndarray) -> np.ndarray:
-    """
-    Row-wise log-sum-exp
-    This matches R's ``logsumexp()`` in BOCPD_functions.R.
-
-    Parameters
-    ----------
-    x : array-like, shape (..., n)
-        Input array; treated as a 2-D matrix where each row is log-summed.
-
-    Returns
-    -------
-    ndarray, shape (nrows,)
-        ``log(sum(exp(x), axis=1))`` computed in a numerically stable way
-        (a scalar when the input has a single row).
-    """
-    x = np.atleast_2d(np.asarray(x, dtype=float))
-    a = x.max(axis=1, keepdims=True)
-    return (np.log(np.sum(np.exp(x - a), axis=1)) + a.squeeze(axis=1)).squeeze()
 
 
 def run_bocpd(
@@ -282,3 +277,124 @@ def run_bocpd(
 
     breaks = list(cpt_map.rx2("breaks"))
     return {"cpt_est": int(breaks[1]), "time_est": int(i)}
+
+
+def _r_result_to_dict(result) -> dict:
+    """Convert the standard rpy2 result list from an R bocpd increment call to a Python dict."""
+    import math
+
+    def _int_or_none(v) -> int | None:
+        if _NAIntegerType is not None and isinstance(v, _NAIntegerType):
+            return None
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return None
+
+    me = float(result.rx2("mean_error")[0])
+    mttd = float(result.rx2("mean_time_to_detect")[0])
+    return {
+        "cpt_est": [_int_or_none(v) for v in result.rx2("cpt_est")],
+        "time_est": [_int_or_none(v) for v in result.rx2("time_est")],
+        "delay": [int(v) for v in result.rx2("delay")],
+        "errors": [float(v) for v in result.rx2("errors")],
+        "detection_rate": float(result.rx2("detection_rate")[0]),
+        "mean_error": me if not math.isnan(me) else float("nan"),
+        "mean_time_to_detect": mttd if not math.isnan(mttd) else float("nan"),
+    }
+
+
+def run_bocpd_increment(
+    *,
+    trend_inc: float,
+    trend_idx: int,
+    n_trends: int,
+    simN: int,
+    npre: int,
+    npost_max: int,
+    level: float,
+    trend_control: float,
+    sigma: float,
+    delay_max: int,
+    prior_alpha: tuple[float, float],
+    prior_sigma2: float,
+    sig_prior: tuple[float, float],
+    pm: float,
+    ptr: float,
+    maxp: int,
+    np_: int,
+    msl: int,
+) -> dict:
+    """Run all *simN* BOCPD replications for one trend increment inside R."""
+    _ensure_sim_sourced()
+
+    result = _R("run_bocpd_increment")(
+        simN=int(simN),
+        n_trends=int(n_trends),
+        trend_idx=int(trend_idx),
+        npre=int(npre),
+        npost_max=int(npost_max),
+        level=float(level),
+        trend_control=float(trend_control),
+        trend_inc=float(trend_inc),
+        sigma=float(sigma),
+        delay_max=int(delay_max),
+        prior_alpha=FloatVector(list(prior_alpha)),
+        prior_sigma2=float(prior_sigma2),
+        sig_prior_shape=float(sig_prior[0]),
+        sig_prior_rate=float(sig_prior[1]),
+        pm=float(pm),
+        ptr=float(ptr),
+        maxp=int(maxp),
+        np=int(np_),
+        msl=int(msl),
+    )
+    return _r_result_to_dict(result)
+
+
+def run_bocpd_distribution_increment(
+    *,
+    trend_inc: float,
+    trend_idx: int,
+    n_trends: int,
+    simN: int,
+    npre: int,
+    npost_max: int,
+    mu: float,
+    sigma: float,
+    ns: int,
+    delay_max: int,
+    prior_alpha: tuple[float, float],
+    prior_sigma2: float,
+    sig_prior: tuple[float, float],
+    pm: float,
+    ptr: float,
+    maxp: int,
+    np_: int,
+    msl: int,
+) -> dict:
+    """Run all *simN* distribution-BOCPD replications for one mean-shift increment inside R."""
+    _ensure_sim_sourced()
+
+    result = _R("run_bocpd_distribution_increment")(
+        simN=int(simN),
+        n_trends=int(n_trends),
+        trend_idx=int(trend_idx),
+        npre=int(npre),
+        npost_max=int(npost_max),
+        mu=float(mu),
+        sigma_dist=float(sigma),
+        ns=int(ns),
+        trend_mu=float(trend_inc),
+        delay_max=int(delay_max),
+        prior_alpha=FloatVector(list(prior_alpha)),
+        prior_sigma2=float(prior_sigma2),
+        sig_prior_shape=float(sig_prior[0]),
+        sig_prior_rate=float(sig_prior[1]),
+        pm=float(pm),
+        ptr=float(ptr),
+        maxp=int(maxp),
+        np=int(np_),
+        msl=int(msl),
+    )
+    return _r_result_to_dict(result)
