@@ -1,5 +1,5 @@
 """
-SimRewilding — Distribution Change Detection using AMOC
+Distribution Change Detection using AMOC
 Interactive analysis page for rewild_distribution_change_amoc results.
 """
 
@@ -20,14 +20,14 @@ from tracepy.stats.metrics import (
     wasserstein_distance_baci,
 )
 
-# ── Page config ────────────────────────────────────────────────────────────────
+# Page config
 st.set_page_config(
     page_title="Distribution Change Detection (AMOC)",
     page_icon="📊",
     layout="wide",
 )
 
-# ── Simulation constants ─────────────────────────────────────────────────────
+# Simulation constants
 NPRE = 24
 NPOST_VEC = np.arange(24, 121, 3)
 NPOST_MAX = 120
@@ -46,9 +46,9 @@ EFFECT_SIZES_SIGMA_PCT = [50, 100, 150, 200]
 RESULTS_PATH = Path(__file__).parent.parent / "results" / "distribution_amoc" / "sim_results.pkl"
 
 
-# ── Data loading ───────────────────────────────────────────────────────────────
+# Data loading
 @st.cache_data(show_spinner="Loading distribution simulation results…")
-def load_results(path: Path):
+def load_results(path: Path, mtime: float):
     if not path.exists():
         return None
     with open(path, "rb") as f:
@@ -73,7 +73,7 @@ def dist_label(trend_val, pct):
     return f"{pct}% ({trend_val:.4f}/mo)"
 
 
-# ── Colour palettes ────────────────────────────────────────────────────────────
+# Colour palettes
 PALETTE_MU = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
 PALETTE_SIGMA = px.colors.sample_colorscale("Plasma", [i / 3 for i in range(4)])
 
@@ -118,8 +118,9 @@ with st.sidebar:
     | **simN** | 1,000 | Main simulations per effect size |
     """)
 
-# ── Load data ──────────────────────────────────────────────────────────────────
-data = load_results(RESULTS_PATH)
+# Load data
+_mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
+data = load_results(RESULTS_PATH, _mtime)
 
 if data is None:
     st.error(
@@ -163,7 +164,7 @@ if results_available:
     ]
     tab_power, tab_delay, tab_null, tab_err, tab_fdr = st.tabs(_tabs)
 
-    # ── Tab 1: Power curves ────────────────────────────────────────────────────
+    # Power curves
     with tab_power:
         st.subheader("Power curves")
         st.markdown("""
@@ -264,7 +265,7 @@ if results_available:
             with cols[1]:
                 st.plotly_chart(_power_fig_sigma(), width="stretch")
 
-    # ── Tab 2: Detection by delay ──────────────────────────────────────────────
+    # Detection by delay
     with tab_delay:
         st.subheader("Effect of intervention delay on detection")
         st.markdown("""
@@ -469,7 +470,7 @@ if results_available:
                 "that x-value is the minimum monitoring window needed."
             )
 
-    # ── Tab 3: Null distributions ──────────────────────────────────────────────
+    # Null distributions
     with tab_null:
         st.subheader("Null distributions of distance trend statistics")
         st.markdown("""
@@ -540,7 +541,7 @@ if results_available:
         }
         st.table(cv_table)
 
-    # ── Tab 5: Estimation error ────────────────────────────────────────────────
+    # Estimation error
     with tab_err:
         st.subheader("Changepoint localisation error")
         st.markdown("""
@@ -591,7 +592,7 @@ if results_available:
         )
         st.plotly_chart(fig_err, width="stretch")
 
-    # ── Tab 5: FDR Heatmap ─────────────────────────────────────────────────────
+    # FDR Heatmap
     with tab_fdr:
         st.subheader("False Discovery Rate heatmap")
         st.markdown("""
@@ -713,7 +714,7 @@ if results_available:
                     width="stretch",
                 )
 
-    # ── Detection summary table ────────────────────────────────────────────────
+    # Detection summary table
     st.divider()
     st.subheader("Detection summary table")
     st.markdown("""
@@ -817,7 +818,7 @@ if results_available:
     npost_i_exp = int(np.searchsorted(NPOST_VEC, exp_npost, side="left"))
     npost_i_exp = min(npost_i_exp, len(NPOST_VEC) - 1)
 
-    # ── Run navigator — slider + ◀ ▶ buttons ──────────────────────────────────
+    # Run navigator — slider + ◀ ▶ buttons
     if "exp_nav_idx" not in st.session_state:
         st.session_state["exp_nav_idx"] = 0
     if "exp_nav_slider" not in st.session_state:
@@ -861,7 +862,7 @@ if results_available:
     _trend_sigma_val = 0.0 if exp_type == "Mean (Mu)" else float(exp_trend)
     _sim_data = _regenerate_sim(_seed, _delay, _trend_mu_val, _trend_sigma_val)
 
-    # ── Metrics row ───────────────────────────────────────────────────────────
+    # Metrics row
     crit_val = cv.get("npost_24", {}).get("critical_value")
     m1, m2, m3 = st.columns(3)
     with m1:
@@ -885,7 +886,7 @@ if results_available:
                 help=f"True τ = month {_true_cpt} (pre={NPRE} + delay={_delay})",
             )
 
-    # ── Distance + mean-difference time series ────────────────────────────────
+    # Distance + mean-difference time series
     nt = NPRE + exp_npost
     dist_ts = wasserstein_distance_baci(
         _sim_data["sample_ctr"][:, :nt],
@@ -987,7 +988,7 @@ if results_available:
     )
     st.plotly_chart(fig_dist, width="stretch")
 
-    # ── Distribution snapshots ─────────────────────────────────────────────────
+    # Distribution snapshots
     st.markdown("**Distribution snapshots** — dashed = control, solid = intervention")
     snap_t_exp = st.slider(
         "Timepoint (month)",
@@ -1205,7 +1206,7 @@ if s_run:
     st.session_state["dist_mini_last_params"] = _cur_params
 
 
-# ── Results — persisted across rerenders via session state ────────────────────
+# Results — persisted across rerenders via session state
 if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist_mini_runs"]:
     mr = st.session_state["dist_mini_runs"]
     detected_flags = mr["detected_flags"]
@@ -1216,7 +1217,7 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
 
     st.success("Simulation complete!")
 
-    # ── Summary metrics ───────────────────────────────────────────────────────
+    # Summary metrics
     valid_cpts = [s["cpt"] for s, d in zip(mr["all_stats"], detected_flags) if d]
     sm1, sm2, sm3 = st.columns(3)
     with sm1:
@@ -1242,7 +1243,7 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
                 help="Median (τ̂ − true τ). Positive = declared later than true change.",
             )
 
-    # ── Run navigator ─────────────────────────────────────────────────────────
+    # Run navigator
     st.divider()
     st.subheader("Browse simulation runs")
 
@@ -1297,7 +1298,7 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
     _tmax = s_stats["Tmax"]
     _cpt = s_stats["cpt"]
 
-    # ── Per-run metrics ───────────────────────────────────────────────────────
+    # Per-run metrics
     mm1, mm2, mm3 = st.columns(3)
     with mm1:
         st.metric("T_max", f"{_tmax:.3f}", delta=f"threshold {crit_val_mr:.3f}", delta_color="off")
@@ -1317,7 +1318,7 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
                 "Timing error", "—", help=f"True τ = month {true_cpt} (pre = {mr['s_npre']} months)"
             )
 
-    # ── Distance + mean-difference time series ────────────────────────────────
+    # Distance + mean-difference time series
     s_nt = mr["s_npre"] + mr["s_npost"]
     t_sim = np.arange(1, s_nt + 1)
     s_mean_diff = sim["sample_itv"].mean(axis=0) - sim["sample_ctr"].mean(axis=0)
@@ -1409,7 +1410,7 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
     )
     st.plotly_chart(fig_s, width="stretch")
 
-    # ── Distribution snapshots ─────────────────────────────────────────────────
+    # Distribution snapshots
     st.markdown("**Distribution snapshots** — dashed = control, solid = intervention")
     snap_t_mr = st.slider(
         "Timepoint (month)",

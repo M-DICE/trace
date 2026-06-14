@@ -1,5 +1,5 @@
 """
-SimRewilding — Trend Change Detection using Forecast (Page-CUSUM)
+Trend Change Detection using Forecast (Page-CUSUM)
 Interactive analysis page for rewild_trend_change_forecast results.
 """
 
@@ -25,14 +25,14 @@ CRIT_VAL = lookup_crit_val(_CRIT_VAL_TABLE)
 
 warnings.filterwarnings("ignore")
 
-# ── Page config ────────────────────────────────────────────────────────────────
+# Page config
 st.set_page_config(
     page_title="Trend Change Detection (Forecast)",
     page_icon="🔮",
     layout="wide",
 )
 
-# ── Simulation constants ─────────────────────────────────────────────────────
+# Simulation constants
 NPRE = 24
 NPOST_YEARS = 10
 NPOST_MONTHS = 12 * NPOST_YEARS
@@ -53,16 +53,16 @@ RESULTS_PATH = Path(__file__).parent.parent / "results" / "trend_forecast" / "si
 PALETTE = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
 
 
-# ── Data loading ───────────────────────────────────────────────────────────────
+# Data loading
 @st.cache_data(show_spinner="Loading pre-computed simulation results…")
-def load_results(path: Path):
+def load_results(path: Path, mtime: float):
     if not path.exists():
         return None
     with open(path, "rb") as f:
         return pickle.load(f)
 
 
-# ── CUSUM path helper (for individual run explorer) ───────────────────────────
+# CUSUM path helper (for individual run explorer)
 def compute_cusum_path(y_itv, npre, ntt, crit_val, gamma=0.0, phi=None):
     """
     Weighted Page-CUSUM path matching amoc.page_cusum.
@@ -127,7 +127,7 @@ as the evidence threshold is crossed. This makes it well-suited to real-time mon
 """)
 
 
-# ── Sidebar ────────────────────────────────────────────────────────────────────
+# Sidebar
 with st.sidebar:
     st.markdown("""
     **On this page**
@@ -150,8 +150,9 @@ with st.sidebar:
     """)
 
 
-# ── Load data ──────────────────────────────────────────────────────────────────
-data = load_results(RESULTS_PATH)
+# Load data
+_mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
+data = load_results(RESULTS_PATH, _mtime)
 
 if data is None:
     st.error(
@@ -199,7 +200,7 @@ if results_available:
         ]
     )
 
-    # ── Tab 2: Time to Detection ───────────────────────────────────────────────
+    # Time to Detection
     with tab_ttd:
         st.subheader("Time to detection distribution")
         st.markdown("""
@@ -305,7 +306,7 @@ if results_available:
             width="stretch",
         )
 
-    # ── Tab 3: Changepoint Error ───────────────────────────────────────────────
+    # Changepoint Error
     with tab_err:
         st.subheader("Changepoint localisation error")
         st.markdown("""
@@ -371,7 +372,7 @@ if results_available:
                     err_fig(res_ar, "AR(1) BA", "rgba(255,152,0,0.82)"), width="stretch"
                 )
 
-    # ── Tab 5: Detection by Delay ──────────────────────────────────────────────
+    # Detection by Delay
     with tab_delay:
         st.subheader("Effect of intervention delay on detection")
         st.markdown("""
@@ -494,7 +495,7 @@ if results_available:
             )
             st.plotly_chart(fig_hm, width="stretch")
 
-    # ── Tab 6: Changepoint Bias ────────────────────────────────────────────────
+    # Changepoint Bias
     with tab_bias:
         st.subheader("Changepoint timing accuracy")
         st.markdown("""
@@ -601,7 +602,7 @@ if results_available:
         st.caption("Detections per 1,000 simulations used to build each box:")
         st.dataframe(n_rows, hide_index=True, width="stretch")
 
-    # ── Tab 6: Critical values ─────────────────────────────────────────────────
+    # Critical values
     with tab_cv:
         import json as _json
 

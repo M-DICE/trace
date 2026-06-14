@@ -1,5 +1,5 @@
 """
-SimRewilding — Distribution Change Detection using Forecast (Page-CUSUM)
+Distribution Change Detection using Forecast (Page-CUSUM)
 Interactive analysis page for distribution_forecast results.
 """
 
@@ -27,14 +27,14 @@ warnings.filterwarnings("ignore")
 _CRIT_VAL_TABLE = load_crit_val_table()
 CRIT_VAL = lookup_crit_val(_CRIT_VAL_TABLE)
 
-# ── Page config ────────────────────────────────────────────────────────────────
+# Page config
 st.set_page_config(
     page_title="Distribution Change Detection (Forecast)",
     page_icon="🌦️",
     layout="wide",
 )
 
-# ── Simulation constants ──────────────────────────────────────────────────────
+# Simulation constants
 NPRE = 24
 NPOST_VEC = np.arange(24, 121, 12)
 NPOST_MAX = int(NPOST_VEC[-1])
@@ -53,9 +53,9 @@ RESULTS_PATH = (
 PALETTE = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
 
 
-# ── Data loading ───────────────────────────────────────────────────────────────
+# Data loading
 @st.cache_data(show_spinner="Loading distribution forecast results…")
-def load_results(path: Path):
+def load_results(path: Path, mtime: float):
     if not path.exists():
         return None
     with open(path, "rb") as f:
@@ -129,7 +129,7 @@ monitoring of distributional shifts.
 """)
 
 
-# ── Sidebar ────────────────────────────────────────────────────────────────────
+# Sidebar
 with st.sidebar:
     st.markdown("""
     **On this page**
@@ -155,8 +155,9 @@ with st.sidebar:
     """)
 
 
-# ── Load data ──────────────────────────────────────────────────────────────────
-data = load_results(RESULTS_PATH)
+# Load data
+_mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
+data = load_results(RESULTS_PATH, _mtime)
 
 if data is None:
     st.error(
@@ -204,7 +205,7 @@ if results_available:
         ]
     )
 
-    # ── Tab 1: Power curves ────────────────────────────────────────────────────
+    # Power curves
     with tab_power:
         st.subheader("Power curves")
         st.markdown("""
@@ -276,7 +277,7 @@ if results_available:
         A higher curve means the method detects the change more reliably.
         """)
 
-    # ── Tab 2: Detection heatmaps ──────────────────────────────────────────────
+    # Detection heatmaps
     with tab_heatmap:
         st.subheader("Detection heatmaps")
         st.markdown("""
@@ -367,7 +368,7 @@ if results_available:
             "minimum monitoring window needed for reliable detection."
         )
 
-    # ── Tab 3: Summary tables ──────────────────────────────────────────────────
+    # Summary tables
     with tab_summary:
         st.subheader("Detection summary")
         st.markdown("""
@@ -405,7 +406,7 @@ if results_available:
         _raw_ba = _build_summary_raw(res_ba)
         _labels = [f"{r['pct']}%" for r in _raw_baci]
 
-        # ── Detection rate bar chart ───────────────────────────────────────────
+        # Detection rate bar chart
         fig_summ_dr = go.Figure()
         fig_summ_dr.add_trace(
             go.Bar(
@@ -449,7 +450,7 @@ if results_available:
         )
         st.plotly_chart(fig_summ_dr, width="stretch")
 
-        # ── Median delay bar chart ─────────────────────────────────────────────
+        # Median delay bar chart
         fig_summ_dl = go.Figure()
         fig_summ_dl.add_trace(
             go.Bar(
@@ -480,7 +481,7 @@ if results_available:
         )
         st.plotly_chart(fig_summ_dl, width="stretch")
 
-        # ── Merged summary table ───────────────────────────────────────────────
+        # Merged summary table
         _merged_rows = []
         for b, a in zip(_raw_baci, _raw_ba):
             _merged_rows.append(
@@ -512,7 +513,7 @@ if results_available:
             )
         st.dataframe(pd.DataFrame(_merged_rows), hide_index=True, width="stretch")
 
-    # ── Tab 4: Detection by delay ──────────────────────────────────────────────
+    # Detection by delay
     with tab_delay:
         st.subheader("Effect of intervention delay on detection")
         st.markdown("""
@@ -627,7 +628,7 @@ if results_available:
             )
             st.plotly_chart(fig_hm_dl, width="stretch")
 
-    # ── Tab 5: Changepoint error ───────────────────────────────────────────────
+    # Changepoint error
     with tab_err:
         st.subheader("Changepoint localisation error")
         st.markdown("""
@@ -688,7 +689,7 @@ if results_available:
             with _ec2:
                 st.plotly_chart(_err_fig(res_ba, "BA", "rgba(255,152,0,0.82)"), width="stretch")
 
-    # ── Tab 6: Changepoint bias ────────────────────────────────────────────────
+    # Changepoint bias
     with tab_bias:
         st.subheader("Changepoint timing accuracy")
         st.markdown("""
@@ -1041,7 +1042,7 @@ if results_available:
             )
             st.plotly_chart(fig_ir_s, width="stretch")
 
-    # ── Distribution snapshots ─────────────────────────────────────────────────
+    # Distribution snapshots
     st.markdown("**Distribution snapshots** — dashed = control, solid = intervention")
     snap_t_ir = st.slider(
         "Timepoint (month)",
@@ -1260,7 +1261,7 @@ if s_run:
     st.session_state["df_mini_last_params"] = _cur_params
 
 
-# ── Results — persisted across rerenders via session state ────────────────────
+# Results — persisted across rerenders via session state
 if "df_mini_runs" in st.session_state and (
     st.session_state["df_mini_runs"].get("all_sims_baci")
     or st.session_state["df_mini_runs"].get("all_sims_ba")
@@ -1273,7 +1274,7 @@ if "df_mini_runs" in st.session_state and (
 
     st.success("Simulation complete!")
 
-    # ── Summary metrics ───────────────────────────────────────────────────────
+    # Summary metrics
     sm_cols = st.columns(4)
     _col_i = 0
     if run_baci:
@@ -1300,7 +1301,7 @@ if "df_mini_runs" in st.session_state and (
         with sm_cols[_col_i + 1]:
             st.metric("BA mean time to detect", f"{np.mean(_ba_t):.1f} mo" if _ba_t else "—")
 
-    # ── Timing error summary ──────────────────────────────────────────────────
+    # Timing error summary
     _true_cpt_custom = mr["s_npre"]
     _te_cols = st.columns(2 if (run_baci and run_ba) else 1)
     _te_pairs = []
@@ -1326,7 +1327,7 @@ if "df_mini_runs" in st.session_state and (
                 with _tb:
                     st.metric(f"{_te_lbl} median detection lag", f"{_med_lag:.1f} mo")
 
-    # ── Run navigator ─────────────────────────────────────────────────────────
+    # Run navigator
     st.divider()
     st.subheader("Browse simulation runs")
 
@@ -1413,7 +1414,7 @@ if "df_mini_runs" in st.session_state and (
         det_text = f"✓ month {mr['s_npre'] + int(te)}" if was_detected else "✗ not detected"
 
         with col:
-            # ── Per-run metrics ───────────────────────────────────────────────
+            # Per-run metrics
             mm1, mm2 = st.columns(2)
             with mm1:
                 st.metric(f"{scen_label} — result", det_text)
@@ -1526,7 +1527,7 @@ if "df_mini_runs" in st.session_state and (
             )
             st.plotly_chart(fig_m, width="stretch")
 
-    # ── Distribution snapshots ─────────────────────────────────────────────────
+    # Distribution snapshots
     st.markdown("**Distribution snapshots** — dashed = control, solid = intervention")
     _ref_sim = (mr["all_sims_baci"] or mr["all_sims_ba"])[show_idx]["sim"]
     snap_t_df = st.slider(

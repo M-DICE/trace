@@ -1,5 +1,5 @@
 """
-SimRewilding — Trend Change Detection using AMOC
+Trend Change Detection using AMOC
 Interactive analysis page for rewild_trend_change_amoc results.
 """
 
@@ -17,14 +17,14 @@ from scipy.stats import linregress
 from tracepy.simulation.trend import ci_sim, ci_sim_ar
 from tracepy.stats.metrics import trend_stats, trend_stats_ar
 
-# ── Page config ────────────────────────────────────────────────────────────────
+# Page config
 st.set_page_config(
     page_title="Trend Change Detection (AMOC)",
     page_icon="📈",
     layout="wide",
 )
 
-# ── Simulation constants ─────────────────────────────────────────────────────
+# Simulation constants
 NPRE = 24
 NPOST_YEARS = 10
 NPOST_MONTHS = 12 * NPOST_YEARS
@@ -43,9 +43,9 @@ EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # % of mean / 1
 RESULTS_PATH = Path(__file__).parent.parent / "results" / "trend_amoc" / "sim_results.pkl"
 
 
-# ── Data loading ───────────────────────────────────────────────────────────────
+# Data loading
 @st.cache_data(show_spinner="Loading pre-computed simulation results…")
-def load_results(path: Path):
+def load_results(path: Path, mtime: float):
     if not path.exists():
         return None
     with open(path, "rb") as f:
@@ -85,7 +85,7 @@ def trend_label(trend_val, pct):
     return f"{pct}% ({trend_val:.4f}/mo)"
 
 
-# ── Colour palette (one per effect size) ──────────────────────────────────────
+# Colour palette (one per effect size)
 PALETTE = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
 
 
@@ -145,8 +145,9 @@ with st.sidebar:
     """)
 
 
-# ── Load data ─────────────────────────────────────────────────────────────────
-data = load_results(RESULTS_PATH)
+# Load data
+_mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
+data = load_results(RESULTS_PATH, _mtime)
 
 if data is None:
     st.error(
@@ -192,7 +193,7 @@ if results_available:
         ]
     )
 
-    # ── Tab 1: Power Curves ────────────────────────────────────────────────────
+    # Power Curves
     with tab_power:
         st.subheader("Power curves: detection rate vs monitoring window")
         st.markdown("""
@@ -282,7 +283,7 @@ if results_available:
                 icon="ℹ️",
             )
 
-    # ── Tab 2: Time to Detection ───────────────────────────────────────────────
+    # Time to Detection
     with tab_ttd:
         st.subheader("Time to detection: minimum monitoring window for target power")
         st.markdown("""
@@ -415,7 +416,7 @@ if results_available:
         )
         st.plotly_chart(fig_ttd, width="stretch")
 
-        # ── Plain-English summary ──────────────────────────────────────────────
+        # Plain-English summary
         def summarise(ttd, label):
             not_reached = [EFFECT_SIZES_PCT[i] for i, (m, _) in enumerate(ttd) if m is None]
             return not_reached
@@ -459,7 +460,7 @@ if results_available:
         for msg in msgs:
             st.caption(msg)
 
-    # ── Tab 4: Null Distributions ──────────────────────────────────────────────
+    # Null Distributions
     with tab_null:
         st.subheader("Null distributions and critical values")
         st.markdown("""
@@ -575,7 +576,7 @@ if results_available:
         }
         st.table(cv_table)
 
-    # ── Tab 5: Changepoint Error ───────────────────────────────────────────────
+    # Changepoint Error
     with tab_err:
         st.subheader("Changepoint localisation error")
         st.markdown("""
@@ -644,7 +645,7 @@ if results_available:
                 with cols[2]:
                     st.plotly_chart(error_fig(res_iid_ba, "i.i.d. BA"), width="stretch")
 
-    # ── Tab 6: Detection by Delay ──────────────────────────────────────────────
+    # Detection by Delay
     with tab_delay:
         st.subheader("Effect of intervention delay on detection")
         st.markdown("""
@@ -660,7 +661,7 @@ if results_available:
           interact to determine detection probability.
         """)
 
-        # ── Controls ──────────────────────────────────────────────────────────
+        # Controls
         ctrl1, ctrl2, ctrl3 = st.columns(3)
         with ctrl1:
             delay_effect_pct = st.select_slider(
@@ -712,7 +713,7 @@ if results_available:
                 hi.append(min(1.0, r + se))
             return np.array(rates), np.array(lo), np.array(hi)
 
-        # ── Line chart view ────────────────────────────────────────────────────
+        # Line chart view
         if delay_view == "Line chart":
             npost_line = st.select_slider(
                 "Monitoring window (months)",
@@ -812,7 +813,7 @@ if results_available:
                     " simulations."
                 )
 
-        # ── Heatmap view ───────────────────────────────────────────────────────
+        # Heatmap view
         else:
             _heat_map = {"i.i.d. BACI": res_iid, "AR(1)": res_ar, "i.i.d. BA": res_iid_ba}
             if delay_noise in ("Both", "All"):
@@ -905,7 +906,7 @@ if results_available:
                 "that x-value is the minimum monitoring window needed."
             )
 
-    # ── Tab 6: Changepoint Bias ────────────────────────────────────────────────
+    # Changepoint Bias
     with tab_bias:
         st.subheader("Changepoint timing accuracy")
         st.markdown("""
@@ -1111,7 +1112,7 @@ if results_available:
             icon="💡",
         )
 
-    # ── Tab 7: FDR Heatmap ────────────────────────────────────────────────────
+    # FDR Heatmap
     with tab_fdr:
         st.subheader("False Discovery Rate heatmap")
         st.markdown("""
@@ -1228,7 +1229,7 @@ if results_available:
                 icon="ℹ️",
             )
 
-    # ── Detection summary table ────────────────────────────────────────────────
+    # Detection summary table
     st.divider()
     st.subheader("Detection summary table")
     st.markdown("""
@@ -1273,7 +1274,7 @@ if results_available:
 
     st.dataframe(_pd.DataFrame(_summ_rows), hide_index=True, width="stretch")
 
-    # ── Individual run explorer ────────────────────────────────────────────────
+    # Individual run explorer
     st.divider()
     st.header("🔍 Individual run explorer")
     st.markdown("""
@@ -1346,7 +1347,7 @@ if results_available:
         )
         st.stop()
 
-    # ── Metrics row — one column per model ────────────────────────────────────
+    # Metrics row — one column per model
     m_cols = st.columns(len(_exp_models))
     for col, (label, res, crit_key, _use_ar) in zip(m_cols, _exp_models):
         _delay = int(res[exp_trend]["delays"][run_i])
@@ -1375,7 +1376,7 @@ if results_available:
                     help=f"True τ = month {_true_cpt} (pre={NPRE} + delay={_delay})",
                 )
 
-    # ── Time series tabs — one per model ──────────────────────────────────────
+    # Time series tabs — one per model
     def _build_exp_fig(res, trend, run_idx, npost_i, npost_mo, label, use_ar=False):
         _delay = int(res[trend]["delays"][run_idx])
         _seed = int(res[trend]["seeds"][run_idx])
@@ -1852,7 +1853,7 @@ if run_btn:
     st.session_state["mini_runs_last_params"] = _cur_params
 
 
-# ── Results — persists across rerenders via session state ─────────────────────
+# Results — persists across rerenders via session state
 if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]:
     mr = st.session_state["mini_runs"]
     _model_labels = list(mr["models"].keys())
@@ -1860,7 +1861,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     det_rates_str = ", ".join(f"**{k}: {mr['models'][k]['det_rate']:.1%}**" for k in _model_labels)
     st.success("Simulation complete!")
 
-    # ── Summary metrics — one column per model ─────────────────────────────────
+    # Summary metrics — one column per model
     sm_cols = st.columns(len(_model_labels))
     for col, label in zip(sm_cols, _model_labels):
         mdata = mr["models"][label]
@@ -1892,7 +1893,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
                 st.metric("Mean |timing error|", "n/a")
                 st.metric("Median detection lag", "n/a")
 
-    # ── Run navigator ─────────────────────────────────────────────────────────
+    # Run navigator
     st.divider()
     st.subheader("Browse simulation runs")
 
@@ -1932,7 +1933,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
         else "No runs detected a change (i.i.d. BACI) — try a larger effect size or longer window."
     )
 
-    # ── Current run ───────────────────────────────────────────────────────────
+    # Current run
     show_idx = st.session_state.get("mini_nav_idx", 0)
     run_num = show_idx + 1
     show_seed = mr["base_seed"] + show_idx
@@ -1958,7 +1959,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
             "Red solid = detected τ̂ (where present)."
         )
 
-    # ── Per-model metrics ──────────────────────────────────────────────────────
+    # Per-model metrics
     pm_cols = st.columns(len(_model_labels))
     for col, label in zip(pm_cols, _model_labels):
         mdata = mr["models"][label]
@@ -1990,7 +1991,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
                     help=f"True τ = month {true_cpt} (pre={npre_sim} + delay={delay_sim})",
                 )
 
-    # ── Time series charts — one per model, side by side ──────────────────────
+    # Time series charts — one per model, side by side
     def _build_mini_fig(
         sim_data, stats, was_detected, label, npre, npost, delay, true_cpt_val, crit_val
     ):
