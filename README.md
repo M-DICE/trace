@@ -158,6 +158,12 @@ uv run ruff check .
 uv run ruff check --fix .
 ```
 
+### Format code
+
+```bash
+uv run ruff format .
+```
+
 ### Check only imports
 
 ```bash
