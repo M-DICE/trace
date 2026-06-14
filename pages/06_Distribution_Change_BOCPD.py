@@ -508,7 +508,7 @@ if results_available:
             _lag = ir_t_alarm - ir_true_cpt
             st.metric(
                 "Alarm step",
-                f"step {ir_t_alarm}",
+                f"month {ir_t_alarm}",
                 delta=f"lag {_lag:+d} mo",
                 delta_color="off",
                 help="Step at which BOCPD first declared the changepoint.",
@@ -596,7 +596,7 @@ if results_available:
                 mode="markers",
                 name="Alarm raised",
                 marker=dict(color="crimson", size=11, symbol="x"),
-                hovertemplate=f"Alarm at step {ir_t_alarm}<extra></extra>",
+                hovertemplate=f"Alarm at month {ir_t_alarm}<extra></extra>",
             ),
             row=1,
             col=1,
@@ -764,7 +764,7 @@ if "bd_live_result" in st.session_state and "bd_live_meta" in st.session_state:
         else:
             st.metric("Timing error", "—", help=f"True τ = month {_true}")
     with lm3:
-        st.metric("Alarm step", f"step {int(_talarm)}" if _talarm is not None else "—")
+        st.metric("Alarm step", f"month {int(_talarm)}" if _talarm is not None else "—")
 
     fig_live = go.Figure()
     fig_live.add_vrect(x0=1, x1=_meta["npre"], fillcolor="rgba(100,149,237,0.07)", line_width=0)
