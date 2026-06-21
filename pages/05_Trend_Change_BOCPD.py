@@ -578,7 +578,7 @@ difference series. This is the **only** part of the page that needs R + rpy2 —
 pre-computed explorer above needs neither.
 """)
 
-with st.expander("⚙️ Live BOCPD (requires R + rpy2)", expanded=False):
+with st.expander("⚙️ Simulation parameters", expanded=True):
     c1, c2, c3 = st.columns(3)
     with c1:
         live_effect_pct = st.select_slider(
@@ -606,7 +606,7 @@ with st.expander("⚙️ Live BOCPD (requires R + rpy2)", expanded=False):
             key="bocpd_live_seed",
         )
 
-    run_live = st.button("▶ Run live BOCPD", type="primary", width="content")
+    run_live = st.button("▶ Run simulation", type="primary", width="content")
 
 
 @st.cache_data(show_spinner="Running live BOCPD (R)…")

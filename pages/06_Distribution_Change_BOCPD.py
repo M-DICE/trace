@@ -659,7 +659,7 @@ live_trend = float(TREND_INCREASE_MU[EFFECT_SIZES_PCT.index(live_effect)])
 live_npost = NPOST_MAX - live_delay
 live_true_cpt = live_npre + live_delay
 
-if st.button("▶ Run BOCPD", type="primary", key="bd_live_run"):
+if st.button("▶ Run simulation", type="primary", key="bd_live_run"):
     try:
         st.session_state["bd_live_result"] = _live_bocpd(
             int(live_seed),
