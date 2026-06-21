@@ -41,6 +41,9 @@ select = [
 [tool.ruff.lint.isort]
 known-first-party = ["tracepy", "webapp"]
 
+[tool.uv]
+no-binary-package = ["rpy2", "rpy2-rinterface"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.15.12",
