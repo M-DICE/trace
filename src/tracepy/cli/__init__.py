@@ -1,6 +1,7 @@
 """CLI entry point for TRACE simulations.
 
 Usage:
+    uv run trace-sim all [--quick] [--plots-only] [--no-cache]
     uv run trace-sim trend-amoc [--quick] [--plots-only] [--no-cache]
     uv run trace-sim trend-forecast [--quick] [--plots-only] [--no-cache]
     uv run trace-sim trend-bocpd [--quick] [--plots-only] [--no-cache]
@@ -20,47 +21,52 @@ from tracepy.cli import (
     trend_forecast,
 )
 
+ALL_SIMULATIONS = [
+    "trend-amoc",
+    "trend-forecast",
+    "trend-bocpd",
+    "distribution-amoc",
+    "distribution-bocpd",
+    "distribution-forecast",
+]
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="TRACE simulation runner",
+        description=(
+            "Run TRACE changepoint detection simulations.\n"
+            "Results are saved to disk after each stage and reused on subsequent runs.\n"
+            "Use 'all' to run every simulation in sequence."
+        ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
-            "  uv run trace-sim trend-amoc\n"
-            "  uv run trace-sim trend-amoc --quick\n"
-            "  uv run trace-sim trend-bocpd --quick\n"
-            "  uv run trace-sim distribution-amoc --plots-only\n"
-            "  uv run trace-sim distribution-bocpd --quick\n"
-            "  uv run trace-sim distribution-forecast --quick\n"
-            "  uv run trace-sim trend-amoc --no-cache\n"
+            "  uv run trace-sim -h                               # show this help\n"
+            "  uv run trace-sim all                              # run all simulations\n"
+            "  uv run trace-sim all --quick                      # fast smoke-test (Nsim=10, simN=10)\n"
+            "  uv run trace-sim trend-amoc                       # run one simulation\n"
+            "  uv run trace-sim trend-amoc --plots-only          # regenerate plots from saved results\n"
+            "  uv run trace-sim trend-amoc --no-cache            # ignore saved results, re-run fresh\n"
         ),
     )
     parser.add_argument(
         "simulation",
-        choices=[
-            "trend-amoc",
-            "trend-forecast",
-            "trend-bocpd",
-            "distribution-amoc",
-            "distribution-bocpd",
-            "distribution-forecast",
-        ],
-        help="Which simulation to run",
+        choices=["all", *ALL_SIMULATIONS],
+        help="simulation to run; 'all' runs every simulation in sequence",
     )
     parser.add_argument(
-        "--quick", action="store_true", help="Run with Nsim=10, simN=10 for fast smoke-testing"
+        "--quick", action="store_true", help="use Nsim=10, simN=10 for a fast smoke-test"
     )
     parser.add_argument(
         "--plots-only",
         "-p",
         action="store_true",
-        help="Skip simulation phases and generate plots from saved results",
+        help="skip simulation and regenerate plots from saved results",
     )
     parser.add_argument(
         "--no-cache",
         action="store_true",
-        help="Ignore any saved results and run all simulation phases fresh",
+        help="ignore saved results and re-run all stages from scratch",
     )
     args = parser.parse_args()
 
@@ -76,4 +82,7 @@ def main() -> None:
         "trend-forecast": trend_forecast.run,
         "distribution-forecast": distribution_forecast.run,
     }
-    dispatch[args.simulation](quick=args.quick, plots_only=args.plots_only, no_cache=args.no_cache)
+
+    simulations = ALL_SIMULATIONS if args.simulation == "all" else [args.simulation]
+    for sim in simulations:
+        dispatch[sim](quick=args.quick, plots_only=args.plots_only, no_cache=args.no_cache)

@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: trace
 Version: 0.1.0
-Summary: Temporal Rewilding Analysis for Changepoint Estimation
+Summary: Temporal Restoration Analysis for Changepoint Estimation
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
 License-File: LICENSE
@@ -16,7 +16,7 @@ Requires-Dist: statsmodels>=0.14.6
 Requires-Dist: streamlit>=1.57.0
 Dynamic: license-file
 
-# TRACE: Temporal Rewilding Analysis for Changepoint Estimation
+# TRACE: Temporal Restoration Analysis for Changepoint Estimation
 
 ## Overview
 
@@ -57,11 +57,6 @@ The interactive app lets you explore pre-computed simulation results and run sma
 - macOS: `brew install --cask r`
 - Linux: see [CRAN instructions](https://cran.r-project.org/)
 - Windows: see [CRAN instructions](https://cran.r-project.org/)
-
-> **Note:** `rpy2` must be compiled against the R version on your system. If you see a `libRblas.dylib` error at startup, reinstall rpy2 from source:
-> ```bash
-> uv pip install --force-reinstall --no-binary rpy2,rpy2-rinterface rpy2
-> ```
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (fast Python package manager):
 
