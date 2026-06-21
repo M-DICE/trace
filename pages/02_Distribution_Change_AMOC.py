@@ -3,7 +3,6 @@ Distribution Change Detection using AMOC
 Interactive analysis page for rewild_distribution_change_amoc results.
 """
 
-import pickle
 from datetime import datetime
 from pathlib import Path
 
@@ -14,11 +13,17 @@ import streamlit as st
 from plotly.subplots import make_subplots
 from scipy.stats import gaussian_kde
 
+from tracepy.plotting.styles import CLR_TAU_DET, CLR_TAU_TRUE
 from tracepy.simulation.distribution import ci_sim_cdf
 from tracepy.stats.metrics import (
     trend_stats_cdf,
     wasserstein_distance_baci,
 )
+from webapp.components import render_run_navigator
+from webapp.constants import NPRE
+from webapp.constants import PALETTE as PALETTE_MU
+from webapp.figures import add_power_thresholds, add_pre_shading
+from webapp.loaders import load_results
 
 # Page config
 st.set_page_config(
@@ -28,7 +33,6 @@ st.set_page_config(
 )
 
 # Simulation constants
-NPRE = 24
 NPOST_VEC = np.arange(24, 121, 3)
 NPOST_MAX = 120
 MU = 10.0
@@ -44,15 +48,6 @@ EFFECT_SIZES_MU_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 EFFECT_SIZES_SIGMA_PCT = [50, 100, 150, 200]
 
 RESULTS_PATH = Path(__file__).parent.parent / "results" / "distribution_amoc" / "sim_results.pkl"
-
-
-# Data loading
-@st.cache_data(show_spinner="Loading distribution simulation results…")
-def load_results(path: Path, mtime: float):
-    if not path.exists():
-        return None
-    with open(path, "rb") as f:
-        return pickle.load(f)
 
 
 @st.cache_data(show_spinner="Regenerating simulation run…")
@@ -74,7 +69,6 @@ def dist_label(trend_val, pct):
 
 
 # Colour palettes
-PALETTE_MU = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
 PALETTE_SIGMA = px.colors.sample_colorscale("Plasma", [i / 3 for i in range(4)])
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -120,7 +114,8 @@ with st.sidebar:
 
 # Load data
 _mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
-data = load_results(RESULTS_PATH, _mtime)
+with st.spinner("Loading distribution simulation results…"):
+    data = load_results(RESULTS_PATH, _mtime)
 
 if data is None:
     st.error(
@@ -193,20 +188,7 @@ if results_available:
                         hovertemplate="npost: %{x} mo<br>Detection rate: %{y:.1%}<extra></extra>",
                     )
                 )
-            fig.add_hline(
-                y=0.80,
-                line_dash="dash",
-                line_color="grey",
-                annotation_text="80% power",
-                annotation_position="right",
-            )
-            fig.add_hline(
-                y=0.95,
-                line_dash="dot",
-                line_color="grey",
-                annotation_text="95% power",
-                annotation_position="right",
-            )
+            add_power_thresholds(fig)
             fig.update_layout(
                 title="Power curves — mean shifts (Mu)",
                 xaxis_title="Post-intervention monitoring window (months)",
@@ -230,20 +212,7 @@ if results_available:
                         hovertemplate="npost: %{x} mo<br>Detection rate: %{y:.1%}<extra></extra>",
                     )
                 )
-            fig.add_hline(
-                y=0.80,
-                line_dash="dash",
-                line_color="grey",
-                annotation_text="80% power",
-                annotation_position="right",
-            )
-            fig.add_hline(
-                y=0.95,
-                line_dash="dot",
-                line_color="grey",
-                annotation_text="95% power",
-                annotation_position="right",
-            )
+            add_power_thresholds(fig)
             fig.update_layout(
                 title="Power curves — variance shifts (Sigma)",
                 xaxis_title="Post-intervention monitoring window (months)",
@@ -819,37 +788,10 @@ if results_available:
     npost_i_exp = min(npost_i_exp, len(NPOST_VEC) - 1)
 
     # Run navigator — slider + ◀ ▶ buttons
-    if "exp_nav_idx" not in st.session_state:
-        st.session_state["exp_nav_idx"] = 0
-    if "exp_nav_slider" not in st.session_state:
-        st.session_state["exp_nav_slider"] = 1
-
     n_runs = len(exp_results[exp_trend]["delays"])
-
-    run_i = min(st.session_state.get("exp_nav_idx", 0), n_runs - 1)
-    st.session_state["exp_nav_idx"] = run_i
-    st.session_state["exp_nav_slider"] = min(st.session_state.get("exp_nav_slider", 1), n_runs)
-
-    def _exp_prev():
-        new = max(0, st.session_state["exp_nav_idx"] - 1)
-        st.session_state["exp_nav_idx"] = new
-        st.session_state["exp_nav_slider"] = new + 1
-
-    def _exp_next():
-        new = min(n_runs - 1, st.session_state["exp_nav_idx"] + 1)
-        st.session_state["exp_nav_idx"] = new
-        st.session_state["exp_nav_slider"] = new + 1
-
-    def _exp_on_slider():
-        st.session_state["exp_nav_idx"] = st.session_state["exp_nav_slider"] - 1
-
-    en1, en2, en3 = st.columns([1, 10, 1])
-    with en1:
-        st.button("◀", on_click=_exp_prev, key="exp_nav_prev", width="stretch")
-    with en2:
-        st.slider("Run", 1, n_runs, key="exp_nav_slider", on_change=_exp_on_slider)
-    with en3:
-        st.button("▶", on_click=_exp_next, key="exp_nav_next", width="stretch")
+    run_i = render_run_navigator(
+        n_runs, "exp_nav_idx", "exp_nav_slider", "exp_nav_prev", "exp_nav_next"
+    )
 
     _delay = int(exp_results[exp_trend]["delays"][run_i])
     _seed = int(exp_results[exp_trend]["seeds"][run_i])
@@ -909,9 +851,7 @@ if results_available:
         vertical_spacing=0.10,
     )
     for row in [1, 2]:
-        fig_dist.add_vrect(
-            x0=1, x1=NPRE, fillcolor="rgba(100,149,237,0.07)", line_width=0, row=row, col=1
-        )
+        add_pre_shading(fig_dist, NPRE, row=row, col=1)
 
     fig_dist.add_trace(
         go.Scatter(
@@ -949,11 +889,11 @@ if results_available:
         fig_dist.add_vline(
             x=_true_cpt,
             line_dash="dash",
-            line_color="#1A237E",
+            line_color=CLR_TAU_TRUE,
             line_width=2,
-            annotation_text=f"True τ = {_true_cpt}" if row == 1 else "",
+            annotation_text=f"True τ={_true_cpt}" if row == 1 else "",
             annotation_position=_true_ann_side,
-            annotation_font=dict(color="#1A237E", size=10),
+            annotation_font=dict(color=CLR_TAU_TRUE, size=10),
             row=row,
             col=1,
         )
@@ -968,11 +908,11 @@ if results_available:
             fig_dist.add_vline(
                 x=_cpt,
                 line_dash="solid",
-                line_color="crimson",
+                line_color=CLR_TAU_DET,
                 line_width=2,
-                annotation_text=f"τ̂ = {_cpt}" if row == 1 else "",
+                annotation_text=f"Detected={_cpt}" if row == 1 else "",
                 annotation_position=_det_ann_side,
-                annotation_font=dict(color="crimson", size=10),
+                annotation_font=dict(color=CLR_TAU_DET, size=10),
                 row=row,
                 col=1,
             )
@@ -1248,32 +1188,9 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
     st.subheader("Browse simulation runs")
 
     n_sim_mr = mr["n_sim"]
-
-    if "dist_mini_nav_idx" not in st.session_state:
-        st.session_state["dist_mini_nav_idx"] = 0
-    if "dist_mnav_slider" not in st.session_state:
-        st.session_state["dist_mnav_slider"] = 1
-
-    def _dist_nav_prev():
-        new = max(0, st.session_state["dist_mini_nav_idx"] - 1)
-        st.session_state["dist_mini_nav_idx"] = new
-        st.session_state["dist_mnav_slider"] = new + 1
-
-    def _dist_nav_next():
-        new = min(n_sim_mr - 1, st.session_state["dist_mini_nav_idx"] + 1)
-        st.session_state["dist_mini_nav_idx"] = new
-        st.session_state["dist_mnav_slider"] = new + 1
-
-    def _dist_on_slider():
-        st.session_state["dist_mini_nav_idx"] = st.session_state["dist_mnav_slider"] - 1
-
-    nc1, nc2, nc3 = st.columns([1, 10, 1])
-    with nc1:
-        st.button("◀", on_click=_dist_nav_prev, key="dist_mnav_prev", width="stretch")
-    with nc2:
-        st.slider("Run", 1, n_sim_mr, key="dist_mnav_slider", on_change=_dist_on_slider)
-    with nc3:
-        st.button("▶", on_click=_dist_nav_next, key="dist_mnav_next", width="stretch")
+    show_idx = render_run_navigator(
+        n_sim_mr, "dist_mini_nav_idx", "dist_mnav_slider", "dist_mnav_prev", "dist_mnav_next"
+    )
 
     det_indices = [i for i, d in enumerate(detected_flags) if d]
     st.caption(
@@ -1283,7 +1200,6 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
         "or longer monitoring window."
     )
 
-    show_idx = st.session_state.get("dist_mini_nav_idx", 0)
     run_num = show_idx + 1
     show_seed = mr["base_seed"] + show_idx
 
@@ -1335,9 +1251,7 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
         vertical_spacing=0.10,
     )
     for row in [1, 2]:
-        fig_s.add_vrect(
-            x0=1, x1=mr["s_npre"], fillcolor="rgba(100,149,237,0.07)", line_width=0, row=row, col=1
-        )
+        add_pre_shading(fig_s, mr["s_npre"], row=row, col=1)
 
     fig_s.add_trace(
         go.Scatter(
@@ -1373,11 +1287,11 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
         fig_s.add_vline(
             x=mr["s_npre"],
             line_dash="dash",
-            line_color="#1A237E",
+            line_color=CLR_TAU_TRUE,
             line_width=2,
-            annotation_text=f"True τ = {mr['s_npre']}" if row == 1 else "",
+            annotation_text=f"True τ={mr['s_npre']}" if row == 1 else "",
             annotation_position=_s_ann_side,
-            annotation_font=dict(color="#1A237E", size=10),
+            annotation_font=dict(color=CLR_TAU_TRUE, size=10),
             row=row,
             col=1,
         )
@@ -1387,9 +1301,9 @@ if "dist_mini_runs" in st.session_state and "all_sims" in st.session_state["dist
             fig_s.add_vline(
                 x=_cpt,
                 line_dash="solid",
-                line_color="crimson",
+                line_color=CLR_TAU_DET,
                 line_width=2,
-                annotation_text=f"τ̂ = {_cpt}" if row == 1 else "",
+                annotation_text=f"Detected={_cpt}" if row == 1 else "",
                 annotation_position=_det_ann_side,
                 annotation_font=dict(color="crimson", size=10),
                 row=row,

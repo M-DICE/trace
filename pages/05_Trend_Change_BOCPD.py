@@ -8,17 +8,20 @@ declared changepoint. Unlike AMOC/Forecast there is no monitoring-window
 (npost) dimension: each replication produces exactly one outcome.
 """
 
-import pickle
 from pathlib import Path
 
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
 from scipy.stats import linregress
 
+from tracepy.plotting.styles import CLR_TAU_DET, CLR_TAU_TRUE
 from tracepy.simulation.trend import ci_sim
+from webapp.components import render_run_navigator
+from webapp.constants import EFFECT_SIZES_PCT, NPOST_MONTHS, NPRE, PALETTE
+from webapp.figures import add_power_thresholds, add_pre_shading, add_timing_band
+from webapp.loaders import load_results
 
 # Page config
 st.set_page_config(
@@ -28,9 +31,6 @@ st.set_page_config(
 )
 
 # Simulation constants (mirror config/default_params.yaml)
-NPRE = 24
-NPOST_YEARS = 10
-NPOST_MONTHS = 12 * NPOST_YEARS  # 120
 NPOST_MAX = NPOST_MONTHS
 NTT = NPRE + NPOST_MAX  # 144
 LEVEL = 10.0
@@ -44,21 +44,8 @@ PTR = 0.02  # run-length hazard (bocpd.ptr)
 TREND_INCREASE = np.round(
     LEVEL * np.concatenate([[0.05], np.arange(0.1, 1.1, 0.1)]) / NPOST_MONTHS, 4
 )
-EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # % of mean / 10 yr
 
 RESULTS_PATH = Path(__file__).parent.parent / "results" / "trend_bocpd" / "sim_results.pkl"
-
-# Colour palette (one per effect size)
-PALETTE = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
-
-
-# Data loading
-@st.cache_data(show_spinner="Loading pre-computed simulation results…")
-def load_results(path: Path, mtime: float):
-    if not path.exists():
-        return None
-    with open(path, "rb") as f:
-        return pickle.load(f)
 
 
 @st.cache_data(show_spinner="Regenerating simulation run…")
@@ -97,7 +84,8 @@ recent changepoint** with a **particle filter**.
 
 # Load data
 _mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
-data = load_results(RESULTS_PATH, _mtime)
+with st.spinner("Loading pre-computed simulation results…"):
+    data = load_results(RESULTS_PATH, _mtime)
 
 results_available = False
 simN = None
@@ -235,20 +223,7 @@ if results_available:
                 name="Detection rate",
             )
         )
-        fig_power.add_hline(
-            y=0.80,
-            line_dash="dash",
-            line_color="grey",
-            annotation_text="80% power",
-            annotation_position="right",
-        )
-        fig_power.add_hline(
-            y=0.95,
-            line_dash="dot",
-            line_color="grey",
-            annotation_text="95% power",
-            annotation_position="right",
-        )
+        add_power_thresholds(fig_power)
         fig_power.update_layout(
             title="Detection rate vs effect size (BOCPD, full 10-year window)",
             xaxis=dict(title="Effect size (% of mean / 10 yr)", dtick=10),
@@ -292,15 +267,7 @@ if results_available:
                 p95s.append(None)
 
         fig_err = go.Figure()
-        fig_err.add_hrect(
-            y0=-3,
-            y1=3,
-            fillcolor="rgba(0,180,0,0.07)",
-            line_width=0,
-            annotation_text="± 3 months",
-            annotation_position="top right",
-            annotation_font=dict(color="green", size=10),
-        )
+        add_timing_band(fig_err)
         fig_err.add_trace(
             go.Box(
                 x=x_labels,
@@ -391,49 +358,12 @@ if results_available:
         key="bocpd_exp_effect",
     )
 
-    if "exp_nav_idx" not in st.session_state:
-        st.session_state["exp_nav_idx"] = 0
-    if "exp_nav_slider" not in st.session_state:
-        st.session_state["exp_nav_slider"] = 1
-
     exp_trend = trends[pct_list.index(exp_effect_pct)]
     n_runs_exp = len(res[exp_trend]["delay"])
 
-    # Clamp any carried-over navigation state to the current effect size's run
-    # count before the slider widget is drawn (effect sizes can differ in length).
-    st.session_state["exp_nav_idx"] = min(
-        st.session_state.get("exp_nav_idx", 0), max(n_runs_exp - 1, 0)
+    run_i = render_run_navigator(
+        n_runs_exp, "exp_nav_idx", "exp_nav_slider", "exp_nav_prev", "exp_nav_next"
     )
-    st.session_state["exp_nav_slider"] = min(
-        st.session_state.get("exp_nav_slider", 1), max(n_runs_exp, 1)
-    )
-
-    def _exp_prev():
-        new = max(0, st.session_state["exp_nav_idx"] - 1)
-        st.session_state["exp_nav_idx"] = new
-        st.session_state["exp_nav_slider"] = new + 1
-
-    def _exp_next():
-        new = min(n_runs_exp - 1, st.session_state["exp_nav_idx"] + 1)
-        st.session_state["exp_nav_idx"] = new
-        st.session_state["exp_nav_slider"] = new + 1
-
-    def _exp_on_slider():
-        st.session_state["exp_nav_idx"] = st.session_state["exp_nav_slider"] - 1
-
-    en1, en2, en3 = st.columns([1, 10, 1])
-    with en1:
-        st.button("◀", on_click=_exp_prev, key="exp_nav_prev", width="stretch")
-    with en2:
-        st.slider("Run", 1, max(n_runs_exp, 1), key="exp_nav_slider", on_change=_exp_on_slider)
-    with en3:
-        st.button("▶", on_click=_exp_next, key="exp_nav_next", width="stretch")
-
-    run_i = st.session_state.get("exp_nav_idx", 0)
-    if run_i >= n_runs_exp:
-        run_i = n_runs_exp - 1
-        st.session_state["exp_nav_idx"] = run_i
-        st.session_state["exp_nav_slider"] = run_i + 1
 
     # Reconstruct the run
     # 1-based index into the *full* effect-size grid — this is the ``trend_idx``
@@ -506,9 +436,7 @@ if results_available:
         vertical_spacing=0.10,
     )
     for row in [1, 2]:
-        fig.add_vrect(
-            x0=1, x1=NPRE, fillcolor="rgba(100,149,237,0.07)", line_width=0, row=row, col=1
-        )
+        add_pre_shading(fig, NPRE, row=row, col=1)
     fig.add_trace(
         go.Scatter(
             x=t,
@@ -575,11 +503,11 @@ if results_available:
         fig.add_vline(
             x=true_cpt,
             line_dash="solid",
-            line_color="#1A237E",
+            line_color=CLR_TAU_TRUE,
             line_width=2,
             annotation_text=f"True τ={true_cpt}" if row == 1 else "",
             annotation_position=true_ann_side,
-            annotation_font=dict(color="#1A237E", size=10),
+            annotation_font=dict(color=CLR_TAU_TRUE, size=10),
             row=row,
             col=1,
         )
@@ -594,11 +522,11 @@ if results_available:
             fig.add_vline(
                 x=cpt,
                 line_dash="dash",
-                line_color="crimson",
+                line_color=CLR_TAU_DET,
                 line_width=2,
-                annotation_text=f"τ̂={cpt}" if row == 1 else "",
+                annotation_text=f"Detected={cpt}" if row == 1 else "",
                 annotation_position=det_ann_side,
-                annotation_font=dict(color="crimson", size=10),
+                annotation_font=dict(color=CLR_TAU_DET, size=10),
                 row=row,
                 col=1,
             )
@@ -650,7 +578,7 @@ difference series. This is the **only** part of the page that needs R + rpy2 —
 pre-computed explorer above needs neither.
 """)
 
-with st.expander("⚙️ Live BOCPD (requires R + rpy2)", expanded=False):
+with st.expander("⚙️ Simulation parameters", expanded=True):
     c1, c2, c3 = st.columns(3)
     with c1:
         live_effect_pct = st.select_slider(
@@ -678,7 +606,7 @@ with st.expander("⚙️ Live BOCPD (requires R + rpy2)", expanded=False):
             key="bocpd_live_seed",
         )
 
-    run_live = st.button("▶ Run live BOCPD", type="primary", width="content")
+    run_live = st.button("▶ Run simulation", type="primary", width="content")
 
 
 @st.cache_data(show_spinner="Running live BOCPD (R)…")
@@ -766,7 +694,7 @@ if run_live:
         fig_live.add_vline(
             x=true_cpt,
             line_dash="solid",
-            line_color="#1A237E",
+            line_color=CLR_TAU_TRUE,
             line_width=2,
             annotation_text=f"True τ={true_cpt}",
             annotation_position="top right",
@@ -775,9 +703,9 @@ if run_live:
             fig_live.add_vline(
                 x=cpt,
                 line_dash="dash",
-                line_color="crimson",
+                line_color=CLR_TAU_DET,
                 line_width=2,
-                annotation_text=f"τ̂={cpt}",
+                annotation_text=f"Detected={cpt}",
                 annotation_position="top left",
             )
         if t_alarm is not None:

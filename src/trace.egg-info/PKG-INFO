@@ -4,6 +4,7 @@ Version: 0.1.0
 Summary: Temporal Rewilding Analysis for Changepoint Estimation
 Requires-Python: >=3.12
 Description-Content-Type: text/markdown
+License-File: LICENSE
 Requires-Dist: matplotlib>=3.10.9
 Requires-Dist: numpy>=2.4.4
 Requires-Dist: plotly>=6.7.0
@@ -13,6 +14,7 @@ Requires-Dist: scipy>=1.17.1
 Requires-Dist: rpy2>=3.6
 Requires-Dist: statsmodels>=0.14.6
 Requires-Dist: streamlit>=1.57.0
+Dynamic: license-file
 
 # TRACE: Temporal Rewilding Analysis for Changepoint Estimation
 
@@ -50,6 +52,17 @@ The interactive app lets you explore pre-computed simulation results and run sma
 
 ### Prerequisites
 
+**R (>= 4.x)** must be installed on your system. The BOCPD method calls into R via rpy2, so a working R installation is required even when running Python simulations.
+
+- macOS: `brew install --cask r`
+- Linux: see [CRAN instructions](https://cran.r-project.org/)
+- Windows: see [CRAN instructions](https://cran.r-project.org/)
+
+> **Note:** `rpy2` must be compiled against the R version on your system. If you see a `libRblas.dylib` error at startup, reinstall rpy2 from source:
+> ```bash
+> uv pip install --force-reinstall --no-binary rpy2,rpy2-rinterface rpy2
+> ```
+
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) (fast Python package manager):
 
 ```bash
@@ -77,8 +90,11 @@ The app loads results from `results/`. Run the simulations before launching the 
 
 ```bash
 uv run trace-sim trend-amoc
+uv run trace-sim trend-forecast
+uv run trace-sim trend-bocpd
 uv run trace-sim distribution-amoc
 uv run trace-sim distribution-forecast
+uv run trace-sim distribution-bocpd
 ```
 
 ## Python simulations (command-line)
@@ -87,7 +103,7 @@ uv run trace-sim distribution-forecast
 uv run trace-sim <simulation> [--quick] [--plots-only]
 ```
 
-Simulations: `trend-amoc`, `trend-forecast`, `distribution-amoc`, `distribution-forecast`
+Simulations: `trend-amoc`, `trend-forecast`, `trend-bocpd`, `distribution-amoc`, `distribution-forecast`, `distribution-bocpd`
 
 ### Trend change AMOC
 
@@ -126,6 +142,22 @@ uv run trace-sim distribution-forecast --plots-only
 uv run trace-sim distribution-forecast --quick
 ```
 
+### Trend change BOCPD
+
+```bash
+uv run trace-sim trend-bocpd
+uv run trace-sim trend-bocpd --plots-only
+uv run trace-sim trend-bocpd --quick
+```
+
+### Distribution change BOCPD
+
+```bash
+uv run trace-sim distribution-bocpd
+uv run trace-sim distribution-bocpd --plots-only
+uv run trace-sim distribution-bocpd --quick
+```
+
 ---
 
 ## Linting
@@ -142,6 +174,12 @@ uv run ruff check .
 
 ```bash
 uv run ruff check --fix .
+```
+
+### Format code
+
+```bash
+uv run ruff format .
 ```
 
 ### Check only imports
