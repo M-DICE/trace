@@ -81,7 +81,7 @@ def trend_label(trend_val, pct):
 st.title("📈 Trend Change Detection (AMOC)")
 
 st.markdown("""
-After a rewilding intervention (e.g. reintroducing a species, restoring a habitat), we
+After a restoration intervention (e.g. reintroducing a species, restoring a habitat), we
 expect some ecological indicator to change trajectory.
 
 **At Most One Change (AMOC)** is an *offline* changepoint detection method.
@@ -623,7 +623,7 @@ if results_available:
     with tab_delay:
         st.subheader("Effect of intervention delay on detection")
         st.markdown("""
-        The ecological response to a rewilding intervention rarely begins on day one.
+        The ecological response to a restoration intervention rarely begins on day one.
         There is often a **lag** before the new trend is visible in the data — vegetation may
         take a growing season to respond, or a reintroduced predator population needs time to
         establish. This tab shows how that delay erodes detection probability.
