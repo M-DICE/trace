@@ -73,7 +73,7 @@ def _regenerate_iid(seed: int, delay: int, trend_inc: float):
 st.title("🔄 Trend Change Detection (BOCPD)")
 
 st.markdown("""
-After a rewilding intervention, we want to know, as the data arrives, whether
+After a restoration intervention, we want to know, as the data arrives, whether
 an ecological indicator has changed trajectory.
 
 **BOCPD (Bayesian Online Changepoint Detection)** processes the series **one

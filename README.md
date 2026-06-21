@@ -1,4 +1,4 @@
-# TRACE: Temporal Rewilding Analysis for Changepoint Estimation
+# TRACE: Temporal Restoration Analysis for Changepoint Estimation
 
 ## Overview
 

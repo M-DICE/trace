@@ -97,7 +97,7 @@ def _run_arrays(entry):
 st.title("🔄📊 Distribution Change Detection (BOCPD)")
 
 st.markdown("""
-Rewilding interventions can shift the **shape of a species' distribution**, not just its
+Restoration interventions can shift the **shape of a species' distribution**, not just its
 average. Here the intervention shifts the distribution's **mean** after the changepoint.
 
 Each month is summarised by two 200-sample distributions (control vs intervention). We

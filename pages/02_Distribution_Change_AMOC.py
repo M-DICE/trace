@@ -77,7 +77,7 @@ PALETTE_SIGMA = px.colors.sample_colorscale("Plasma", [i / 3 for i in range(4)])
 st.title("📊 Distribution Change Detection (AMOC)")
 
 st.markdown("""
-Rewilding interventions can affect not just the average abundance of a species, but also its
+Restoration interventions can affect not just the average abundance of a species, but also its
 **variability** or the entire **shape of its distribution**.
 
 This page analyses changes in distributions using distance measure
@@ -238,7 +238,7 @@ if results_available:
     with tab_delay:
         st.subheader("Effect of intervention delay on detection")
         st.markdown("""
-        The ecological response to a rewilding intervention rarely begins immediately.
+        The ecological response to a restoration intervention rarely begins immediately.
         This tab shows how a **lag** between the formal intervention and the start of the
         distributional shift erodes detection probability.
 

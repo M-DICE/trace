@@ -27,7 +27,7 @@ GLOSSARY = [
         "term": "Changepoint Detection",
         "what": "A statistical method to identify when a time series changes behavior.",
         "why": (
-            "In rewilding, we want to know if an intervention actually caused a shift "
+            "In restoration, we want to know if an intervention actually caused a shift "
             "in the ecological indicator."
         ),
         "plain_english": (
@@ -49,7 +49,7 @@ GLOSSARY = [
             "change point in the entire time series."
         ),
         "why": (
-            "In a rewilding intervention study, we expect one clear shift when the "
+            "In a restoration intervention study, we expect one clear shift when the "
             "intervention starts (plus any response lag). AMOC tests this efficiently."
         ),
         "plain_english": (
@@ -125,11 +125,11 @@ GLOSSARY = [
         "term": "Power (Statistical Power)",
         "what": "The probability of correctly detecting a real change when one exists.",
         "why": (
-            "Low power means you might miss real rewilding effects. "
+            "Low power means you might miss real restoration effects. "
             "High power (80%+) means you're likely to catch them if they're there."
         ),
         "plain_english": (
-            "If the rewilding *really* works (has a real effect), what's the chance your "
+            "If the restoration *really* works (has a real effect), what's the chance your "
             "test will spot it? That's power. We typically aim for 80% or higher."
         ),
         "resources": [
@@ -207,7 +207,7 @@ GLOSSARY = [
             "Also called the Earth Mover's Distance (EMD)."
         ),
         "why": (
-            "When a rewilding intervention changes the *shape* of a population's distribution, "
+            "When a restoration intervention changes the *shape* of a population's distribution, "
             "not just its average standard mean-based tests, miss it. Wasserstein distance "
             "captures changes in mean, variance, skewness, and any other aspect of the "
             "distribution simultaneously."
@@ -311,7 +311,7 @@ GLOSSARY = [
             "false-positive rate."
         ),
         "plain_english": (
-            "Camera traps at a rewilding site occasionally misfire on swaying branches. "
+            "Camera traps at a restoration site occasionally misfire on swaying branches. "
             "Set the threshold too low and the system declares a wolf sighting every time "
             "the wind picks up; set it too high and it misses a real sighting. The critical "
             "value sets that sensitivity for the statistical test."
@@ -327,7 +327,7 @@ GLOSSARY = [
             "a *variance drift* makes the population more or less variable."
         ),
         "why": (
-            "Rewilding might not just increase average abundance, it might stabilise a "
+            "Restoration might not just increase average abundance, it might stabilise a "
             "previously volatile population, or vice versa."
         ),
         "plain_english": (
@@ -467,7 +467,7 @@ GLOSSARY = [
 
 # Render
 st.title("📚 Glossary of Terms")
-st.caption("A non-technical guide to statistical concepts in rewilding analysis")
+st.caption("A non-technical guide to statistical concepts in restoration analysis")
 
 for entry in GLOSSARY:
     st.markdown(f"### **{entry['term']}**")

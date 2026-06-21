@@ -8,10 +8,10 @@ st.set_page_config(
 )
 
 st.title("🌱 TRACE")
-st.subheader("Temporal Rewilding Analysis for Changepoint Estimation")
+st.subheader("Temporal Restoration Analysis for Changepoint Estimation")
 
 st.markdown("""
-Rewilding requires robust methods to detect
+Restoration requires robust methods to detect
 whether an intervention is actually working. This app provides **interactive simulations**
 and **statistical analyses** for evaluating the detectability of ecological change after an
 intervention has been applied.

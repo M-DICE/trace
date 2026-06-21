@@ -109,7 +109,7 @@ def _detection_rates(results, trends, npost_vec):
 st.title("🌦️ Distribution Change Detection (Forecast)")
 
 st.markdown("""
-Rewilding interventions can affect not just the average abundance of a species, but also its
+Restoration interventions can affect not just the average abundance of a species, but also its
 **variability** or the entire **shape of its distribution**.
 
 This page analyses changes in distributions using **Wasserstein Distance**.
