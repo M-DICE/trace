@@ -3,14 +3,12 @@ Distribution Change Detection using Forecast (Page-CUSUM)
 Interactive analysis page for distribution_forecast results.
 """
 
-import pickle
 import warnings
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
@@ -19,8 +17,13 @@ from statsmodels.regression.linear_model import OLS
 
 from tracepy.changepoint.amoc import load_crit_val_table, lookup_crit_val
 from tracepy.changepoint.forecast import page_cusum
+from tracepy.plotting.styles import CLR_TAU_DET, CLR_TAU_TRUE
 from tracepy.simulation.distribution import ci_sim_cdf
 from tracepy.stats.metrics import wasserstein_distance_ba, wasserstein_distance_baci
+from webapp.components import render_run_navigator
+from webapp.constants import EFFECT_SIZES_PCT, NPRE, PALETTE
+from webapp.figures import add_power_thresholds, add_pre_shading, add_timing_band
+from webapp.loaders import load_results
 
 warnings.filterwarnings("ignore")
 
@@ -35,7 +38,6 @@ st.set_page_config(
 )
 
 # Simulation constants
-NPRE = 24
 NPOST_VEC = np.arange(24, 121, 12)
 NPOST_MAX = int(NPOST_VEC[-1])
 NTT = NPRE + NPOST_MAX
@@ -44,22 +46,10 @@ SIGMA = 1.0
 NS = 200
 
 TREND_INCREASE_MU = np.round(MU * np.concatenate([[0.05], np.arange(0.1, 1.1, 0.1)]) / 120, 4)
-EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
 RESULTS_PATH = (
     Path(__file__).parent.parent / "results" / "distribution_forecast" / "sim_results.pkl"
 )
-
-PALETTE = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
-
-
-# Data loading
-@st.cache_data(show_spinner="Loading distribution forecast results…")
-def load_results(path: Path, mtime: float):
-    if not path.exists():
-        return None
-    with open(path, "rb") as f:
-        return pickle.load(f)
 
 
 @st.cache_data(show_spinner="Regenerating simulation run…")
@@ -157,7 +147,8 @@ with st.sidebar:
 
 # Load data
 _mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
-data = load_results(RESULTS_PATH, _mtime)
+with st.spinner("Loading distribution forecast results…"):
+    data = load_results(RESULTS_PATH, _mtime)
 
 if data is None:
     st.error(
@@ -236,20 +227,7 @@ if results_available:
                         hovertemplate="npost: %{x} mo<br>Detection rate: %{y:.1%}<extra></extra>",
                     )
                 )
-            fig.add_hline(
-                y=0.80,
-                line_dash="dash",
-                line_color="grey",
-                annotation_text="80% power",
-                annotation_position="right",
-            )
-            fig.add_hline(
-                y=0.95,
-                line_dash="dot",
-                line_color="grey",
-                annotation_text="95% power",
-                annotation_position="right",
-            )
+            add_power_thresholds(fig)
             fig.update_layout(
                 title=title,
                 xaxis_title="Post-intervention monitoring window (months)",
@@ -426,20 +404,7 @@ if results_available:
                 hovertemplate="%{x}<br>Detection rate: %{y:.1%}<extra>BA</extra>",
             )
         )
-        fig_summ_dr.add_hline(
-            y=0.80,
-            line_dash="dash",
-            line_color="grey",
-            annotation_text="80%",
-            annotation_position="right",
-        )
-        fig_summ_dr.add_hline(
-            y=0.95,
-            line_dash="dot",
-            line_color="grey",
-            annotation_text="95%",
-            annotation_position="right",
-        )
+        add_power_thresholds(fig_summ_dr)
         fig_summ_dr.update_layout(
             barmode="group",
             title="Detection rate by effect size",
@@ -579,7 +544,7 @@ if results_available:
                 y=0.80,
                 line_dash="dash",
                 line_color="grey",
-                annotation_text="80%",
+                annotation_text="80% power",
                 annotation_position="right",
             )
             fig_dl.update_layout(
@@ -714,15 +679,7 @@ if results_available:
             _bias_configs.append(("BA", res_ba, "rgba(255,152,0,0.85)"))
 
         fig_bias = go.Figure()
-        fig_bias.add_hrect(
-            y0=-3,
-            y1=3,
-            fillcolor="rgba(0,180,0,0.07)",
-            line_width=0,
-            annotation_text="±3 mo",
-            annotation_position="top right",
-            annotation_font=dict(color="green", size=10),
-        )
+        add_timing_band(fig_bias)
 
         _n_table = {}
         for _lbl, _res, _col in _bias_configs:
@@ -819,35 +776,7 @@ if results_available:
     ir_trend = pct_to_trend[ir_eff_pct]
     n_runs_ir = len(res_baci[ir_trend]["delays"])
 
-    if "ir_nav_idx" not in st.session_state:
-        st.session_state["ir_nav_idx"] = 0
-    if "ir_nav_slider" not in st.session_state:
-        st.session_state["ir_nav_slider"] = 1
-
-    ir_run_i = min(st.session_state.get("ir_nav_idx", 0), n_runs_ir - 1)
-    st.session_state["ir_nav_idx"] = ir_run_i
-    st.session_state["ir_nav_slider"] = min(st.session_state.get("ir_nav_slider", 1), n_runs_ir)
-
-    def _ir_prev():
-        n = max(0, st.session_state["ir_nav_idx"] - 1)
-        st.session_state["ir_nav_idx"] = n
-        st.session_state["ir_nav_slider"] = n + 1
-
-    def _ir_next():
-        n = min(n_runs_ir - 1, st.session_state["ir_nav_idx"] + 1)
-        st.session_state["ir_nav_idx"] = n
-        st.session_state["ir_nav_slider"] = n + 1
-
-    def _ir_slider():
-        st.session_state["ir_nav_idx"] = st.session_state["ir_nav_slider"] - 1
-
-    en1, en2, en3 = st.columns([1, 10, 1])
-    with en1:
-        st.button("◀", on_click=_ir_prev, key="ir_prev", width="stretch")
-    with en2:
-        st.slider("Run", 1, n_runs_ir, key="ir_nav_slider", on_change=_ir_slider)
-    with en3:
-        st.button("▶", on_click=_ir_next, key="ir_next", width="stretch")
+    ir_run_i = render_run_navigator(n_runs_ir, "ir_nav_idx", "ir_nav_slider", "ir_prev", "ir_next")
 
     ir_delay = int(res_baci[ir_trend]["delays"][ir_run_i])
     ir_seed = int(res_baci[ir_trend]["seeds"][ir_run_i])
@@ -939,9 +868,7 @@ if results_available:
                 vertical_spacing=0.12,
             )
             for row in [1, 2]:
-                fig_ir_s.add_vrect(
-                    x0=1, x1=NPRE, fillcolor="rgba(100,149,237,0.07)", line_width=0, row=row, col=1
-                )
+                add_pre_shading(fig_ir_s, NPRE, row=row, col=1)
 
             fig_ir_s.add_trace(
                 go.Scatter(
@@ -1006,11 +933,11 @@ if results_available:
                 fig_ir_s.add_vline(
                     x=ir_true_cpt,
                     line_dash="dash",
-                    line_color="#1A237E",
+                    line_color=CLR_TAU_TRUE,
                     line_width=2,
                     annotation_text=f"True τ={ir_true_cpt}" if row == 1 else "",
                     annotation_position=_ann_side,
-                    annotation_font=dict(color="#1A237E", size=9),
+                    annotation_font=dict(color=CLR_TAU_TRUE, size=9),
                     row=row,
                     col=1,
                 )
@@ -1018,11 +945,11 @@ if results_available:
                     fig_ir_s.add_vline(
                         x=_det_t,
                         line_dash="solid",
-                        line_color="crimson",
+                        line_color=CLR_TAU_DET,
                         line_width=2,
                         annotation_text=f"Detected={_det_t}" if row == 1 else "",
                         annotation_position=_det_side,
-                        annotation_font=dict(color="crimson", size=9),
+                        annotation_font=dict(color=CLR_TAU_DET, size=9),
                         row=row,
                         col=1,
                     )
@@ -1332,32 +1259,9 @@ if "df_mini_runs" in st.session_state and (
     st.subheader("Browse simulation runs")
 
     n_sim_mr = mr["n_sim"]
-
-    if "df_mini_nav_idx" not in st.session_state:
-        st.session_state["df_mini_nav_idx"] = 0
-    if "df_mnav_slider" not in st.session_state:
-        st.session_state["df_mnav_slider"] = 1
-
-    def _df_nav_prev():
-        new = max(0, st.session_state["df_mini_nav_idx"] - 1)
-        st.session_state["df_mini_nav_idx"] = new
-        st.session_state["df_mnav_slider"] = new + 1
-
-    def _df_nav_next():
-        new = min(n_sim_mr - 1, st.session_state["df_mini_nav_idx"] + 1)
-        st.session_state["df_mini_nav_idx"] = new
-        st.session_state["df_mnav_slider"] = new + 1
-
-    def _df_on_slider():
-        st.session_state["df_mini_nav_idx"] = st.session_state["df_mnav_slider"] - 1
-
-    nc1, nc2, nc3 = st.columns([1, 10, 1])
-    with nc1:
-        st.button("◀", on_click=_df_nav_prev, key="df_mnav_prev", width="stretch")
-    with nc2:
-        st.slider("Run", 1, n_sim_mr, key="df_mnav_slider", on_change=_df_on_slider)
-    with nc3:
-        st.button("▶", on_click=_df_nav_next, key="df_mnav_next", width="stretch")
+    show_idx = render_run_navigator(
+        n_sim_mr, "df_mini_nav_idx", "df_mnav_slider", "df_mnav_prev", "df_mnav_next"
+    )
 
     # Run caption
     _n_det_caption = max(sum(det_baci) if run_baci else 0, sum(det_ba) if run_ba else 0)
@@ -1366,7 +1270,6 @@ if "df_mini_runs" in st.session_state and (
         f"({_n_det_caption / n_sim_mr:.0%})."
     )
 
-    show_idx = st.session_state.get("df_mini_nav_idx", 0)
     show_seed = mr["base_seed"] + show_idx
     st.subheader(
         f"Run #{show_idx + 1} of {n_sim_mr} · base seed {mr['base_seed']} · run seed {show_seed}"
@@ -1430,14 +1333,7 @@ if "df_mini_runs" in st.session_state and (
                 vertical_spacing=0.12,
             )
             for row in [1, 2]:
-                fig_m.add_vrect(
-                    x0=1,
-                    x1=mr["s_npre"],
-                    fillcolor="rgba(100,149,237,0.07)",
-                    line_width=0,
-                    row=row,
-                    col=1,
-                )
+                add_pre_shading(fig_m, mr["s_npre"], row=row, col=1)
 
             fig_m.add_trace(
                 go.Scatter(
@@ -1502,7 +1398,7 @@ if "df_mini_runs" in st.session_state and (
                 fig_m.add_vline(
                     x=mr["s_npre"],
                     line_dash="dash",
-                    line_color="#1A237E",
+                    line_color=CLR_TAU_TRUE,
                     line_width=2,
                     row=row,
                     col=1,
@@ -1511,7 +1407,7 @@ if "df_mini_runs" in st.session_state and (
                     fig_m.add_vline(
                         x=mr["s_npre"] + int(te),
                         line_dash="solid",
-                        line_color="crimson",
+                        line_color=CLR_TAU_DET,
                         line_width=2,
                         row=row,
                         col=1,

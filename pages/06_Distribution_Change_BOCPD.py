@@ -8,7 +8,6 @@ no monitoring-window (npost) dimension — every replication runs once over the
 full window, so all charts derive from per-run outcome lists.
 """
 
-import pickle
 import warnings
 from pathlib import Path
 
@@ -20,8 +19,13 @@ import streamlit as st
 from plotly.subplots import make_subplots
 from scipy.stats import gaussian_kde
 
+from tracepy.plotting.styles import CLR_TAU_DET, CLR_TAU_TRUE
 from tracepy.simulation.distribution import ci_sim_cdf
 from tracepy.stats.metrics import wasserstein_distance_baci
+from webapp.components import render_run_navigator
+from webapp.constants import EFFECT_SIZES_PCT, NPOST_MONTHS, NPRE, PALETTE
+from webapp.figures import add_power_thresholds, add_pre_shading, add_timing_band
+from webapp.loaders import load_results
 
 warnings.filterwarnings("ignore")
 
@@ -33,9 +37,6 @@ st.set_page_config(
 )
 
 # Simulation constants (mirror config/default_params.yaml → distribution)
-NPRE = 24
-NPOST_YEARS = 10
-NPOST_MONTHS = 12 * NPOST_YEARS  # 120
 NPOST_MAX = NPOST_MONTHS
 MU = 10.0
 SIGMA = 1.0
@@ -47,20 +48,8 @@ PTR = 0.02
 
 # NB: the /120 denominator is literal in the CLI, not /NPOST_MONTHS.
 TREND_INCREASE_MU = np.round(MU * np.concatenate([[0.05], np.arange(0.1, 1.1, 0.1)]) / 120, 4)
-EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 
 RESULTS_PATH = Path(__file__).parent.parent / "results" / "distribution_bocpd" / "sim_results.pkl"
-
-PALETTE = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
-
-
-# Data loading
-@st.cache_data(show_spinner="Loading distribution BOCPD results…")
-def load_results(path: Path, mtime: float):
-    if not path.exists():
-        return None
-    with open(path, "rb") as f:
-        return pickle.load(f)
 
 
 @st.cache_data(show_spinner="Regenerating simulation run…")
@@ -128,7 +117,8 @@ critical value — there is a **single** simulation phase. Each replication runs
 
 # Load data
 _mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
-data = load_results(RESULTS_PATH, _mtime)
+with st.spinner("Loading distribution BOCPD results…"):
+    data = load_results(RESULTS_PATH, _mtime)
 
 simN = None
 if data is None:
@@ -248,20 +238,7 @@ if results_available:
                 name="Detection rate",
             )
         )
-        fig_sens.add_hline(
-            y=0.80,
-            line_dash="dash",
-            line_color="grey",
-            annotation_text="80%",
-            annotation_position="right",
-        )
-        fig_sens.add_hline(
-            y=0.95,
-            line_dash="dot",
-            line_color="grey",
-            annotation_text="95%",
-            annotation_position="right",
-        )
+        add_power_thresholds(fig_sens)
         fig_sens.update_layout(
             title="Detection rate vs mean-shift effect size",
             xaxis_title="Effect size (% of mean shift over 10 yr)",
@@ -342,15 +319,7 @@ if results_available:
 
         loc_min_n = st.slider("Minimum detections to show box", 2, 50, 5, key="bd_loc_min_n")
         fig_loc = go.Figure()
-        fig_loc.add_hrect(
-            y0=-3,
-            y1=3,
-            fillcolor="rgba(0,180,0,0.07)",
-            line_width=0,
-            annotation_text="±3 mo (good enough)",
-            annotation_position="top right",
-            annotation_font=dict(color="green", size=10),
-        )
+        add_timing_band(fig_loc)
         _loc_n = []
         for pct in avail_pcts:
             t = pct_to_trend[pct]
@@ -435,37 +404,9 @@ if results_available:
     n_runs_ir = len(ir_entry["delay"])
 
     # Run navigator — slider + ◀ ▶ buttons
-    if "bd_ir_nav_idx" not in st.session_state:
-        st.session_state["bd_ir_nav_idx"] = 0
-    if "bd_ir_nav_slider" not in st.session_state:
-        st.session_state["bd_ir_nav_slider"] = 1
-
-    ir_run_i = min(st.session_state.get("bd_ir_nav_idx", 0), n_runs_ir - 1)
-    st.session_state["bd_ir_nav_idx"] = ir_run_i
-    st.session_state["bd_ir_nav_slider"] = min(
-        st.session_state.get("bd_ir_nav_slider", 1), n_runs_ir
+    ir_run_i = render_run_navigator(
+        n_runs_ir, "bd_ir_nav_idx", "bd_ir_nav_slider", "bd_ir_prev", "bd_ir_next"
     )
-
-    def _ir_prev():
-        n = max(0, st.session_state["bd_ir_nav_idx"] - 1)
-        st.session_state["bd_ir_nav_idx"] = n
-        st.session_state["bd_ir_nav_slider"] = n + 1
-
-    def _ir_next():
-        n = min(n_runs_ir - 1, st.session_state["bd_ir_nav_idx"] + 1)
-        st.session_state["bd_ir_nav_idx"] = n
-        st.session_state["bd_ir_nav_slider"] = n + 1
-
-    def _ir_slider():
-        st.session_state["bd_ir_nav_idx"] = st.session_state["bd_ir_nav_slider"] - 1
-
-    en1, en2, en3 = st.columns([1, 10, 1])
-    with en1:
-        st.button("◀", on_click=_ir_prev, key="bd_ir_prev", width="stretch")
-    with en2:
-        st.slider("Run", 1, n_runs_ir, key="bd_ir_nav_slider", on_change=_ir_slider)
-    with en3:
-        st.button("▶", on_click=_ir_next, key="bd_ir_next", width="stretch")
 
     ir_delay = int(ir_entry["delay"][ir_run_i])
     ir_trend_idx = EFFECT_SIZES_PCT.index(ir_eff_pct) + 1
@@ -548,7 +489,7 @@ if results_available:
     )
 
     # Top: distance series
-    fig_ir.add_vrect(x0=1, x1=NPRE, fillcolor="rgba(100,149,237,0.07)", line_width=0, row=1, col=1)
+    add_pre_shading(fig_ir, NPRE, row=1, col=1)
     fig_ir.add_trace(
         go.Scatter(
             x=t_ax,
@@ -564,11 +505,11 @@ if results_available:
     fig_ir.add_vline(
         x=ir_true_cpt,
         line_dash="solid",
-        line_color="#1A237E",
+        line_color=CLR_TAU_TRUE,
         line_width=2,
-        annotation_text=f"True τ = {ir_true_cpt}",
+        annotation_text=f"True τ={ir_true_cpt}",
         annotation_position=_ann_side,
-        annotation_font=dict(color="#1A237E", size=10),
+        annotation_font=dict(color=CLR_TAU_TRUE, size=10),
         row=1,
         col=1,
     )
@@ -580,11 +521,11 @@ if results_available:
         fig_ir.add_vline(
             x=ir_cpt,
             line_dash="dash",
-            line_color="crimson",
+            line_color=CLR_TAU_DET,
             line_width=2,
-            annotation_text=f"τ̂ = {ir_cpt}",
+            annotation_text=f"Detected={ir_cpt}",
             annotation_position=_det_side,
-            annotation_font=dict(color="crimson", size=10),
+            annotation_font=dict(color=CLR_TAU_DET, size=10),
             row=1,
             col=1,
         )
@@ -767,7 +708,7 @@ if "bd_live_result" in st.session_state and "bd_live_meta" in st.session_state:
         st.metric("Alarm step", f"month {int(_talarm)}" if _talarm is not None else "—")
 
     fig_live = go.Figure()
-    fig_live.add_vrect(x0=1, x1=_meta["npre"], fillcolor="rgba(100,149,237,0.07)", line_width=0)
+    add_pre_shading(fig_live, _meta["npre"])
     fig_live.add_trace(
         go.Scatter(
             x=_t,
@@ -781,21 +722,21 @@ if "bd_live_result" in st.session_state and "bd_live_meta" in st.session_state:
     fig_live.add_vline(
         x=_true,
         line_dash="solid",
-        line_color="#1A237E",
+        line_color=CLR_TAU_TRUE,
         line_width=2,
-        annotation_text=f"True τ = {_true}",
+        annotation_text=f"True τ={_true}",
         annotation_position="top right",
-        annotation_font=dict(color="#1A237E", size=10),
+        annotation_font=dict(color=CLR_TAU_TRUE, size=10),
     )
     if _det:
         fig_live.add_vline(
             x=int(_cpt),
             line_dash="dash",
-            line_color="crimson",
+            line_color=CLR_TAU_DET,
             line_width=2,
-            annotation_text=f"τ̂ = {int(_cpt)}",
+            annotation_text=f"Detected={int(_cpt)}",
             annotation_position="top left",
-            annotation_font=dict(color="crimson", size=10),
+            annotation_font=dict(color=CLR_TAU_DET, size=10),
         )
     fig_live.update_layout(
         title=(

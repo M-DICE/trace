@@ -3,19 +3,22 @@ Trend Change Detection using AMOC
 Interactive analysis page for rewild_trend_change_amoc results.
 """
 
-import pickle
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
-import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from plotly.subplots import make_subplots
 from scipy.stats import linregress
 
+from tracepy.plotting.styles import CLR_TAU_DET, CLR_TAU_TRUE
 from tracepy.simulation.trend import ci_sim, ci_sim_ar
 from tracepy.stats.metrics import trend_stats, trend_stats_ar
+from webapp.components import render_run_navigator
+from webapp.constants import EFFECT_SIZES_PCT, NPOST_MONTHS, NPRE, PALETTE
+from webapp.figures import add_power_thresholds, add_pre_shading, add_timing_band
+from webapp.loaders import load_results
 
 # Page config
 st.set_page_config(
@@ -25,9 +28,6 @@ st.set_page_config(
 )
 
 # Simulation constants
-NPRE = 24
-NPOST_YEARS = 10
-NPOST_MONTHS = 12 * NPOST_YEARS
 NPOST_VEC = np.arange(NPRE, NPOST_MONTHS + 1, 12)  # [24, 36, ..., 120] — annual steps, matching R
 LEVEL = 10.0
 TREND_CONTROL = 0.005
@@ -38,18 +38,8 @@ ALPHA = 0.95
 TREND_INCREASE = np.round(
     LEVEL * np.concatenate([[0.05], np.arange(0.1, 1.1, 0.1)]) / NPOST_MONTHS, 4
 )
-EFFECT_SIZES_PCT = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]  # % of mean / 10 yr
 
 RESULTS_PATH = Path(__file__).parent.parent / "results" / "trend_amoc" / "sim_results.pkl"
-
-
-# Data loading
-@st.cache_data(show_spinner="Loading pre-computed simulation results…")
-def load_results(path: Path, mtime: float):
-    if not path.exists():
-        return None
-    with open(path, "rb") as f:
-        return pickle.load(f)
 
 
 @st.cache_data(show_spinner="Regenerating simulation run…")
@@ -83,10 +73,6 @@ def _regenerate_ar(seed: int, delay: int, trend_inc: float):
 
 def trend_label(trend_val, pct):
     return f"{pct}% ({trend_val:.4f}/mo)"
-
-
-# Colour palette (one per effect size)
-PALETTE = px.colors.sample_colorscale("Viridis", [i / 10 for i in range(11)])
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -147,7 +133,8 @@ with st.sidebar:
 
 # Load data
 _mtime = RESULTS_PATH.stat().st_mtime if RESULTS_PATH.exists() else 0.0
-data = load_results(RESULTS_PATH, _mtime)
+with st.spinner("Loading pre-computed simulation results…"):
+    data = load_results(RESULTS_PATH, _mtime)
 
 if data is None:
     st.error(
@@ -231,20 +218,7 @@ if results_available:
                         hovertemplate="npost: %{x} mo<br>Detection rate: %{y:.1%}<extra></extra>",
                     )
                 )
-            fig.add_hline(
-                y=0.80,
-                line_dash="dash",
-                line_color="grey",
-                annotation_text="80% power",
-                annotation_position="right",
-            )
-            fig.add_hline(
-                y=0.95,
-                line_dash="dot",
-                line_color="grey",
-                annotation_text="95% power",
-                annotation_position="right",
-            )
+            add_power_thresholds(fig)
             fig.update_layout(
                 title=title,
                 xaxis_title="Post-intervention monitoring window (months)",
@@ -969,15 +943,7 @@ if results_available:
         fig_bias = go.Figure()
 
         # Shaded "near-zero" zone ±3 months — roughly within one data collection round
-        fig_bias.add_hrect(
-            y0=-3,
-            y1=3,
-            fillcolor="rgba(0,180,0,0.07)",
-            line_width=0,
-            annotation_text="± 3 months",
-            annotation_position="top right",
-            annotation_font=dict(color="green", size=10),
-        )
+        add_timing_band(fig_bias)
 
         for label, results, colour in bias_configs:
             q1s, meds, q3s, p5s, p95s = [], [], [], [], []
@@ -1298,35 +1264,7 @@ if results_available:
             key="exp_npost",
         )
 
-    # Run navigator — shared slider + ◀ ▶ buttons
-    if "exp_nav_idx" not in st.session_state:
-        st.session_state["exp_nav_idx"] = 0
-    if "exp_nav_slider" not in st.session_state:
-        st.session_state["exp_nav_slider"] = 1
-
-    def _exp_prev():
-        new = max(0, st.session_state["exp_nav_idx"] - 1)
-        st.session_state["exp_nav_idx"] = new
-        st.session_state["exp_nav_slider"] = new + 1
-
-    def _exp_next():
-        new = min(999, st.session_state["exp_nav_idx"] + 1)
-        st.session_state["exp_nav_idx"] = new
-        st.session_state["exp_nav_slider"] = new + 1
-
-    def _exp_on_slider():
-        st.session_state["exp_nav_idx"] = st.session_state["exp_nav_slider"] - 1
-
-    en1, en2, en3 = st.columns([1, 10, 1])
-    with en1:
-        st.button("◀", on_click=_exp_prev, key="exp_nav_prev", width="stretch")
-    with en2:
-        st.slider("Run", 1, 1000, key="exp_nav_slider", on_change=_exp_on_slider)
-    with en3:
-        st.button("▶", on_click=_exp_next, key="exp_nav_next", width="stretch")
-
     exp_trend = trends[EFFECT_SIZES_PCT.index(exp_effect_pct)]
-    run_i = st.session_state.get("exp_nav_idx", 0)
 
     npost_i_exp = int(np.searchsorted(NPOST_VEC, exp_npost, side="left"))
     npost_i_exp = min(npost_i_exp, len(NPOST_VEC) - 1)
@@ -1340,12 +1278,11 @@ if results_available:
         _exp_models.append(("i.i.d. BA", res_iid_ba, "iid_ba_48", False))
 
     _n_runs_exp = min(len(res[exp_trend]["delays"]) for _, res, _, _ in _exp_models)
-    if run_i >= _n_runs_exp:
-        st.warning(
-            "It looks like you have run fewer simulations than expected. "
-            "Please re-run the full simulation."
-        )
-        st.stop()
+
+    # Run navigator — shared slider + ◀ ▶ buttons
+    run_i = render_run_navigator(
+        _n_runs_exp, "exp_nav_idx", "exp_nav_slider", "exp_nav_prev", "exp_nav_next"
+    )
 
     # Metrics row — one column per model
     m_cols = st.columns(len(_exp_models))
@@ -1418,9 +1355,7 @@ if results_available:
             vertical_spacing=0.10,
         )
         for row in [1, 2]:
-            fig.add_vrect(
-                x0=1, x1=NPRE, fillcolor="rgba(100,149,237,0.07)", line_width=0, row=row, col=1
-            )
+            add_pre_shading(fig, NPRE, row=row, col=1)
         fig.add_trace(
             go.Scatter(
                 x=t,
@@ -1503,11 +1438,11 @@ if results_available:
             fig.add_vline(
                 x=_true_cpt,
                 line_dash="dash",
-                line_color="#1A237E",
+                line_color=CLR_TAU_TRUE,
                 line_width=2,
                 annotation_text=f"True τ={_true_cpt}" if row == 1 else "",
                 annotation_position=true_ann_side,
-                annotation_font=dict(color="#1A237E", size=10),
+                annotation_font=dict(color=CLR_TAU_TRUE, size=10),
                 row=row,
                 col=1,
             )
@@ -1523,11 +1458,11 @@ if results_available:
                 fig.add_vline(
                     x=_cpt,
                     line_dash="solid",
-                    line_color="crimson",
+                    line_color=CLR_TAU_DET,
                     line_width=2,
-                    annotation_text=f"τ̂={_cpt}" if row == 1 else "",
+                    annotation_text=f"Detected={_cpt}" if row == 1 else "",
                     annotation_position=det_ann_side,
-                    annotation_font=dict(color="crimson", size=10),
+                    annotation_font=dict(color=CLR_TAU_DET, size=10),
                     row=row,
                     col=1,
                 )
@@ -1900,31 +1835,9 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     n_sim_mr = mr["n_sim"]
     det_indices = [i for i, d in enumerate(mr["models"]["i.i.d. BACI"]["detected_flags"]) if d]
 
-    if "mini_nav_idx" not in st.session_state:
-        st.session_state["mini_nav_idx"] = 0
-    if "mnav_slider" not in st.session_state:
-        st.session_state["mnav_slider"] = 1
-
-    def _nav_prev():
-        new = max(0, st.session_state["mini_nav_idx"] - 1)
-        st.session_state["mini_nav_idx"] = new
-        st.session_state["mnav_slider"] = new + 1
-
-    def _nav_next():
-        new = min(n_sim_mr - 1, st.session_state["mini_nav_idx"] + 1)
-        st.session_state["mini_nav_idx"] = new
-        st.session_state["mnav_slider"] = new + 1
-
-    def _on_slider():
-        st.session_state["mini_nav_idx"] = st.session_state["mnav_slider"] - 1
-
-    nc1, nc2, nc3 = st.columns([1, 10, 1])
-    with nc1:
-        st.button("◀", on_click=_nav_prev, key="mnav_prev", width="stretch")
-    with nc2:
-        st.slider("Run", 1, n_sim_mr, key="mnav_slider", on_change=_on_slider)
-    with nc3:
-        st.button("▶", on_click=_nav_next, key="mnav_next", width="stretch")
+    show_idx = render_run_navigator(
+        n_sim_mr, "mini_nav_idx", "mnav_slider", "mnav_prev", "mnav_next"
+    )
 
     det_pct = len(det_indices) / n_sim_mr if n_sim_mr > 0 else 0
     st.caption(
@@ -1934,7 +1847,6 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
     )
 
     # Current run
-    show_idx = st.session_state.get("mini_nav_idx", 0)
     run_num = show_idx + 1
     show_seed = mr["base_seed"] + show_idx
     true_cpt = mr["true_cpt"]
@@ -2025,9 +1937,7 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
             vertical_spacing=0.10,
         )
         for row in [1, 2]:
-            fig.add_vrect(
-                x0=1, x1=npre, fillcolor="rgba(100,149,237,0.07)", line_width=0, row=row, col=1
-            )
+            add_pre_shading(fig, npre, row=row, col=1)
         fig.add_trace(
             go.Scatter(
                 x=t,
@@ -2120,11 +2030,11 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
             fig.add_vline(
                 x=true_cpt_val,
                 line_dash="dash",
-                line_color="#1A237E",
+                line_color=CLR_TAU_TRUE,
                 line_width=2,
                 annotation_text=f"True τ={true_cpt_val}" if row == 1 else "",
                 annotation_position=true_ann_side,
-                annotation_font=dict(color="#1A237E", size=10),
+                annotation_font=dict(color=CLR_TAU_TRUE, size=10),
                 row=row,
                 col=1,
             )
@@ -2140,11 +2050,11 @@ if "mini_runs" in st.session_state and "models" in st.session_state["mini_runs"]
                 fig.add_vline(
                     x=stats["cpt"],
                     line_dash="solid",
-                    line_color="crimson",
+                    line_color=CLR_TAU_DET,
                     line_width=2,
-                    annotation_text=f"τ̂={stats['cpt']}" if row == 1 else "",
+                    annotation_text=f"Detected={stats['cpt']}" if row == 1 else "",
                     annotation_position=det_ann_side,
-                    annotation_font=dict(color="crimson", size=10),
+                    annotation_font=dict(color=CLR_TAU_DET, size=10),
                     row=row,
                     col=1,
                 )
