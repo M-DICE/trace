@@ -12,6 +12,7 @@ The interactive web app lets you explore pre-computed results or run small custo
 
 > These steps get the web app running on your computer in about 10 minutes. All commands are run from the project root:
 > ```bash
+> cd trace
 > pwd  # .../trace
 > ```
 
