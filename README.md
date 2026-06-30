@@ -8,32 +8,52 @@ The interactive web app lets you explore pre-computed results or run small custo
 
 ## Quick Start
 
-> These steps get the web app running on your computer in about 10 minutes.
+> **Windows users:** see [docs/WINDOWS.md](docs/WINDOWS.md) for Windows-specific instructions.
 
-1. **Install R** — download from [cran.r-project.org](https://cran.r-project.org/) and follow the installer for your system.
+> These steps get the web app running on your computer in about 10 minutes. All commands are run from the project root:
+> ```bash
+> cd trace
+> pwd  # .../trace
+> ```
 
-2. **Install uv** (a Python package manager). Open a terminal and run:
+1. **Clone the repository** (including submodules):
+   ```bash
+   git clone --recurse-submodules https://github.com/M-DICE/trace.git
+   ```
+   If you already cloned without submodules, run:
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+2. **Install R** — download from [cran.r-project.org](https://cran.r-project.org/) and follow the installer for your system.
+
+3. **Install uv** (a Python package manager). Open a terminal and run:
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-3. **Install dependencies** (run once, from the project folder):
+4. **Install dependencies** (run once):
    ```bash
    uv sync
    ```
 
-4. **Generate pre-computed results** (optional but recommended — takes a few minutes):
+5. **Generate the critical value table** (run once, after clone or `git submodule update`):
+   ```bash
+   uv run Rscript scripts/export_crit_val_table.R
+   ```
+
+6. **Generate pre-computed results** (optional but recommended — takes a few minutes):
    ```bash
    uv run trace-sim all --quick
    ```
 
-5. **Start the app:**
+7. **Start the app:**
    ```bash
    uv run streamlit run Home.py
    ```
    Then open **http://localhost:8501** in your browser.
 
-> If you skip step 4, the app still runs but result pages will appear empty until simulations have been generated.
+> If you skip step 6, the app still runs but result pages will appear empty until simulations have been generated.
 
 ---
 
@@ -105,37 +125,3 @@ uv run ruff check .          # check
 uv run ruff check --fix .    # fix auto-fixable issues
 uv run ruff format .         # format
 ```
-
-### R data export scripts
-
-Some Python modules load pre-computed data that originates in the R codebase.
-These scripts convert R binary files to JSON so that Python can read them at
-runtime without an R dependency.
-
-#### Critical value table (`CritValTable.json`)
-
-The weighted Page-CUSUM detector reads its critical values from
-`data/CritValTable.json`. This file is derived from the
-`CritValTable.rds` lookup table shipped with the SimRewilding R codebase and
-pre-simulated by the `changepoint.forecast` package authors.
-
-**When to run**: after the initial clone and after any `git submodule update`
-that changes `SimRewilding/CritValTable.rds`.
-
-**Requires**: R with the `jsonlite` package (`install.packages("jsonlite")`).
-
-```bash
-Rscript scripts/export_crit_val_table.R
-```
-
-Custom paths (optional):
-
-```bash
-Rscript scripts/export_crit_val_table.R \
-  --input  SimRewilding/CritValTable.rds \
-  --output data/CritValTable.json
-```
-
-The output is a JSON array of records with fields `Detector`, `Gamma`, `Alpha`,
-and `CritVal`, covering 4 detectors × 19 gamma values × 3 alpha levels (228
-rows total).

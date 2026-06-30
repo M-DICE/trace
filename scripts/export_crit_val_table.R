@@ -12,6 +12,9 @@
 #
 # Dependencies: jsonlite (install.packages("jsonlite"))
 
+if (!requireNamespace("jsonlite", quietly = TRUE)) {
+  install.packages("jsonlite", repos = "https://cran.r-project.org")
+}
 library(jsonlite)
 
 # ── argument parsing ──────────────────────────────────────────────────────────
