@@ -8,7 +8,10 @@ The interactive web app lets you explore pre-computed results or run small custo
 
 ## Quick Start
 
-> These steps get the web app running on your computer in about 10 minutes.
+> These steps get the web app running on your computer in about 10 minutes. All commands are run from the project root:
+> ```bash
+> pwd  # .../trace
+> ```
 
 1. **Install R** — download from [cran.r-project.org](https://cran.r-project.org/) and follow the installer for your system.
 
@@ -17,7 +20,7 @@ The interactive web app lets you explore pre-computed results or run small custo
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-3. **Install dependencies** (run once, from the project folder):
+3. **Install dependencies** (run once):
    ```bash
    uv sync
    ```
