@@ -13,35 +13,44 @@ The interactive web app lets you explore pre-computed results or run small custo
 > pwd  # .../trace
 > ```
 
-1. **Install R** — download from [cran.r-project.org](https://cran.r-project.org/) and follow the installer for your system.
+1. **Clone the repository** (including submodules):
+   ```bash
+   git clone --recurse-submodules https://github.com/M-DICE/trace.git
+   ```
+   If you already cloned without submodules, run:
+   ```bash
+   git submodule update --init --recursive
+   ```
 
-2. **Install uv** (a Python package manager). Open a terminal and run:
+2. **Install R** — download from [cran.r-project.org](https://cran.r-project.org/) and follow the installer for your system.
+
+3. **Install uv** (a Python package manager). Open a terminal and run:
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 
-3. **Install dependencies** (run once):
+4. **Install dependencies** (run once):
    ```bash
    uv sync
    ```
 
-4. **Generate the critical value table** (run once, after clone or submodule update):
+5. **Generate the critical value table** (run once, after clone or `git submodule update`):
    ```bash
    uv run Rscript scripts/export_crit_val_table.R
    ```
 
-5. **Generate pre-computed results** (optional but recommended — takes a few minutes):
+6. **Generate pre-computed results** (optional but recommended — takes a few minutes):
    ```bash
    uv run trace-sim all --quick
    ```
 
-6. **Start the app:**
+7. **Start the app:**
    ```bash
    uv run streamlit run Home.py
    ```
    Then open **http://localhost:8501** in your browser.
 
-> If you skip step 4, the app still runs but result pages will appear empty until simulations have been generated.
+> If you skip step 6, the app still runs but result pages will appear empty until simulations have been generated.
 
 ---
 
