@@ -25,7 +25,11 @@ import warnings
 
 import numpy as np
 
-from tracepy.changepoint.bocpd import run_bocpd, run_bocpd_distribution_increment
+from tracepy.changepoint.bocpd import (
+    init_r,
+    run_bocpd,
+    run_bocpd_distribution_increment,
+)
 from tracepy.cli._utils import (
     fmt_elapsed,
     print_complete,
@@ -110,6 +114,7 @@ def run(quick: bool, plots_only: bool, no_cache: bool = False) -> None:
 
     if not plots_only:
         print_stage("Detection — BOCPD simulations", len(detection_results), len(trend_increase_mu))
+        init_r()
         t_total = time.perf_counter()
 
         for m, trend_inc in enumerate(trend_increase_mu, start=1):
