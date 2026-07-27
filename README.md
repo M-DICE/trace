@@ -6,6 +6,12 @@ The interactive web app lets you explore pre-computed results or run small custo
 
 ---
 
+## Pre-requisites
+
+- [Git](https://git-scm.com/downloads), with read access to the [SimRewilding](https://github.com/GMY2018/SimRewilding) repo (used as a submodule).
+- [R](https://cran.r-project.org/), version 4.5.x or later.
+- Python 3.12 or later.
+
 ## Quick Start
 
 > **Windows users:** see [docs/WINDOWS.md](docs/WINDOWS.md) for Windows-specific instructions.
