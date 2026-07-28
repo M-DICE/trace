@@ -69,6 +69,17 @@ def _ensure_sim_sourced() -> None:
         _SIM_R_SOURCED = True
 
 
+def init_r() -> None:
+    """
+    Source the R backend up front.
+
+    Sourcing is otherwise lazy and happens inside the first simulation call,
+    which interleaves the R banner with the caller's progress output.  Calling
+    this before a run loop keeps that banner on its own line.
+    """
+    _ensure_sim_sourced()
+
+
 # ============================================================================
 # rpy2 helpers
 # ============================================================================

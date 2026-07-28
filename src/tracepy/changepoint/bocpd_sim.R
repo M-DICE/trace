@@ -6,6 +6,32 @@
 ## ---- IMPORTANT ----
 ## BOCPD_functions.R MUST be sourced first.
 
+.sim_env <- new.env(parent = emptyenv())
+
+## Number of workers available for mclapply on this machine.
+##
+## mclapply relies on forking, which is unavailable on Windows: R there accepts
+## mc.cores = 1 only (see ?mclapply) and errors otherwise.  detectCores() may
+## also return NA, which ?detectCores warns is unsuitable for mc.cores, so the
+## unknown case falls back to serial too.  Replications seed themselves, so a
+## serial run reproduces the parallel result exactly.
+.detect_sim_cores <- function() {
+  if (identical(.Platform$OS.type, "windows")) {
+    return(1L)
+  }
+  n <- parallel::detectCores(logical = FALSE)
+  if (is.na(n)) 1L else max(1L, as.integer(n))
+}
+
+.sim_env$n_cores <- .detect_sim_cores()
+
+cat(sprintf(
+  "  Running R %s on %s (OS.type=%s) - %d core(s) available%s\n",
+  getRversion(), R.version$platform, .Platform$OS.type, .sim_env$n_cores,
+  if (.sim_env$n_cores == 1L) " (serial execution)" else " (parallel execution)"
+))
+
+
 run_bocpd_r <- function(x, prior_alpha, prior_sigma2, sig_prior, pm, ptr, maxp, np, msl) {
   N <- length(x)
   nmodel <- 1L
@@ -166,7 +192,9 @@ run_bocpd_distribution_increment <- function(
 ) {
   sig_prior <- c(sig_prior_shape, sig_prior_rate)
 
-  run_one <- function(s) {
+  run_one <- function(s) tryCatch(.run_one_dist(s), error = function(e) NULL)
+
+  .run_one_dist <- function(s) {
     seed_val <- s * n_trends + trend_idx
     set.seed(seed_val)
 
@@ -195,7 +223,7 @@ run_bocpd_distribution_increment <- function(
     list(cpt_est = res$cpt_est, time_est = res$time_est, delay = delay)
   }
 
-  n_cores <- min(simN, max(1L, parallel::detectCores(logical = FALSE)))
+  n_cores <- max(1L, min(as.integer(simN), .sim_env$n_cores))
   raw <- parallel::mclapply(seq_len(simN), run_one, mc.cores = n_cores)
 
   cpt_est_vec  <- rep(NA_integer_, simN)
