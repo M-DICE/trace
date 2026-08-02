@@ -7,7 +7,7 @@ This guide covers Windows-specific setup steps. Follow the [main README](../READ
 ## Prerequisites
 
 - **Git for Windows** — download from [git-scm.com](https://git-scm.com/). During installation, choose "Git from the command line and also from 3rd-party software" so that `sh.exe` is available on your PATH (see [step 5](#5-fix-the-path-for-sh) below).
-- **R** — download from [cran.r-project.org](https://cran.r-project.org/). During installation, tick the option to add R to your PATH.
+- **R** — download from [cran.r-project.org](https://cran.r-project.org/). During installation, tick the option to add R to your PATH. A version from 4.5.1 onwards is recommended. The app may not run on earlier versions, such as 4.3.x. 
 
 ---
 
@@ -21,6 +21,8 @@ All commands are run from **PowerShell** unless noted otherwise. Open it by pres
 git clone --recurse-submodules https://github.com/M-DICE/trace.git
 cd trace
 ```
+
+A GitHub personal access token may be required. [This link](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#about-personal-access-tokens) provides some information on the use of access token.
 
 ### 2. Install uv
 
@@ -76,7 +78,6 @@ After installing, add the Rtools `usr\bin` directory to your **User variables** 
 
 | R version | Rtools path |
 |-----------|-------------|
-| 4.3.x | `C:\Rtools43\usr\bin` |
 | 4.4.x | `C:\Rtools44\usr\bin` |
 | 4.5.x | `C:\Rtools45\usr\bin` |
 
@@ -88,6 +89,8 @@ To verify: `make --version`
 uv run trace-sim all --quick
 ```
 
+If this returns error messages with `R_getvar`, it is likely that the installed R version is too low. Please update R.
+ 
 ### 8. Start the app
 
 ```powershell
