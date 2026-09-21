@@ -181,9 +181,10 @@ def trend_stats(y_ctr=None, y_itv=None, nt=None):
         results = model.fit()
 
         # Test statistic for trend difference (beta_1 vs beta_2)
-        # Use normalized (unscaled) covariance (X'X)^{-1} to match R's cov.unscaled
+        # Scale the unscaled covariance (X'X)^{-1} by the residual variance,
+        # matching R's cov.unscaled * summary(lmfit)$sigma^2
         vec = np.array([0, -1, 1])
-        var_diff = vec @ results.normalized_cov_params @ vec
+        var_diff = vec @ (results.normalized_cov_params * results.scale) @ vec
         stats_vec[m] = (results.params[1] - results.params[2]) / np.sqrt(var_diff)
 
     Tmax = np.max(np.abs(stats_vec))
@@ -270,11 +271,12 @@ def trend_stats_ar(y_ctr=None, y_itv=None, nt=None):
 
         except Exception:
             # OLS fallback if ARIMA fit fails or variance guard triggers
-            # Use normalized (unscaled) covariance to match R's cov.unscaled
+            # Scale the unscaled covariance by the residual variance,
+            # matching R's cov.unscaled * summary(lmfit)$sigma^2
             ols_model = OLS(y_dif, X)
             ols_fit = ols_model.fit()
             vec_ols = np.array([0, -1, 1])
-            var_diff = vec_ols @ ols_fit.normalized_cov_params @ vec_ols
+            var_diff = vec_ols @ (ols_fit.normalized_cov_params * ols_fit.scale) @ vec_ols
             stats_vec[m] = (ols_fit.params[1] - ols_fit.params[2]) / np.sqrt(var_diff)
 
     Tmax = np.max(np.abs(stats_vec))
