@@ -90,6 +90,8 @@ uv run trace-sim all --quick
 ```
 
 If this returns error messages with `R_getvar`, it is likely that the installed R version is too low. Please update R.
+
+> Remarks: Since the app uses sh.exe, which does not work straightforwardly on Windows, you may encounter problems running this line. Common issues include R/Rtools version mismatch, undefined paths, and memory allocation errors. We have provided the solution to some of these problems, but given the differences in the set up of individual machines, you are likely to encounter different ones. Some debugging may be required. If you just want to try the app and implement some arbitrary simulation scenarios, skip this step and go straight to launching the app. 
  
 ### 8. Start the app
 
